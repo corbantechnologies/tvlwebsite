@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  Building2, Users, Calendar, Ship, Sparkles, Tag, Car, 
+  BookOpen, Building2, Users, Calendar, Ship, Sparkles, Tag, Car, 
   HelpCircle, Settings, ShieldAlert, LogOut, ChevronLeft, 
   ChevronRight, ExternalLink, Menu, X, Bell, Layers,
   Compass, BarChart3, Clock, CheckCircle2, DollarSign,
@@ -99,6 +99,7 @@ export default function AdminPortalLayout({
         { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign },
         { label: 'Staff Team', href: '/admin/team', icon: Users },
         { label: 'Audit Logs', href: '/admin/logs', icon: Activity },
+        { label: 'Admin User Guide', href: '/admin/guide', icon: BookOpen, badge: 'Guide' },
       ],
     },
   ];
