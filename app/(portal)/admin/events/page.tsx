@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Calendar, Clock, MapPin, Ticket, Plus, Trash2, Edit, Save, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MediaDropzone from '@/components/ui/MediaDropzone';
 import { ResortEvent } from '@/types';
 import { DEFAULT_EVENTS } from '@/lib/data';
 
@@ -290,17 +291,13 @@ export default function AdminEventsPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">
-                  Poster Image URL
-                </label>
-                <input
-                  type="url"
-                  value={newEvent.posterUrl}
-                  onChange={(e) => setNewEvent({ ...newEvent, posterUrl: e.target.value })}
-                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27]"
-                />
-              </div>
+              <MediaDropzone
+                value={newEvent.posterUrl}
+                onChange={(url) => setNewEvent({ ...newEvent, posterUrl: url })}
+                folder="events"
+                label="Event Poster Artwork (MinIO)"
+                helperText="Drag & drop event poster or paste MinIO link"
+              />
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">

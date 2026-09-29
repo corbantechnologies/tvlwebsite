@@ -10,7 +10,7 @@
  * No database required—changes made here will instantly reflect across the entire application!
  */
 
-import { ApartmentType, PackageType, DiningExperience, FacilityType } from "@/types";
+import { ApartmentType, PackageType, DiningExperience, FacilityType } from "./types";
 
 export const APARTMENTS: ApartmentType[] = [
   {

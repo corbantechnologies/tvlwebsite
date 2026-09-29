@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, Sparkles, Plus, Trash2, Check, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MediaDropzone from '@/components/ui/MediaDropzone';
 import { ResortPackage } from '@/types';
 import { DEFAULT_RESORT_PACKAGES } from '@/lib/data';
 
@@ -317,6 +318,14 @@ export default function AdminPackagesPage() {
                   ))}
                 </div>
               </div>
+
+              <MediaDropzone
+                value={newPkg.heroImage}
+                onChange={(url) => setNewPkg({ ...newPkg, heroImage: url })}
+                folder="packages"
+                label="Package Hero Imagery (MinIO)"
+                helperText="Drag & drop high-res suite/dhow image or paste MinIO link"
+              />
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">

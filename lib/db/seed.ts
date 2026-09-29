@@ -255,7 +255,7 @@ export async function ensureDatabaseSeeded() {
     if (evtCount === 0) {
       const formattedEvents = DEFAULT_EVENTS.map(e => ({
         ...e,
-        createdAt: e.createdAt || new Date().toISOString()
+        createdAt: (e as any).createdAt || new Date().toISOString()
       }));
       await db.insert(events).values(formattedEvents as any);
       console.log("🌱 [Seed] Seeded baseline incoming events.");
@@ -267,7 +267,7 @@ export async function ensureDatabaseSeeded() {
     if (pkgCount === 0) {
       const formattedPackages = DEFAULT_RESORT_PACKAGES.map(p => ({
         ...p,
-        createdAt: p.createdAt || new Date().toISOString()
+        createdAt: (p as any).createdAt || new Date().toISOString()
       }));
       await db.insert(packages).values(formattedPackages as any);
       console.log("🌱 [Seed] Seeded baseline multi-tier packages.");

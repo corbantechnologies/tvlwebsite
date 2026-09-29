@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { Layers, Save, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MediaDropzone from '@/components/ui/MediaDropzone';
 
 export default function AdminHeroPage() {
+  const [heroMediaUrl, setHeroMediaUrl] = useState('https://media.tamarind.co.ke/hero/harbour-clifftop.jpg');
   const [headline, setHeadline] = useState('Coastal Grandeur & Private Luxury Suites Overlooking Tudor Creek');
   const [subtext, setSubtext] = useState('Experience Mombasa’s most iconic sanctuary. Elegant Swahili-styled oceanfront apartments, world-renowned fresh seafood at Tamarind Restaurant, and unforgettable sunset voyages aboard the Tamarind Dhow.');
   const [bannerAlert, setBannerAlert] = useState('Direct Booking Perk: Complimentary Sunset Welcome Cocktail & Dhow Priority Seating');
@@ -40,6 +42,14 @@ export default function AdminHeroPage() {
             className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
           />
         </div>
+
+        <MediaDropzone
+          value={heroMediaUrl}
+          onChange={setHeroMediaUrl}
+          folder="hero"
+          label="Hero Background Media / Video (MinIO)"
+          helperText="Drag & drop clifftop pool/harbour image or video"
+        />
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">

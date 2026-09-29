@@ -1,238 +1,1634 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import HeroSection from '@/components/marketing/HeroSection';
-import ApartmentCard from '@/components/marketing/ApartmentCard';
-import EventsHighlight from '@/components/marketing/EventsHighlight';
-import PackagesShowcase from '@/components/marketing/PackagesShowcase';
-import BookingModal from '@/components/marketing/BookingModal';
-import OptimizedImage from '@/components/ui/OptimizedImage';
-import { APARTMENTS, DEFAULT_EVENTS, DEFAULT_RESORT_PACKAGES, DINING, FACILITIES, REVIEWS } from '@/lib/data';
-import { ApartmentType, ResortEvent, ResortPackage } from '@/types';
-import { Waves, Ship, Utensils, Sparkles, Star, MapPin, ArrowRight, ShieldCheck, Check } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import ApartmentDetail from "@/components/ApartmentDetail";
+import DiningDetail from "@/components/DiningDetail";
+import BookingModal from "@/components/BookingModal";
+import TransferModal from "@/components/TransferModal";
+import EventsAndChartersSection from "@/components/EventsAndChartersSection";
 
-export default function HomePage() {
-  const [apartments, setApartments] = useState<ApartmentType[]>(APARTMENTS);
-  const [events, setEvents] = useState<ResortEvent[]>(DEFAULT_EVENTS);
-  const [packages, setPackages] = useState<ResortPackage[]>(DEFAULT_RESORT_PACKAGES);
-  
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [selectedApartmentId, setSelectedApartmentId] = useState('1-bedroom');
-  const [selectedPkgId, setSelectedPkgId] = useState('ro');
+import DirectPerksBanner from "@/components/DirectPerksBanner";
+import ReviewsSection from "@/components/ReviewsSection";
+import MobileBookingBar from "@/components/MobileBookingBar";
+import GuestBookingTrackerModal from "@/components/GuestBookingTrackerModal";
+import OptimizedImage from "@/components/OptimizedImage";
+import { getOptimizedImageUrl } from "@/utils/media";
+import { loadTransferVehicles, loadEventPackages, saveTransferVehicles, saveEventPackages } from "@/utils/extrasStore";
+import { useLiveRates } from "@/utils/profitroom";
+import { StaffUser } from "@/types";
+import { loadStaffUsers, saveStaffUsers, getCurrentStaffUser, setCurrentStaffUser } from "@/utils/staffStore";
+import { APARTMENTS, PACKAGES, DINING, FACILITIES } from "@/data";
+import {
+  Waves, Users, Maximize2, Coffee, Utensils, Ship,
+  MapPin, Phone, Mail, Sparkles, ArrowRight, Clock, ChevronRight,
+  ShieldCheck, HelpCircle, CheckCircle2, Star, Calendar, MessageSquare,
+  ChevronLeft, Image as ImageIcon, Settings, Plus, Trash2, RotateCcw, Check,
+  Car, Plane, Train, Key, UserCheck, Eye, EyeOff, Lock, ArrowLeft
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
-  useEffect(() => {
-    // Fetch live inventory, events, and packages
-    const loadData = async () => {
-      try {
-        const [aptRes, evtRes, pkgRes] = await Promise.all([
-          fetch('/api/apartments').catch(() => null),
-          fetch('/api/events').catch(() => null),
-          fetch('/api/packages').catch(() => null),
-        ]);
+export default function App() {
+  const router = useRouter();
+  const { getLivePrice, getLivePackagePrice } = useLiveRates();
+  const [activeView, setActiveView] = useState<"home" | "detail" | "dining">("home");
+  const [selectedApartmentId, setSelectedApartmentId] = useState<string>("1-bedroom");
+  const [selectedDiningId, setSelectedDiningId] = useState<string>("tamarind-restaurant");
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [trackingToken, setTrackingToken] = useState("");
+  const [preSelectedPkg, setPreSelectedPkg] = useState<string>("ro");
 
-        if (aptRes && aptRes.ok) {
-          const d = await aptRes.json();
-          if (d.apartments && d.apartments.length > 0) setApartments(d.apartments);
-        }
-        if (evtRes && evtRes.ok) {
-          const d = await evtRes.json();
-          if (d.events && d.events.length > 0) setEvents(d.events);
-        }
-        if (pkgRes && pkgRes.ok) {
-          const d = await pkgRes.json();
-          if (d.packages && d.packages.length > 0) setPackages(d.packages);
-        }
-      } catch (err) {
-        console.warn('Using static fallback resort data:', err);
-      }
-    };
-    loadData();
-  }, []);
+  // Dynamic server-synced datasets and pricing rules
+  const [apartments, setApartments] = useState<any[]>(APARTMENTS);
+  const [diningOptions, setDiningOptions] = useState<any[]>(DINING);
+  const [pricingRules, setPricingRules] = useState({
+    markupMultiplier: 1.0,
+    taxRate: 8,
+    seasonalFactor: "regular"
+  });
 
-  const handleOpenBooking = (pkgId?: string, aptId?: string) => {
-    if (pkgId) setSelectedPkgId(pkgId);
-    if (aptId) setSelectedApartmentId(aptId);
-    setIsBookingModalOpen(true);
+  const [securityNotification, setSecurityNotification] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
+
+  const triggerNotification = (title: string, message: string, type: "success" | "error" | "info" = "success") => {
+    setSecurityNotification({ show: true, title, message, type });
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      setSecurityNotification(prev => prev && prev.title === title ? null : prev);
+    }, 5000);
   };
 
+  // Auto-detect secure guest token or track reference from URL (e.g. ?token=tv_guest_... or ?track=inq_...)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token") || params.get("track");
+      if (token) {
+        setTrackingToken(token);
+        setIsTrackingModalOpen(true);
+      }
+    } catch (e) {
+      console.error("Failed to parse URL query params:", e);
+    }
+  }, []);
+
+  // Sync data with local server database_store
+  useEffect(() => {
+    const fetchLiveData = async () => {
+      try {
+        const pRes = await fetch("/api/pricing");
+        if (pRes.ok) {
+          const d = await pRes.json();
+          if (d.pricing) setPricingRules(d.pricing);
+        }
+
+        const aRes = await fetch("/api/apartments");
+        if (aRes.ok) {
+          const d = await aRes.json();
+          if (d.apartments) setApartments(d.apartments);
+        }
+
+        const dRes = await fetch("/api/dining");
+        if (dRes.ok) {
+          const d = await dRes.json();
+          if (d.dining) setDiningOptions(d.dining);
+        }
+
+        const sRes = await fetch("/api/settings");
+        if (sRes.ok) {
+          const d = await sRes.json();
+          if (d.transfer_vehicles) {
+            setTransferVehiclesList(d.transfer_vehicles);
+            saveTransferVehicles(d.transfer_vehicles);
+          }
+          if (d.event_packages) {
+            setEventPackagesList(d.event_packages);
+            saveEventPackages(d.event_packages);
+          }
+          if (d.staff_users && Array.isArray(d.staff_users)) {
+            setStaffUsers(d.staff_users);
+            saveStaffUsers(d.staff_users);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not sync with live server db, using static defaults.", err);
+      }
+    };
+    fetchLiveData();
+  }, []);
+
+  // Keyboard listener for 10-digit hidden key combination
+  useEffect(() => {
+    let typedKeys = "";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (/^\d$/.test(e.key)) {
+        typedKeys += e.key;
+        if (typedKeys.length > 10) {
+          typedKeys = typedKeys.slice(-10);
+        }
+        if (typedKeys === "1977197700" || typedKeys === "1234567890") {
+          setIsAdmin(true);
+          try {
+            localStorage.setItem("tamarind_staff_unlocked", "true");
+          } catch (err) {
+            console.error(err);
+          }
+          setIsCustomizerOpen(true);
+          triggerNotification("Security Clearance Granted", "Tamarind Staff Dashboard unlocked! Controls are active.");
+          typedKeys = "";
+        }
+      } else {
+        // Reset only if not a number
+        if (e.key !== "Shift" && e.key !== "Control" && e.key !== "Alt") {
+          typedKeys = "";
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Processed apartments with live markupMultiplier applied (defensive fallback to APARTMENTS if empty)
+  const processedApartments = (apartments && apartments.length > 0 ? apartments : APARTMENTS).map(apt => ({
+    ...apt,
+    pricePerNight: Math.round(apt.pricePerNight * (pricingRules?.markupMultiplier || 1.0))
+  }));
+
+  // Live starting price for mobile booking bar (dynamic from Profitroom)
+  const { mobileStartingPrice, isMobilePriceLive } = useMemo(() => {
+    // If viewing a specific apartment detail, show that apartment's live rate
+    if (activeView === "detail" && selectedApartmentId) {
+      const activeApt = processedApartments.find(a => a.id === selectedApartmentId) || processedApartments[0];
+      if (activeApt) {
+        const { price, isLive } = getLivePrice(activeApt.id, activeApt.pricePerNight);
+        return { mobileStartingPrice: price, isMobilePriceLive: isLive };
+      }
+    }
+
+    // On home view or other views, find the minimum live rate across all available apartments
+    let lowestPrice = Infinity;
+    let anyLive = false;
+
+    processedApartments.forEach(apt => {
+      const { price, isLive } = getLivePrice(apt.id, apt.pricePerNight);
+      if (price < lowestPrice) {
+        lowestPrice = price;
+      }
+      if (isLive) {
+        anyLive = true;
+      }
+    });
+
+    if (lowestPrice === Infinity) {
+      lowestPrice = processedApartments[0]?.pricePerNight || 160;
+    }
+
+    return { mobileStartingPrice: lowestPrice, isMobilePriceLive: anyLive };
+  }, [activeView, selectedApartmentId, processedApartments, getLivePrice]);
+
+  // Dynamic dining options with fallback to static DINING
+  const displayDining = diningOptions && diningOptions.length > 0 ? diningOptions : DINING;
+
+  // Dynamic state for extras (Transfers & Events)
+  const [transferVehiclesList, setTransferVehiclesList] = useState(() => loadTransferVehicles());
+  const [eventPackagesList, setEventPackagesList] = useState(() => loadEventPackages());
+
+  const defaultHeroImages = [
+    "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--14.jpg", // Pool luxury overlooking sea
+    "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--11.jpg", // Beautiful coastal resort
+    "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--2.jpg", // Coastal rooms / suites
+  ];
+
+  const [heroImages, setHeroImages] = useState<string[]>(() => {
+    if (typeof window === "undefined") return defaultHeroImages;
+    try {
+      const saved = localStorage.getItem("tamarind_hero_images");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasCloudinary = parsed.some((img: string) => typeof img === "string" && img.includes("cloudinary"));
+          if (hasCloudinary) {
+            console.log("🧹 [LocalStorage] Resetting legacy Cloudinary hero images to self-hosted defaults.");
+            localStorage.setItem("tamarind_hero_images", JSON.stringify(defaultHeroImages));
+            return defaultHeroImages;
+          }
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load hero images from localStorage:", e);
+    }
+    return defaultHeroImages;
+  });
+
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [newUrlInput, setNewUrlInput] = useState("");
+  const [pasteListInput, setPasteListInput] = useState("");
+  const [urlError, setUrlError] = useState("");
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      const saved = localStorage.getItem("tamarind_staff_unlocked");
+      if (saved === "true") return true;
+      const params = new URLSearchParams(window.location.search);
+      return params.get("admin") === "true" || params.get("staff") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>(() => loadStaffUsers());
+  const [currentStaffUser, setCurrentStaffUserState] = useState<StaffUser | null>(() => getCurrentStaffUser());
+
+  const [isStaffPinModalOpen, setIsStaffPinModalOpen] = useState(false);
+  const [staffAuthMode, setStaffAuthMode] = useState<"login" | "forgot" | "reset">("login");
+  const [staffEmailInput, setStaffEmailInput] = useState("");
+  const [staffPasswordInput, setStaffPasswordInput] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [staffPinError, setStaffPinError] = useState("");
+
+  // Forgot password & reset password state
+  const [forgotEmailInput, setForgotEmailInput] = useState("");
+  const [forgotSentMessage, setForgotSentMessage] = useState("");
+  const [resetTokenInput, setResetTokenInput] = useState("");
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
+
+  // Check URL query on mount for password reset token
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get("action");
+    const token = urlParams.get("token");
+    if (action === "reset-password" && token) {
+      setResetTokenInput(token);
+      setStaffAuthMode("reset");
+      setIsStaffPinModalOpen(true);
+    }
+  }, []);
+
+  const handleStaffLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffPinError("");
+    setAuthLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: staffEmailInput,
+          password: staffPasswordInput
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Authentication failed.");
+      }
+
+      if (data.user) {
+        setCurrentStaffUserState(data.user);
+        setCurrentStaffUser(data.user);
+        setIsAdmin(true);
+        try {
+          localStorage.setItem("tamarind_staff_unlocked", "true");
+        } catch (e) {
+          console.error(e);
+        }
+        setIsStaffPinModalOpen(false);
+        setStaffEmailInput("");
+        setStaffPasswordInput("");
+        setIsCustomizerOpen(true);
+        toast.success(`Welcome ${data.user.name} (${data.user.role.toUpperCase()})`);
+      }
+    } catch (err: any) {
+      setStaffPinError(err.message || "Failed to log in.");
+      toast.error(err.message || "Login failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleRequestPasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffPinError("");
+    setAuthLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmailInput })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Request failed");
+
+      setForgotSentMessage(data.message || "Password reset instructions sent.");
+      toast.success("Password reset instructions sent!");
+    } catch (err: any) {
+      setStaffPinError(err.message || "Could not request password reset.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleCompletePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffPinError("");
+    if (newPasswordInput !== confirmPasswordInput) {
+      setStaffPinError("Passwords do not match.");
+      return;
+    }
+    setAuthLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: resetTokenInput,
+          newPassword: newPasswordInput
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Reset failed");
+
+      toast.success("Password reset successfully! You can now log in.");
+      setStaffAuthMode("login");
+      setStaffPasswordInput("");
+      setNewPasswordInput("");
+      setConfirmPasswordInput("");
+    } catch (err: any) {
+      setStaffPinError(err.message || "Could not reset password.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLockStaffMode = () => {
+    setIsAdmin(false);
+    setCurrentStaffUserState(null);
+    setCurrentStaffUser(null);
+    try {
+      localStorage.removeItem("tamarind_staff_unlocked");
+    } catch (e) {
+      console.error("Failed to clear staff state:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (heroImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [heroImages]);
+
+  // When opening customizer modal, pre-fill the raw list paste textarea
+  const openCustomizer = () => {
+    setPasteListInput(heroImages.join("\n"));
+    setUrlError("");
+    setIsCustomizerOpen(true);
+  };
+
+  const handleSavePasteList = () => {
+    const lines = pasteListInput
+      .split(/[\n,]+/)
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    if (lines.length === 0) {
+      setUrlError("Please provide at least one valid image URL link.");
+      return;
+    }
+
+    const invalidLines = lines.filter(line => !line.startsWith("http://") && !line.startsWith("https://") && !line.startsWith("/"));
+    if (invalidLines.length > 0) {
+      setUrlError("Some URLs seem invalid. Ensure they start with https:// or http://");
+      return;
+    }
+
+    setHeroImages(lines);
+    localStorage.setItem("tamarind_hero_images", JSON.stringify(lines));
+    setCurrentHeroIndex(0);
+    setUrlError("");
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
+  };
+
+  const handleAddSingleUrl = () => {
+    if (!newUrlInput.trim()) return;
+    if (!newUrlInput.startsWith("http://") && !newUrlInput.startsWith("https://") && !newUrlInput.startsWith("/")) {
+      setUrlError("Invalid URL format. Ensure it starts with https:// or http://");
+      return;
+    }
+
+    const updated = [...heroImages, newUrlInput.trim()];
+    setHeroImages(updated);
+    localStorage.setItem("tamarind_hero_images", JSON.stringify(updated));
+    setPasteListInput(updated.join("\n"));
+    setNewUrlInput("");
+    setUrlError("");
+    setCurrentHeroIndex(updated.length - 1); // switch to newly added slide!
+  };
+
+  const handleDeleteUrl = (indexToDelete: number) => {
+    if (heroImages.length <= 1) {
+      setUrlError("You must keep at least one background image.");
+      return;
+    }
+    const updated = heroImages.filter((_, idx) => idx !== indexToDelete);
+    setHeroImages(updated);
+    localStorage.setItem("tamarind_hero_images", JSON.stringify(updated));
+    setPasteListInput(updated.join("\n"));
+    if (currentHeroIndex >= updated.length) {
+      setCurrentHeroIndex(0);
+    }
+    setUrlError("");
+  };
+
+  const handleResetDefaults = () => {
+    setHeroImages(defaultHeroImages);
+    localStorage.setItem("tamarind_hero_images", JSON.stringify(defaultHeroImages));
+    setPasteListInput(defaultHeroImages.join("\n"));
+    setCurrentHeroIndex(0);
+    setUrlError("");
+  };
+
+  const handleSelectDining = (id: string) => {
+    router.push(`/dining/${id}`);
+  };
+
+  // Custom contact submission form state
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactDept, setContactDept] = useState("village");
+  const [isContactSubmitting, setIsContactSubmitting] = useState(false);
+  const [contactSubmitError, setContactSubmitError] = useState("");
+  const [isContactSubmitted, setIsContactSubmitted] = useState(false);
+
+  // FAQ interactive state
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // Scroll target helper
+  const navigateToSection = (sectionId: string) => {
+    if (activeView !== "home") {
+      setActiveView("home");
+      // Give React time to render home view, then scroll
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+
+  const getApartmentSlug = (id: string) => {
+    return id
+      .replace("1-bedroom", "one-bedroom")
+      .replace("2-bedroom", "two-bedroom")
+      .replace("3-bedroom", "three-bedroom");
+  };
+
+  const handleSelectApartment = (id: string) => {
+    router.push(`/apartments/${getApartmentSlug(id)}`);
+  };
+
+  const handleOpenBookingWithParams = (aptId: string = "1-bedroom", pkgId: string = "ro") => {
+    setSelectedApartmentId(aptId);
+    setPreSelectedPkg(pkgId);
+    setIsBookingOpen(true);
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactName || !contactEmail || !contactMessage) {
+      toast.error("Please fill out all contact fields.");
+      return;
+    }
+
+    setIsContactSubmitting(true);
+    setContactSubmitError("");
+
+    try {
+      const response = await fetch("/api/inquire", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "general",
+          payload: {
+            name: contactName,
+            email: contactEmail,
+            message: contactMessage,
+            department: contactDept,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit inquiry.");
+      }
+
+      setIsContactSubmitted(true);
+      toast.success("Your message has been delivered to Tamarind Reservations.");
+    } catch (err: any) {
+      console.error("Error submitting general inquiry:", err);
+      setContactSubmitError(err.message || "Unable to send inquiry. Please try again later.");
+    } finally {
+      setIsContactSubmitting(false);
+    }
+  };
+
+  const activeApartment = processedApartments.find(a => a.id === selectedApartmentId) || processedApartments[0];
+
+  const faqs = [
+    {
+      q: "Is Tamarind Village Mombasa suitable for self-catering?",
+      a: "Yes! Every 1, 2, and 3-bedroom apartment comes with a fully equipped granite-countertop kitchen featuring modern refrigerators, ovens, microwaves, cooktops, kettle utilities, and fine cutlery. If you prefer to be pampered, you can upgrade to our Bed & Breakfast or Half Board packages."
+    },
+    {
+      q: "How does dining work with the adjacent Tamarind Restaurant?",
+      a: "Tamarind Village is physically connected to the world-famous Tamarind Mombasa Restaurant. Residents can dine at the restaurant, enjoy sundowners at the creekside Dawa Terrace, or order direct room service to be delivered straight to their apartment veranda."
+    },
+    {
+      q: "Can I book the Tamarind Dhow cruise directly through the hotel?",
+      a: "Absolutely. We offer exclusive packages (such as our Half Board Premium) that include a sunset or lunch cruise on the Tamarind Dhow. Residents also receive priority reservations for individual bookings and private charters."
+    },
+    {
+      q: "Is there secure parking and active security?",
+      a: "Yes. Tamarind Village is a highly secure, private gated compound with 24-hour manned professional security, electronic surveillance, and secure, complimentary resident and guest parking on site."
+    }
+  ];
+
   return (
-    <div>
-      {/* 1. Hero Section */}
-      <HeroSection onOpenBooking={(pkg) => handleOpenBooking(pkg)} />
+    <div className="min-h-screen bg-brand-sand font-sans text-brand-dark selection:bg-brand-teal selection:text-white flex flex-col w-full max-w-full overflow-x-hidden">
 
-      {/* 2. Direct Perks Banner */}
-      <section className="bg-[#821124] text-white py-6 border-y border-[#C59B27]/40 shadow-inner">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-4 text-xs tracking-wider">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#C59B27]" />
-            <span className="font-bold">Direct Booking Perks:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-[#C59B27]" />
-            <span>Complimentary Sunset Welcome Cocktail</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-[#C59B27]" />
-            <span>Priority Seating on Tamarind Dhow</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-[#C59B27]" />
-            <span>Guaranteed Best Rates &amp; Flexible Check-In</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Luxury Accommodations Showcase */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6" id="accommodations">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#821124]/10 text-[#821124] text-xs font-bold uppercase tracking-widest">
-              <Sparkles className="w-3.5 h-3.5 text-[#C59B27]" />
-              <span>Coastal Sanctuaries</span>
-            </div>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#1F1615] font-bold">
-              Private Sea-Facing Suites &amp; Villas
-            </h2>
-            <p className="text-sm text-[#1F1615]/75 max-w-xl">
-              Spacious Swahili architecture with private verandahs, handcrafted Lamu furniture, modern kitchens, and direct clifftop breeze.
-            </p>
-          </div>
-
-          <Link
-            href="/apartments"
-            className="mt-4 md:mt-0 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#821124] hover:text-[#680e1c] group"
-          >
-            <span>Explore All 3 Categories</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {apartments.map((apt) => (
-            <ApartmentCard
-              key={apt.id}
-              apartment={apt}
-              onSelect={(id) => handleOpenBooking(undefined, id)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* 4. Dining & Dhow Experience Feature */}
-      <section className="py-20 bg-[#1F1615] text-[#FAF6F0] relative overflow-hidden" id="dining">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#C59B27]/20 border border-[#C59B27]/40 text-[#C59B27] text-xs font-semibold tracking-widest uppercase">
-              <Ship className="w-3.5 h-3.5" />
-              <span>The Legend of Mombasa Gastronomy</span>
-            </div>
-
-            <h2 className="font-serif text-3xl sm:text-5xl font-bold text-white leading-tight">
-              Tamarind Mombasa &amp; The Legendary Dhow Cruise
-            </h2>
-
-            <p className="text-sm sm:text-base text-white/80 leading-relaxed font-light">
-              Perched on a coral cliff overlooking the picturesque Old Harbour of Mombasa, Tamarind Restaurant is renowned as one of Africa’s finest seafood destinations. 
-              Pair your stay with a romantic sunset cruise aboard our authentic Arab sailing dhow, drifting under starlit skies with live music and fresh lobster.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <Utensils className="w-5 h-5 text-[#C59B27] mb-2" />
-                <h4 className="font-serif font-bold text-white text-base">Tamarind Restaurant</h4>
-                <p className="text-xs text-white/70 mt-1">Clifftop dining, mangrove crab, and fresh daily catch.</p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <Ship className="w-5 h-5 text-[#C59B27] mb-2" />
-                <h4 className="font-serif font-bold text-white text-base">Tamarind Dhow</h4>
-                <p className="text-xs text-white/70 mt-1">Lunch &amp; dinner sailing charters along Tudor Creek.</p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-wrap gap-4">
-              <Link
-                href="/dining"
-                className="px-6 py-3.5 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow-lg transition-all flex items-center gap-2"
-              >
-                <span>View Menus &amp; Sailings</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Dining Photography */}
-          <div className="relative h-[480px] rounded-3xl overflow-hidden shadow-2xl border border-[#C59B27]/30">
-            <OptimizedImage
-              src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80"
-              alt="Tamarind Dhow Sailing at Sunset"
-              fill
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Incoming Events Section */}
-      <EventsHighlight
-        events={events}
-        onBookEvent={() => handleOpenBooking()}
+      {/* Dynamic Sticky Header */}
+      <Navbar
+        onNavigate={navigateToSection}
+        onOpenBooking={() => setIsBookingOpen(true)}
+        onOpenTransferModal={() => setIsTransferModalOpen(true)}
+        onOpenTracking={() => setIsTrackingModalOpen(true)}
+        activeView={activeView}
+        onGoHome={() => {
+          setActiveView("home");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
       />
 
-      {/* 6. Signature Packages Section */}
-      <PackagesShowcase
-        packages={packages}
-        onSelectPackage={(pkg) => handleOpenBooking(pkg.id)}
-      />
+      {/* Primary Page Content Wrapper */}
+      <main className="flex-1">
+        <AnimatePresence mode="wait">
+          {activeView === "home" ? (
+            <motion.div
+              key="home-view"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
 
-      {/* 7. Guest Reviews & Heritage */}
-      <section className="py-20 bg-[#FAF6F0] border-t border-[#C59B27]/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
-            <div className="flex justify-center gap-1 text-[#C59B27] mb-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-[#C59B27]" />
-              ))}
+              {/* 1. HERO SECTION */}
+              <section className="relative min-h-[85vh] flex items-center justify-center bg-brand-dark overflow-hidden" id="hero-section">
+                {/* Visual Backdrop (Curated Luxury resort / pool overlooking sea with smooth fade-in) */}
+                <div className="absolute inset-0 z-0">
+                  <AnimatePresence mode="popLayout">
+                    <motion.img
+                      key={currentHeroIndex}
+                      src={getOptimizedImageUrl(heroImages[currentHeroIndex], "hero")}
+                      alt={`Tamarind Village Coastal Backdrop ${currentHeroIndex + 1}`}
+                      initial={{ opacity: 0, scale: 1.05 }}
+                      animate={{ opacity: 0.45, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
+                      className="absolute inset-0 w-full h-full object-cover filter brightness-90"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const original = heroImages[currentHeroIndex];
+                        if (original && e.currentTarget.src !== original) {
+                          e.currentTarget.src = original;
+                        }
+                      }}
+                    />
+                  </AnimatePresence>
+                  <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/60 to-transparent pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/85 via-transparent to-brand-dark/25 pointer-events-none"></div>
+                </div>
+
+                {/* Left Carousel Arrow */}
+                {heroImages.length > 1 && (
+                  <button
+                    onClick={() => setCurrentHeroIndex((prev) => (prev - 1 + heroImages.length) % heroImages.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2.5 bg-black/30 hover:bg-brand-teal border border-white/10 text-white transition-all cursor-pointer rounded-none group"
+                    aria-label="Previous slide"
+                  >
+                    <ChevronLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  </button>
+                )}
+
+                {/* Right Carousel Arrow */}
+                {heroImages.length > 1 && (
+                  <button
+                    onClick={() => setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2.5 bg-black/30 hover:bg-brand-teal border border-white/10 text-white transition-all cursor-pointer rounded-none group"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  </button>
+                )}
+
+                {/* Slide indicator dots */}
+                {heroImages.length > 1 && (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                    {heroImages.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentHeroIndex(idx)}
+                        className={`h-1.5 transition-all duration-300 ${currentHeroIndex === idx ? "w-8 bg-brand-gold" : "w-2 bg-white/40 hover:bg-white/70"}`}
+                        aria-label={`Go to slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Slides Customize Button (Bottom Left Overlay) */}
+                {isAdmin && (
+                  <div className="absolute bottom-6 left-6 z-20 hidden sm:block">
+                    <button
+                      onClick={openCustomizer}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-black/50 hover:bg-brand-teal text-white border border-white/10 text-[11px] font-bold uppercase tracking-wider transition-all duration-300 backdrop-blur-md hover:border-brand-teal cursor-pointer"
+                    >
+                      <Settings className="w-3.5 h-3.5 text-brand-gold" />
+                      <span>Manage Slides</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Content Overlay */}
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-12 w-full">
+                  <div className="max-w-3xl space-y-6">
+                    {/* Floating Luxury Hospitality Badge */}
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-teal/15 border border-brand-teal/30 text-brand-teal text-xs font-bold uppercase tracking-widest">
+                      <Sparkles className="w-3.5 h-3.5 text-brand-gold animate-pulse" />
+                      <span>Luxury Coastal Serviced Residences</span>
+                    </div>
+
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-white leading-tight tracking-tight">
+                      Swahili Elegance.<br />
+                      <span className="text-brand-teal">Creekside Serenity.</span>
+                    </h1>
+
+                    <p className="text-stone-300 text-sm sm:text-base lg:text-lg font-light leading-relaxed max-w-xl">
+                      Experience the ultimate coastal home at Tamarind Village Mombasa. Our spacious 1, 2, and 3-bedroom fully serviced apartments combine Swahili-Arabic architecture with spectacular harbor views of Tudor Creek.
+                    </p>
+
+                    {/* CTAs */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 pt-4">
+                      <button
+                        onClick={() => navigateToSection("apartments-section")}
+                        className="w-full sm:w-auto px-8 py-3.5 bg-brand-teal hover:bg-brand-teal-dark text-white font-bold rounded-none text-xs uppercase tracking-widest shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer hover:scale-103"
+                        id="hero-btn-explore"
+                      >
+                        <span>Explore Our Apartments</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setIsBookingOpen(true)}
+                        className="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-none text-xs uppercase tracking-widest transition-all duration-300 backdrop-blur-sm cursor-pointer"
+                        id="hero-btn-book"
+                      >
+                        Check Availability
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right side floating trust badge */}
+                  <div className="hidden lg:block bg-brand-dark/80 backdrop-blur-md border border-stone-800 p-6 rounded-none w-80 space-y-4 shadow-xl">
+                    <div className="flex items-center gap-1.5 text-brand-gold text-xs font-bold uppercase tracking-wider">
+                      <Star className="w-4 h-4 fill-brand-gold" />
+                      <Star className="w-4 h-4 fill-brand-gold" />
+                      <Star className="w-4 h-4 fill-brand-gold" />
+                      <Star className="w-4 h-4 fill-brand-gold" />
+                      <Star className="w-4 h-4 fill-brand-gold" />
+                      <span className="text-white ml-2">5-Star Luxury</span>
+                    </div>
+                    <p className="text-stone-300 text-xs leading-relaxed font-light">
+                      "An exceptional oasis in Mombasa. Combining room-service convenience from Tamarind Restaurant with the vast spatial comfort of our own high-ceiling Swahili residence."
+                    </p>
+                    <div className="border-t border-stone-800 pt-3 flex justify-between text-[10px] text-stone-400 font-semibold uppercase">
+                      <span>Nyali Coastline</span>
+                      <span>Tudor Creek View</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* DIRECT ADVANTAGES & PERKS BANNER (BEST RATE GUARANTEE, DAWA COCKTAIL, DIRECT FLEXIBILITY) */}
+              <DirectPerksBanner
+                onOpenBooking={() => setIsBookingOpen(true)}
+                onOpenTracking={() => setIsTrackingModalOpen(true)}
+              />
+
+              {/* 2. CORE STRATEGY: RESIDENCES PROMISE BANNER */}
+              <section className="bg-brand-teal/5 py-12 border-y border-stone-200" id="strategy-intro">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  <div className="lg:col-span-4">
+                    <span className="text-xs font-bold uppercase tracking-widest text-brand-teal block mb-2">Our Core Philosophy</span>
+                    <h2 className="font-serif text-2xl sm:text-3xl text-brand-dark tracking-tight leading-snug">
+                      Your Luxury Home on the Mombasa Coast
+                    </h2>
+                  </div>
+                  <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="p-4 bg-white border border-stone-200 rounded-none shadow-xs">
+                      <h4 className="font-serif text-base text-brand-dark font-bold mb-1">Unmatched Space</h4>
+                      <p className="text-stone-500 text-xs font-light leading-relaxed">
+                        Significantly larger than standard hotel rooms. Features full living rooms, dining halls, and multi-bedroom setups.
+                      </p>
+                    </div>
+                    <div className="p-4 bg-white border border-stone-200 rounded-none shadow-xs">
+                      <h4 className="font-serif text-base text-brand-dark font-bold mb-1">Fully Serviced</h4>
+                      <p className="text-stone-500 text-xs font-light leading-relaxed">
+                        Enjoy daily expert housekeeping, professional laundry services, room-service dining, and 24-hour resort assistance.
+                      </p>
+                    </div>
+                    <div className="p-4 bg-white border border-stone-200 rounded-none shadow-xs">
+                      <h4 className="font-serif text-base text-brand-dark font-bold mb-1">Self-Catering Freedom</h4>
+                      <p className="text-stone-500 text-xs font-light leading-relaxed">
+                        Equipped with high-end full kitchens. Prepare your own meals or enjoy elite adjacent restaurants effortlessly.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 3. APARTMENTS SHOWCASE */}
+              <section className="py-20 scroll-mt-12 w-full" id="apartments-section">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center max-w-3xl mx-auto mb-16">
+                    <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-brand-teal/10 border border-brand-teal/25 text-brand-teal text-xs font-bold uppercase tracking-widest mb-3">
+                      <ShieldCheck className="w-3.5 h-3.5 text-brand-teal" />
+                      <span>Exclusive Residences</span>
+                    </div>
+                    <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-brand-dark tracking-tight">
+                      Luxury Serviced Residences
+                    </h2>
+                    <p className="text-stone-500 font-light mt-4 text-sm sm:text-base leading-relaxed">
+                      Designed around spacious, light-filled rooms, high arches, and authentic coastal Swahili furniture, our apartments are perfectly suited for long-term residencies or luxurious family holidays.
+                    </p>
+                  </div>
+
+                  {/* Apartments Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center justify-center">
+                    {processedApartments.map((apt, index) => {
+                      const { price: livePrice, isLive } = getLivePrice(apt.id, apt.pricePerNight);
+                      return (
+                        <div
+                          key={apt.id}
+                          className={`bg-white border border-stone-200 rounded-none overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group w-full max-w-sm ${index === 2 ? "md:col-span-2 lg:col-span-1 mx-auto" : ""
+                            }`}
+                          id={`card-${apt.id}`}
+                        >
+                          {/* Image Thumbnail Container */}
+                          <div className="relative aspect-[16/10] overflow-hidden bg-stone-100">
+                            <OptimizedImage
+                              src={apt.image}
+                              preset="card"
+                              alt={apt.name}
+                              className="w-full h-full object-cover transform duration-500 group-hover:scale-103"
+                            />
+                            <div className="absolute top-4 right-4 bg-brand-dark/90 backdrop-blur-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
+                              {apt.viewType.split(" ")[0]} View
+                            </div>
+                          </div>
+
+                          {/* Specs and details */}
+                          <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
+                            <div>
+                              <div className="flex justify-between items-start gap-4 mb-3">
+                                <h3 className="font-serif text-xl text-brand-dark group-hover:text-brand-teal transition-colors">
+                                  {apt.name}
+                                </h3>
+                              </div>
+
+                              <p className="text-stone-500 text-xs font-light leading-relaxed mb-4 line-clamp-3">
+                                {apt.description}
+                              </p>
+
+                              {/* Quick Specs Icons Row */}
+                              <div className="grid grid-cols-3 gap-2 py-3 border-y border-stone-200 text-stone-600 font-medium">
+                                <div className="flex items-center gap-1.5 justify-center">
+                                  <Maximize2 className="w-4 h-4 text-brand-teal" />
+                                  <span className="text-[11px] font-mono">{apt.size}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 justify-center">
+                                  <Users className="w-4 h-4 text-brand-teal" />
+                                  <span className="text-[11px] font-mono">Max {apt.maxGuests}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 justify-center">
+                                  <span className="text-[11px] font-serif font-bold text-brand-teal">{apt.bedrooms} Bed</span>
+                                </div>
+                              </div>
+
+                              {/* Inclusions List */}
+                              <div className="mt-4 space-y-2">
+                                <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider block mb-1">Key Highlights:</span>
+                                {apt.highlights.slice(0, 2).map((hl: any, idx: number) => (
+                                  <div key={idx} className="flex gap-2 items-start text-[11px] text-stone-600">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-brand-teal flex-shrink-0 mt-0.5" />
+                                    <span className="font-light">{hl}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Cost & Action footer */}
+                            <div className="pt-4 border-t border-stone-200 flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <span className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">
+                                    {isLive ? "Live Rate" : "Base Rate"}
+                                  </span>
+                                  {isLive && (
+                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-bold text-white bg-emerald-600 rounded-none uppercase tracking-wider">
+                                      ● Live
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xl font-serif text-brand-dark font-extrabold">
+                                  ${livePrice} <span className="text-xs font-sans text-stone-500 font-light">/ night</span>
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                <button
+                                  onClick={() => handleSelectApartment(apt.id)}
+                                  className="px-5 py-2.5 border border-brand-dark text-brand-dark hover:bg-stone-50 rounded-none text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer text-center"
+                                  id={`btn-details-${apt.id}`}
+                                >
+                                  View Details
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+
+              {/* 4. BOARDING PACKAGES SECTION */}
+              <section className="py-20 bg-brand-dark text-stone-100 scroll-mt-12" id="packages-section">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center max-w-3xl mx-auto mb-16">
+                    <span className="text-xs font-bold uppercase tracking-widest text-brand-gold">Boarding & Dining Upgrades</span>
+                    <h2 className="font-serif text-3xl sm:text-4xl text-white tracking-tight mt-2">
+                      Tailored Boarding Packages
+                    </h2>
+                    <p className="text-stone-400 font-light mt-3 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
+                      Upgrade your apartment self-catering stay with one of our specialized board packages, linking you to the culinary brilliance of the adjacent Tamarind Restaurant.
+                    </p>
+                  </div>
+
+                  {/* Packages Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto justify-items-center justify-center">
+                    {PACKAGES.map((pkg, index) => {
+                      const { rate: liveRate, isLive, name: liveName } = getLivePackagePrice(pkg.id, pkg.pricePerPersonPerDay);
+
+                      // Assign elegant icons based on package type
+                      const getPackageIcon = (id: string) => {
+                        switch (id) {
+                          case "ro": return <Sparkles className="w-5 h-5" />;
+                          case "bb": return <Coffee className="w-5 h-5" />;
+                          case "hb": return <Utensils className="w-5 h-5" />;
+                          case "hbp": return <Ship className="w-5 h-5" />;
+                          default: return <Utensils className="w-5 h-5" />;
+                        }
+                      };
+
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`bg-[#2D2926] border border-stone-800 rounded-none p-8 flex flex-col justify-between hover:border-brand-teal/80 transition-all duration-300 shadow-md group relative w-full max-w-sm ${index === 2 ? "md:col-span-2 lg:col-span-1 mx-auto" : ""
+                            }`}
+                          id={`package-card-${pkg.id}`}
+                        >
+                          {pkg.id === "hbp" && (
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-teal text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-none border border-brand-teal/40 shadow-sm whitespace-nowrap">
+                              Highly Recommended
+                            </div>
+                          )}
+
+                          <div>
+                            <div className="flex items-center gap-2 mb-4">
+                              <div className="p-2 bg-stone-800 rounded-none text-brand-teal">
+                                {getPackageIcon(pkg.id)}
+                              </div>
+                              <h3 className="font-serif text-base sm:text-lg font-bold text-white group-hover:text-brand-teal transition-colors">
+                                {liveName || pkg.name}
+                              </h3>
+                            </div>
+
+                            <p className="text-stone-400 text-xs font-light leading-relaxed mb-6">
+                              {pkg.description}
+                            </p>
+
+                            <div className="space-y-3 mb-8">
+                              <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">What's Included:</span>
+                              {pkg.highlights.map((highlight, idx) => (
+                                <div key={idx} className="flex gap-2.5 items-start text-xs text-stone-300">
+                                  <CheckCircle2 className="w-4 h-4 text-brand-teal flex-shrink-0 mt-0.5" />
+                                  <span className="font-light leading-snug">{highlight}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="pt-6 border-t border-stone-800/80 flex flex-col gap-4">
+                            <div className="w-full">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[9px] text-stone-500 uppercase font-bold block">
+                                  {isLive ? "Live Upgrade Cost" : "Upgrade Cost"}
+                                </span>
+                                {isLive && (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 text-[7px] font-bold text-white bg-emerald-600 rounded-none uppercase tracking-wider">
+                                    ● Live
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-lg font-serif font-bold text-white">${liveRate}</span>
+                              <span className="text-[10px] text-stone-400 font-light block">/ Adult / Day</span>
+                            </div>
+
+                            <button
+                              onClick={() => handleOpenBookingWithParams("1-bedroom", pkg.id)}
+                              className="w-full py-3 bg-brand-teal hover:bg-brand-teal-dark text-white font-bold rounded-none text-xs uppercase tracking-widest transition-colors cursor-pointer text-center"
+                              id={`btn-pkg-select-${pkg.id}`}
+                            >
+                              Inquire Package
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+
+              {/* 5. DINING ALLIANCE SECTION */}
+              <section className="py-20 scroll-mt-12 w-full" id="dining-section">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center max-w-3xl mx-auto mb-16">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-brand-teal">The Tamarind Culinary Alliance</span>
+                    <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-brand-dark tracking-tight mt-2">
+                      Adjacent World-Class Gastronomy
+                    </h2>
+                    <p className="text-stone-500 font-light mt-4 text-sm sm:text-base leading-relaxed">
+                      Tamarind Village is physically linked to East Africa’s legendary seafood dining institutions. Residents receive priority reservations, creekside seating placement, and direct-to-veranda room service billing privileges.
+                    </p>
+                  </div>
+
+                  {/* Dining Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center justify-center">
+                    {displayDining.map((dining, index) => (
+                      <div
+                        key={dining.id}
+                        className={`bg-white border border-stone-200 rounded-none overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer hover:border-brand-teal/40 w-full max-w-sm ${index === 2 ? "md:col-span-2 lg:col-span-1 mx-auto" : ""
+                          }`}
+                        onClick={() => handleSelectDining(dining.id)}
+                        id={`dining-${dining.id}`}
+                      >
+                        <div>
+                          {/* Image */}
+                          <div className="relative aspect-[16/10] bg-stone-100 overflow-hidden">
+                            <OptimizedImage
+                              src={dining.image}
+                              preset="card"
+                              alt={dining.name}
+                              className="w-full h-full object-cover transform duration-500 group-hover:scale-103"
+                            />
+                            <div className="absolute bottom-4 left-4 bg-brand-dark/90 backdrop-blur-md px-3 py-1 text-[10px] uppercase font-mono font-bold tracking-wider text-brand-gold">
+                              {dining.hours.split(" | ")[0]}
+                            </div>
+                          </div>
+
+                          {/* Specs */}
+                          <div className="p-6">
+                            <div className="flex justify-between items-center mb-3">
+                              <h3 className="font-serif text-lg sm:text-xl font-bold text-brand-dark group-hover:text-brand-teal transition-colors">
+                                {dining.name}
+                              </h3>
+                            </div>
+
+                            <p className="text-stone-500 text-xs font-light leading-relaxed mb-6">
+                              {dining.description}
+                            </p>
+
+                            <div className="space-y-2.5">
+                              <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider block mb-1">Cuisine Highlights:</span>
+                              {dining.highlights.map((hl: any, idx: number) => (
+                                <div key={idx} className="flex gap-2 items-start text-[11px] text-stone-600 font-light">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-brand-teal mt-1.5 flex-shrink-0"></span>
+                                  <span>{hl}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer reservation placeholder */}
+                        <div className="p-6 pt-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectDining(dining.id);
+                            }}
+                            className="w-full py-3 bg-brand-dark hover:bg-brand-teal text-white font-bold rounded-none text-xs uppercase tracking-widest transition-colors text-center cursor-pointer block"
+                            id={`btn-dining-inquire-${dining.id}`}
+                          >
+                            View Details & Inquire
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* 6. RESORT FACILITIES & SERVICES */}
+              <section className="py-20 bg-brand-sand border-y border-stone-200 scroll-mt-12" id="facilities-section">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center max-w-3xl mx-auto mb-16">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-brand-teal">Bespoke Guest Comforts</span>
+                    <h2 className="font-serif text-3xl sm:text-4xl text-brand-dark tracking-tight mt-1">
+                      Resort Facilities & Services
+                    </h2>
+                    <p className="text-stone-500 font-light mt-3 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
+                      Beyond your spacious private apartment, Tamarind Village Mombasa offers complete resort facilities to make your stay perfectly productive and endlessly relaxing.
+                    </p>
+                  </div>
+
+                  {/* Facilities Rows */}
+                  <div className="space-y-12">
+                    {FACILITIES.map((facility, index) => (
+                      <div
+                        key={facility.id}
+                        className={`flex flex-col lg:flex-row items-stretch gap-8 bg-white border border-stone-200 rounded-none overflow-hidden shadow-sm hover:shadow-md transition-shadow ${index % 2 !== 0 ? "lg:flex-row-reverse" : ""
+                          }`}
+                        id={`facility-${facility.id}`}
+                      >
+                        {/* Image side */}
+                        <div className="lg:w-1/2 aspect-[16/10] lg:aspect-auto relative overflow-hidden bg-stone-200">
+                          <OptimizedImage
+                            src={facility.image || "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--14.jpg"}
+                            preset="card"
+                            alt={facility.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Content side */}
+                        <div className="lg:w-1/2 p-8 sm:p-12 flex flex-col justify-between">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-brand-teal block mb-2">Resort Amenity</span>
+                            <h3 className="font-serif text-2xl font-semibold text-brand-dark mb-4">{facility.name}</h3>
+                            <p className="text-stone-500 text-xs sm:text-sm font-light leading-relaxed mb-6">{facility.description}</p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {(facility.details || []).map((detail: string, idx: number) => (
+                                <div key={idx} className="flex gap-2.5 items-start" id={`fac-detail-${facility.id}-${idx}`}>
+                                  <CheckCircle2 className="w-4 h-4 text-brand-teal flex-shrink-0 mt-0.5" />
+                                  <span className="text-stone-600 text-xs font-light leading-tight">{detail}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="mt-8 pt-6 border-t border-stone-200 flex items-center justify-between">
+                            <span className="text-xs font-mono text-stone-400">Serviced Daily • Exclusive for Residents</span>
+                            <button
+                              onClick={() => setIsBookingOpen(true)}
+                              className="px-5 py-2.5 border border-brand-dark text-brand-dark hover:bg-stone-50 font-bold rounded-none text-xs uppercase tracking-widest transition-colors cursor-pointer"
+                              id={`btn-facility-inquire-${facility.id}`}
+                            >
+                              Inquire Info
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* 6B. PRIVATE AIRPORT & SGR TRANSFERS HIGHLIGHT BANNER */}
+              <section className="py-16 bg-[#1f1d1b] text-white border-y border-stone-800 scroll-mt-12" id="transfers-section">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="bg-gradient-to-r from-[#2a2624] to-[#1c1918] border border-stone-800 p-8 sm:p-12 relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-8 shadow-xl">
+                    <div className="max-w-2xl space-y-4 text-center lg:text-left">
+                      <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-brand-gold text-xs font-mono font-bold uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><Plane className="w-4 h-4" /> Moi Int'l Airport (MBA)</span>
+                        <span className="text-stone-600">•</span>
+                        <span className="flex items-center gap-1.5"><Train className="w-4 h-4" /> Miritini SGR Terminus</span>
+                      </div>
+                      <h3 className="font-serif text-3xl sm:text-4xl text-white font-bold tracking-tight">
+                        Private Chauffeured Airport & SGR Transfers
+                      </h3>
+                      <p className="text-stone-300 text-xs sm:text-sm font-light leading-relaxed">
+                        Arrive in luxury with our private chauffeured transfer service. From personalized flight/train tracking and meet-and-greet baggage assistance to executive Alphards and chilled Tamarind Dawa refreshments on arrival.
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-stone-400 font-mono pt-2">
+                        <span>✓ Executive Saloons ($25)</span>
+                        <span>✓ VIP Alphard Captain Seats ($50)</span>
+                        <span>✓ Group Minivans ($65)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto flex-shrink-0">
+                      <button
+                        onClick={() => setIsTransferModalOpen(true)}
+                        className="px-8 py-4 bg-brand-gold hover:bg-amber-500 text-brand-dark font-bold text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md"
+                        id="btn-banner-book-transfer"
+                      >
+                        <Car className="w-4 h-4" />
+                        <span>Book Private Transfer</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 6C. WEDDINGS, PRIVATE EVENTS & DHOW CHARTERS */}
+              <EventsAndChartersSection
+                onOpenTransferModal={() => setIsTransferModalOpen(true)}
+                onOpenCustomizer={() => {
+                  if (isAdmin) {
+                    setIsCustomizerOpen(true);
+                  } else {
+                    setIsStaffPinModalOpen(true);
+                  }
+                }}
+                eventPackagesList={eventPackagesList}
+                isAdmin={isAdmin}
+              />
+
+              {/* 6D. TRUST & VERIFIED GUEST REVIEWS SECTION */}
+              <ReviewsSection />
+
+              {/* 7. CUSTOM GEOGRAPHIC MAP & CONTACT SECTION */}
+              <section className="py-20 scroll-mt-12 w-full" id="contact-section">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
+
+                    {/* Left: Custom Vector-CSS Map representation of Mombasa & Coordinates (7 cols) */}
+                    <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
+                      <div>
+                        <span className="text-xs font-semibold uppercase tracking-widest text-brand-teal block mb-2">Prime Harbor-Frontage</span>
+                        <h3 className="font-serif text-3xl text-brand-dark tracking-tight">Our Location on Tudor Creek</h3>
+                        <p className="text-stone-500 font-light mt-2 text-xs sm:text-sm leading-relaxed">
+                          Tamarind Village is situated on Cement Silos Road, Nyali, directly on the cliffside shores of Tudor Creek in Mombasa, Kenya. We face the historical Old Port, overlooking Mombasa Island and Old Town.
+                        </p>
+                      </div>
+
+                      {/* Highly Creative CSS Stylized Local Map Container */}
+                      <div className="relative aspect-[16/10] bg-brand-dark border border-stone-800 rounded-none p-6 overflow-hidden flex flex-col justify-between shadow-inner" id="vector-map-container">
+                        {/* Stylized water / land backdrop */}
+                        <div className="absolute inset-0 bg-brand-dark opacity-95"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[70%] rounded-full bg-stone-800/40 border border-stone-700/30 transform rotate-12"></div> {/* Tudor Creek shoreline */}
+                        <div className="absolute top-[-10%] left-[-15%] w-[60%] h-[60%] rounded-full bg-brand-teal/5 blur-3xl"></div> {/* Nyali glow */}
+
+                        {/* Grid representation */}
+                        <div className="absolute inset-0 grid grid-cols-12 grid-rows-12 opacity-5 pointer-events-none">
+                          {Array.from({ length: 144 }).map((_, i) => (
+                            <div key={i} className="border-t border-l border-white"></div>
+                          ))}
+                        </div>
+
+                        {/* Map Markers */}
+                        <div className="relative z-10 h-full flex flex-col justify-between">
+                          {/* Nyali side label */}
+                          <div className="flex justify-between items-start">
+                            <span className="text-[10px] uppercase font-mono tracking-widest text-stone-400 font-bold bg-[#1a1a1a]/95 border border-stone-800 px-2 py-0.5 rounded-none">
+                              Nyali Mainland (Residences)
+                            </span>
+                            <span className="text-[10px] uppercase font-mono tracking-widest text-stone-400 font-bold bg-[#1a1a1a]/95 border border-stone-800 px-2 py-0.5 rounded-none">
+                              Tudor Creek Inlet
+                            </span>
+                          </div>
+
+                          {/* Core pin representer */}
+                          <div className="absolute top-[40%] left-[45%] flex flex-col items-center">
+                            <div className="relative flex h-4 w-4 items-center justify-center">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-teal"></span>
+                            </div>
+                            <div className="bg-brand-dark border border-brand-teal/60 text-white p-3 rounded-none mt-2 shadow-lg text-left w-56 space-y-1">
+                              <p className="text-[11px] font-bold text-brand-gold uppercase tracking-widest leading-none">Tamarind Village</p>
+                              <p className="text-[10px] text-stone-300 font-light">Tamarind Restaurant & Dawa Terrace Adjacent</p>
+                              <p className="text-[9px] text-stone-400 font-mono italic">Cement Silos Road, Nyali Coast</p>
+                            </div>
+                          </div>
+
+                          {/* Fort Jesus Marker */}
+                          <div className="absolute bottom-[20%] right-[15%] flex flex-col items-center opacity-70">
+                            <span className="inline-block w-2 h-2 rounded-full bg-stone-400"></span>
+                            <span className="text-[9px] text-stone-400 uppercase tracking-wider mt-1 font-semibold">Fort Jesus</span>
+                          </div>
+
+                          {/* Old Town Marker */}
+                          <div className="absolute bottom-[35%] left-[10%] flex flex-col items-center opacity-70">
+                            <span className="inline-block w-2 h-2 rounded-full bg-stone-400"></span>
+                            <span className="text-[9px] text-stone-400 uppercase tracking-wider mt-1 font-semibold">Mombasa Old Town</span>
+                          </div>
+
+                          {/* Map Footer legend */}
+                          <div className="flex flex-wrap gap-2 text-[9px] font-mono text-stone-400 bg-[#1a1a1a]/95 p-2.5 rounded-none border border-stone-800">
+                            <span className="text-brand-gold font-bold">Transit distances:</span>
+                            <span className="border-r border-stone-800 pr-2">Moi Airport: ~30 min</span>
+                            <span className="border-r border-stone-800 pr-2">SGR Mombasa Terminus: ~25 min</span>
+                            <span>Nyali Bridge: ~5 min</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Interactive Contact Inquiry Form (5 cols) */}
+                    <div className="lg:col-span-5 bg-white border border-stone-200 rounded-none p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-teal/5 rounded-full blur-xl"></div>
+
+                      <div className="space-y-6">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold tracking-widest text-brand-teal block mb-1">Direct Communication</span>
+                          <h4 className="font-serif text-2xl text-brand-dark">Location Desk & Contact Form</h4>
+                          <p className="text-stone-500 text-xs font-light leading-relaxed mt-1">
+                            Have any questions about custom residencies, executive conference packages, long-term rentals, or Dhow charters? Send us a direct message.
+                          </p>
+                        </div>
+
+                        {!isContactSubmitted ? (
+                          <form onSubmit={handleContactSubmit} className="space-y-4">
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-700 mb-1">Your Full Name</label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g., Jane Doe"
+                                value={contactName}
+                                onChange={(e) => setContactName(e.target.value)}
+                                className="w-full text-xs px-3.5 py-2.5 border border-stone-300 rounded-none text-stone-800 focus:outline-none focus:border-brand-teal bg-stone-50"
+                                id="contact-name"
+                                disabled={isContactSubmitting}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-700 mb-1">Email Address</label>
+                                <input
+                                  type="email"
+                                  required
+                                  placeholder="e.g., janedoe@example.com"
+                                  value={contactEmail}
+                                  onChange={(e) => setContactEmail(e.target.value)}
+                                  className="w-full text-xs px-3.5 py-2.5 border border-stone-300 rounded-none text-stone-800 focus:outline-none focus:border-brand-teal bg-stone-50"
+                                  id="contact-email"
+                                  disabled={isContactSubmitting}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-700 mb-1">Select Department</label>
+                                <select
+                                  value={contactDept}
+                                  onChange={(e) => setContactDept(e.target.value)}
+                                  className="w-full text-xs px-3.5 py-2.5 border border-stone-300 rounded-none text-stone-800 focus:outline-none focus:border-brand-teal bg-stone-50"
+                                  id="contact-dept"
+                                  disabled={isContactSubmitting}
+                                >
+                                  <option value="village">Tamarind Village (Apartments)</option>
+                                  <option value="restaurant">Tamarind Mombasa Restaurant</option>
+                                  <option value="dhow">Tamarind Dhow Cruise</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-700 mb-1">Message Inquiry</label>
+                              <textarea
+                                required
+                                placeholder="How can our accommodation concierge or dining team assist you today?"
+                                rows={4}
+                                value={contactMessage}
+                                onChange={(e) => setContactMessage(e.target.value)}
+                                className="w-full text-xs px-3.5 py-2.5 border border-stone-300 rounded-none text-stone-800 focus:outline-none focus:border-brand-teal resize-none bg-stone-50"
+                                id="contact-message"
+                                disabled={isContactSubmitting}
+                              />
+                            </div>
+
+                            {contactSubmitError && (
+                              <div className="p-3 bg-red-50 text-red-700 text-xs font-medium border-l-2 border-red-600">
+                                {contactSubmitError}
+                              </div>
+                            )}
+
+                            <button
+                              type="submit"
+                              disabled={isContactSubmitting}
+                              className={`w-full py-3 bg-brand-dark hover:bg-brand-teal text-white font-bold rounded-none text-xs uppercase tracking-widest shadow-xs transition-colors cursor-pointer ${isContactSubmitting ? "opacity-75 cursor-not-allowed" : ""}`}
+                              id="btn-contact-submit"
+                            >
+                              {isContactSubmitting ? "Sending Inquiry..." : "Send General Inquiry"}
+                            </button>
+                          </form>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="py-12 text-center space-y-4 bg-brand-teal/5 border border-brand-teal/15 rounded-none"
+                            id="contact-success"
+                          >
+                            <div className="w-12 h-12 bg-brand-teal/10 text-brand-teal rounded-none flex items-center justify-center mx-auto">
+                              <CheckCircle2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-serif text-lg font-bold text-brand-dark">Message Received!</p>
+                              <p className="text-xs text-stone-500 mt-1 font-light max-w-xs mx-auto">
+                                Thank you, <span className="font-semibold">{contactName}</span>. A Tamarind Village representative has logged your inquiry and will respond within 12 hours.
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+
+                      {/* Phone/Email cards */}
+                      <div className="pt-6 border-t border-stone-200 grid grid-cols-2 gap-4 text-left text-[10px] text-stone-500">
+                        <div>
+                          <p className="font-bold text-brand-dark uppercase">Resort Reception</p>
+                          <p>+254 725 959 552</p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-brand-dark uppercase">Direct Booking</p>
+                          <p className="truncate" title="reservations.village@tamarind.co.ke">reservations.village@...</p>
+                          <p>Mombasa, Kenya</p>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 8. FAQ INTERACTIVE SECTION */}
+              <section className="py-20 bg-brand-sand border-t border-stone-200" id="faq-section">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6">
+                  <div className="text-center mb-12">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-brand-teal">Frequently Asked Questions</span>
+                    <h3 className="font-serif text-3xl text-brand-dark tracking-tight mt-1">Accommodations & Resort Guide</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {faqs.map((faq, index) => (
+                      <div
+                        key={index}
+                        className="bg-white border border-stone-200 rounded-none overflow-hidden transition-shadow duration-300"
+                        id={`faq-item-${index}`}
+                      >
+                        <button
+                          onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                          className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none cursor-pointer"
+                        >
+                          <span className="font-serif text-sm sm:text-base font-semibold text-brand-dark pr-4">
+                            {faq.q}
+                          </span>
+                          <span className="text-brand-teal font-bold text-lg flex-shrink-0">
+                            {openFaqIndex === index ? "−" : "+"}
+                          </span>
+                        </button>
+
+                        <AnimatePresence>
+                          {openFaqIndex === index && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="px-6 pb-5 text-xs sm:text-sm text-stone-600 font-light leading-relaxed border-t border-stone-100 pt-3"
+                            >
+                              {faq.a}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+            </motion.div>
+          ) : activeView === "dining" ? (
+
+            /* DYNAMIC ROUTE VIEW: DINING DETAIL PAGE */
+            <div key={`dining-container-${selectedDiningId}`}>
+              <DiningDetail
+                dining={displayDining.find(d => d.id === selectedDiningId) || displayDining[0] || DINING[0]}
+                onBack={() => {
+                  setActiveView("home");
+                  // Scroll back to dining section
+                  setTimeout(() => {
+                    const element = document.getElementById("dining-section");
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }, 100);
+                }}
+                onSelectDining={handleSelectDining}
+                allDinings={displayDining}
+              />
             </div>
-            <h2 className="font-serif text-3xl font-bold text-[#1F1615]">
-              Celebrated by Discerning Guests
-            </h2>
-            <p className="text-xs text-[#1F1615]/70">
-              Moments of magic captured from travellers across the globe.
-            </p>
-          </div>
+          ) : (
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {REVIEWS.map((rev, idx) => (
-              <div
-                key={idx}
-                className="bg-white p-6 rounded-2xl border border-[#C59B27]/25 shadow-sm space-y-4"
-              >
-                <div className="flex items-center gap-1 text-[#C59B27]">
-                  {[...Array(rev.rating)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-[#C59B27]" />
-                  ))}
-                </div>
-                <p className="text-xs text-[#1F1615]/80 italic leading-relaxed">
-                  &ldquo;{rev.quote}&rdquo;
-                </p>
-                <div className="pt-2 border-t border-[#1F1615]/10 flex items-center justify-between text-xs">
-                  <span className="font-bold text-[#1F1615]">{rev.author}</span>
-                  <span className="text-[#1F1615]/50">{rev.location}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            /* DYNAMIC ROUTE VIEW: APARTMENT DETAIL PAGE */
+            <div key={`detail-container-${selectedApartmentId}`}>
+              <ApartmentDetail
+                apartment={activeApartment}
+                onBack={() => {
+                  setActiveView("home");
+                  // Scroll back to apartments
+                  setTimeout(() => {
+                    const element = document.getElementById("apartments-section");
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }, 100);
+                }}
+                onSelectApartment={handleSelectApartment}
+                allApartments={processedApartments}
+                onBookNow={(aptId, pkgId) => {
+                  setSelectedApartmentId(aptId);
+                  setPreSelectedPkg(pkgId);
+                  setIsBookingOpen(true);
+                }}
+              />
+            </div>
+          )}
+        </AnimatePresence>
+      </main>
 
-      {/* Booking Modal */}
+      {/* Global Booking Inquiry Modal */}
       <BookingModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-        preSelectedApartmentId={selectedApartmentId}
-        preSelectedPkg={selectedPkgId}
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        initialApartmentId={selectedApartmentId}
+        initialPackageId={preSelectedPkg}
+        apartmentsList={processedApartments}
       />
+
+      {/* Chauffeur & Private Transfer Modal */}
+      <TransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        vehiclesList={transferVehiclesList}
+      />
+
+      {/* Luxury Footer component */}
+      <Footer
+        onNavigate={navigateToSection}
+        onSelectApartment={handleSelectApartment}
+        onSelectDining={handleSelectDining}
+        onGoHome={() => {
+          setActiveView("home");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onOpenStaffPinModal={() => { window.location.href = "/admin/login"; }}
+        onOpenTracking={() => setIsTrackingModalOpen(true)}
+      />
+
+      {/* Guest No-Login Booking Tracker Modal */}
+      <GuestBookingTrackerModal
+        isOpen={isTrackingModalOpen}
+        onClose={() => setIsTrackingModalOpen(false)}
+        initialToken={trackingToken}
+        onOpenBookingModal={() => {
+          setIsTrackingModalOpen(false);
+          setIsBookingOpen(true);
+        }}
+      />
+
+      {/* Mobile Sticky Booking Bar */}
+      <MobileBookingBar
+        onOpenBooking={() => setIsBookingOpen(true)}
+        startingPrice={mobileStartingPrice}
+        isLive={isMobilePriceLive}
+      />
+
+      {/* Custom Premium Toast Notification */}
+      <AnimatePresence>
+        {securityNotification?.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-none"
+          >
+            <div className="bg-white border border-brand-teal shadow-2xl p-4 flex gap-4 items-start rounded-none pointer-events-auto">
+              <div className="p-2 bg-brand-teal/10 text-brand-teal flex-shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-serif text-sm font-bold text-brand-dark tracking-tight uppercase">
+                  {securityNotification.title}
+                </h4>
+                <p className="text-stone-500 text-[11px] font-light mt-1 leading-relaxed">
+                  {securityNotification.message}
+                </p>
+              </div>
+              <button
+                onClick={() => setSecurityNotification(null)}
+                className="text-stone-400 hover:text-stone-700 p-1 font-bold text-lg leading-none cursor-pointer flex-shrink-0"
+              >
+                &times;
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sticky Floating WhatsApp Button (offset on mobile to clear MobileBookingBar) */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1, duration: 0.5 }}
+        className="fixed bottom-16 md:bottom-6 right-4 sm:right-6 z-40 flex items-center gap-2 group"
+      >
+        <span className="hidden sm:inline-block bg-white text-stone-800 text-[10px] font-bold px-3 py-1.5 shadow-md border border-stone-100 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300 pointer-events-none uppercase tracking-wider font-sans">
+          Chat with Us
+        </span>
+        <a
+          href="https://wa.me/254725959552?text=Hello%20Tamarind%20Village%20Mombasa%2C%20I%20would%20like%20to%20inquire%20about%20booking%20an%20apartment."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-12 h-12 bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 rounded-full relative cursor-pointer"
+          aria-label="Chat on WhatsApp"
+        >
+          {/* Subtle ping pulse */}
+          <span className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-30"></span>
+          <MessageSquare className="w-5 h-5 relative z-10 fill-white" />
+        </a>
+      </motion.div>
+
+      {/* Global React Hot Toast Notifications */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#1c1917",
+            color: "#f5f5f4",
+            borderRadius: "0px",
+            border: "1px solid #44403c",
+            fontSize: "12px",
+            fontFamily: "Outfit, sans-serif",
+            fontWeight: 600,
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)"
+          },
+          success: {
+            iconTheme: {
+              primary: "#2dd4bf",
+              secondary: "#1c1917"
+            }
+          },
+          error: {
+            iconTheme: {
+              primary: "#f43f5e",
+              secondary: "#1c1917"
+            }
+          }
+        }}
+      />
+
     </div>
   );
 }
