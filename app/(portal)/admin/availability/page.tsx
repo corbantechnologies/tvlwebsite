@@ -1,0 +1,39 @@
+'use client';
+
+import AvailabilityManager from "@/components/ui/AvailabilityManager";
+import { useEffect, useState } from "react";
+
+export default function AvailabilityPage() {
+  const [apartments, setApartments] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/apartments")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.apartments) {
+          setApartments(d.apartments.map((a: any) => ({ id: a.id, name: a.name })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-serif font-bold text-white tracking-wide">
+            Apartment Availability & Inventory
+          </h1>
+          <p className="text-xs text-[#C59B27] mt-1">
+            Manage unit inventory counts, maintenance blocks, and manual reservation closures
+          </p>
+        </div>
+      </div>
+
+      <AvailabilityManager
+        apartments={apartments}
+        currentUserName="Staff"
+      />
+    </div>
+  );
+}

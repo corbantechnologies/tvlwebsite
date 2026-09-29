@@ -188,3 +188,26 @@ export const globalSettings = pgTable("global_settings", {
   key: text("key").primaryKey(),
   value: jsonb("value").notNull(),
 });
+
+// ==========================================
+// APARTMENT INVENTORY (Unit Counts per type)
+// ==========================================
+export const apartmentInventory = pgTable("apartment_inventory", {
+  id: text("id").primaryKey(),           // matches apartments.id
+  totalUnits: integer("total_units").notNull().default(1),
+  notes: text("notes"),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ==========================================
+// AVAILABILITY BLOCKS (Staff-set date ranges)
+// ==========================================
+export const availabilityBlocks = pgTable("availability_blocks", {
+  id: text("id").primaryKey(),
+  apartmentId: text("apartment_id").notNull(), // "all" = property-wide | apartment id = specific
+  startDate: text("start_date").notNull(),     // YYYY-MM-DD
+  endDate: text("end_date").notNull(),         // YYYY-MM-DD
+  reason: text("reason"),
+  blockedBy: text("blocked_by"),
+  createdAt: text("created_at").notNull(),
+});

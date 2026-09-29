@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { getClient, getDb } from "./db";
-import { users, apartments, diningOptions, events, packages, pricingRules } from "./schema";
+import { users, apartments, diningOptions, events, packages, pricingRules } , apartmentInventory, availabilityBlocks } from "./schema";
 import { APARTMENTS, DINING, DEFAULT_EVENTS, DEFAULT_RESORT_PACKAGES } from "@/lib/data";
 
 let seedRunning = false;
@@ -171,6 +171,23 @@ export async function ensureDatabaseSeeded() {
         metadata JSONB
       );
 
+      
+      CREATE TABLE IF NOT EXISTS apartment_inventory (
+        id TEXT PRIMARY KEY,
+        total_units INTEGER NOT NULL DEFAULT 1,
+        notes TEXT,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS availability_blocks (
+        id TEXT PRIMARY KEY,
+        apartment_id TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
+        reason TEXT,
+        blocked_by TEXT,
+        created_at TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS global_settings (
         key TEXT PRIMARY KEY,
         value JSONB NOT NULL
@@ -284,6 +301,21 @@ export async function ensureDatabaseSeeded() {
         seasonalFactor: "regular"
       });
       console.log("🌱 [Seed] Seeded baseline pricing rules.");
+    }
+
+    
+    // 8. Check and seed Apartment Inventory
+    const invCountRes = await client.unsafe("SELECT COUNT(*) FROM apartment_inventory");
+    const invCount = parseInt(invCountRes[0]?.count || "0", 10);
+    if (invCount === 0) {
+      const now = new Date().toISOString();
+      const defaultInventory = [
+        { id: "1-bedroom", totalUnits: 1, notes: "Default — update to reflect actual unit count", updatedAt: now },
+        { id: "2-bedroom", totalUnits: 1, notes: "Default — update to reflect actual unit count", updatedAt: now },
+        { id: "3-bedroom", totalUnits: 1, notes: "Default — update to reflect actual unit count", updatedAt: now },
+      ];
+      await db.insert(apartmentInventory).values(defaultInventory).onConflictDoNothing();
+      console.log("🌱 [Seed] Seeded baseline apartment inventory.");
     }
 
     console.log("✅ [Seed] Database tables and hydration verified.");

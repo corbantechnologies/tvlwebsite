@@ -79,6 +79,7 @@ export default function AdminPortalLayout({
         { label: 'Front Desk Hub', href: '/admin/frontdesk', icon: Hotel, badge: 'Live' },
         { label: 'Bookings Ledger', href: '/admin/bookings', icon: Calendar },
         { label: 'Guest Inquiries', href: '/admin/inquiries', icon: Bell, badge: 'Inbox' },
+        { label: 'Availability & Blocks', href: '/admin/availability', icon: Clock },
       ],
     },
     {
