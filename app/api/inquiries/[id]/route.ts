@@ -22,57 +22,87 @@ async function handleUpdate(req: NextRequest, params: Promise<{ id: string }>) {
       ...(body.payload || {})
     };
 
-    await db.update(inquiries).set({
-      status: updatedStatus,
-      payload: updatedPayload
-    }).where(eq(inquiries.id, id));
-
-    // Auto-create booking when status is set to "Booked"
+    // When status is set to "Booked" or when explicit conversion details are provided:
+    let generatedBooking: any = null;
     if (updatedStatus === "Booked") {
       const existingBooking = await db.select().from(bookings).where(eq(bookings.inquiryId, id));
       if (existingBooking.length === 0) {
-        const reference = "TV-" + new Date().getFullYear() + "-" + Math.floor(1000 + Math.random() * 9000);
-        const newBooking = {
+        const reference = "BK-" + new Date().getFullYear() + "-" + Math.floor(1000 + Math.random() * 9000);
+        
+        const staffNotesList: any[] = [];
+        if (body.roomAllocated || updatedPayload.roomAllocated) {
+          staffNotesList.push({
+            text: `Room / Unit Allocated: ${body.roomAllocated || updatedPayload.roomAllocated}`,
+            author: body.actor || "Reservations Staff",
+            timestamp: new Date().toISOString()
+          });
+        }
+        if (body.paymentReference || updatedPayload.paymentReference) {
+          staffNotesList.push({
+            text: `Payment Reference: ${body.paymentReference || updatedPayload.paymentReference}`,
+            author: body.actor || "Reservations Staff",
+            timestamp: new Date().toISOString()
+          });
+        }
+        if (body.notes || updatedPayload.internalNotes) {
+          staffNotesList.push({
+            text: body.notes || updatedPayload.internalNotes,
+            author: body.actor || "Reservations Staff",
+            timestamp: new Date().toISOString()
+          });
+        }
+
+        generatedBooking = {
           id: "bkg_" + Date.now(),
-          bookingReference: reference,
+          bookingReference: body.bookingReference || reference,
           inquiryId: id,
-          apartmentId: updatedPayload.apartmentId || (updatedPayload.apartmentName ? updatedPayload.apartmentName.toLowerCase().replace(/\s+/g, "-") : "unknown"),
-          apartmentName: updatedPayload.apartmentName || "Tamarind Village Suite",
-          guestName: updatedPayload.name || "Guest",
-          guestEmail: updatedPayload.email || "",
-          guestPhone: updatedPayload.phone || "",
-          checkIn: updatedPayload.checkIn && updatedPayload.checkIn !== "Flexible / Not specified" ? updatedPayload.checkIn : "",
-          checkOut: updatedPayload.checkOut && updatedPayload.checkOut !== "Flexible / Not specified" ? updatedPayload.checkOut : "",
-          adults: Number(updatedPayload.adults) || Number(updatedPayload.guests) || 1,
-          children: Number(updatedPayload.children) || 0,
-          packageId: updatedPayload.packageId || null,
-          packageName: updatedPayload.packageName || null,
-          totalAmount: Number(updatedPayload.totalCost) || 0,
-          currency: "USD",
-          paymentStatus: updatedPayload.paymentStatus || "unpaid",
-          paymentMethod: null,
+          apartmentId: body.apartmentId || updatedPayload.apartmentId || (updatedPayload.apartmentName ? updatedPayload.apartmentName.toLowerCase().replace(/\s+/g, "-") : "1-bedroom"),
+          apartmentName: body.apartmentName || updatedPayload.apartmentName || "Tamarind Village Suite",
+          guestName: body.guestName || updatedPayload.name || "Guest",
+          guestEmail: body.guestEmail || updatedPayload.email || "",
+          guestPhone: body.guestPhone || updatedPayload.phone || "",
+          checkIn: body.checkIn || updatedPayload.checkIn || "",
+          checkOut: body.checkOut || updatedPayload.checkOut || "",
+          adults: Number(body.adults) || Number(updatedPayload.adults) || Number(updatedPayload.guests) || 1,
+          children: Number(body.children) || Number(updatedPayload.children) || 0,
+          packageId: body.packageId || updatedPayload.packageId || null,
+          packageName: body.packageName || updatedPayload.packageName || null,
+          totalAmount: Number(body.totalAmount) || Number(updatedPayload.quotedRateKes) || Number(updatedPayload.totalCost) || 0,
+          currency: body.currency || updatedPayload.currency || "KES",
+          paymentStatus: body.paymentStatus || updatedPayload.paymentStatus || "unpaid",
+          paymentMethod: body.paymentMethod || updatedPayload.paymentMethod || "direct",
           bookingStatus: "confirmed",
-          specialRequests: updatedPayload.requests || null,
-          staffNotes: [],
+          specialRequests: body.specialRequests || updatedPayload.specialRequests || updatedPayload.requests || null,
+          staffNotes: staffNotesList,
           createdAt: new Date().toISOString(),
         };
-        await db.insert(bookings).values(newBooking);
+
+        await db.insert(bookings).values(generatedBooking);
+
+        updatedPayload.bookingReference = generatedBooking.bookingReference;
+        if (body.roomAllocated) updatedPayload.roomAllocated = body.roomAllocated;
+        if (body.paymentReference) updatedPayload.paymentReference = body.paymentReference;
 
         await db.insert(auditLogs).values({
           id: "log_" + Date.now(),
           timestamp: new Date().toISOString(),
-          actor: body.actor || "staff",
+          actor: body.actor || "Reservations Staff",
           actorRole: body.actorRole || "staff",
           category: "booking",
-          action: "Auto-Created Booking from Inquiry",
-          details: `Inquiry marked as Booked. Generated booking ${reference} for ${newBooking.guestName}`,
-          targetId: newBooking.id,
-          metadata: { bookingReference: reference, inquiryId: id }
+          action: "Inquiry Converted to Confirmed Booking",
+          details: `Inquiry converted into reservation ${generatedBooking.bookingReference} for ${generatedBooking.guestName} (${generatedBooking.apartmentName})`,
+          targetId: generatedBooking.id,
+          metadata: { bookingReference: generatedBooking.bookingReference, inquiryId: id }
         });
 
-        sendGuestConfirmationEmail(newBooking).catch(console.warn);
+        sendGuestConfirmationEmail(generatedBooking).catch(console.warn);
       }
     }
+
+    await db.update(inquiries).set({
+      status: updatedStatus,
+      payload: updatedPayload
+    }).where(eq(inquiries.id, id));
 
     if (body.auditAction) {
       await db.insert(auditLogs).values({
@@ -88,7 +118,7 @@ async function handleUpdate(req: NextRequest, params: Promise<{ id: string }>) {
     }
 
     const updated = await db.select().from(inquiries).where(eq(inquiries.id, id));
-    return NextResponse.json({ success: true, inquiry: updated[0] });
+    return NextResponse.json({ success: true, inquiry: updated[0], booking: generatedBooking });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

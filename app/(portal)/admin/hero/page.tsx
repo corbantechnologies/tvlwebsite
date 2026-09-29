@@ -47,7 +47,7 @@ export default function AdminHeroPage() {
           value={heroMediaUrl}
           onChange={setHeroMediaUrl}
           folder="hero"
-          label="Hero Background Media / Video (MinIO)"
+          label="Hero Background Media / Video (Media Library)"
           helperText="Drag & drop clifftop pool/harbour image or video"
         />
 

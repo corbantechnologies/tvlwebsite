@@ -294,7 +294,7 @@ export default function AdminPackagesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Hero Image (MinIO MAM)</label>
+                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Hero Image (Media Library MAM)</label>
                 <MediaDropzone
                   folder="packages"
                   currentUrl={editingPkg.heroImage || editingPkg.image}
@@ -391,7 +391,7 @@ export default function AdminPackagesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Hero Image (MinIO MAM)</label>
+                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Hero Image (Media Library MAM)</label>
                 <MediaDropzone
                   folder="packages"
                   currentUrl={newPkg.heroImage}

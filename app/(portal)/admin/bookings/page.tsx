@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Filter, CheckCircle2, Clock, XCircle, ArrowRight, ShieldCheck, RotateCw } from 'lucide-react';
+import { Calendar, Search, Filter, CheckCircle2, Clock, XCircle, ArrowRight, ShieldCheck, RotateCw, BedDouble } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function BookingsLedgerPage() {
@@ -35,24 +35,25 @@ export default function BookingsLedgerPage() {
     const matchesSearch = 
       (b.guestName || '').toLowerCase().includes(term) ||
       (b.bookingReference || b.id || '').toLowerCase().includes(term) ||
-      (b.guestEmail || '').toLowerCase().includes(term);
+      (b.guestEmail || '').toLowerCase().includes(term) ||
+      (b.apartmentName || '').toLowerCase().includes(term);
     const matchesStatus = statusFilter === 'all' || b.bookingStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs text-[#C59B27] font-semibold uppercase tracking-wider mb-1">
-            <Calendar className="w-3.5 h-3.5" /> Master Ledger • Live Database
+            <Calendar className="w-3.5 h-3.5" /> Master Ledger
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white">
             Reservations Ledger
           </h1>
           <p className="text-xs text-white/60">
-            Real-time PostgreSQL records for all guest bookings, deposits, and status.
+            All confirmed reservations originating from website inquiries and direct bookings.
           </p>
         </div>
 
@@ -70,30 +71,38 @@ export default function BookingsLedgerPage() {
             <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by name, ref, email..."
+              placeholder="Search by name, ref, suite..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-[#1F1615] border border-[#C59B27]/25 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27] w-64"
+              className="bg-[#1F1615] border border-[#C59B27]/25 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#C59B27] w-64"
             />
           </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 overflow-hidden shadow-lg">
+      {/* Table Card */}
+      <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 overflow-hidden shadow-xl">
         {isLoading ? (
           <div className="py-20 text-center text-white/50 space-y-3">
             <RotateCw className="w-8 h-8 animate-spin mx-auto text-[#C59B27]" />
-            <p className="text-sm">Loading reservations from PostgreSQL...</p>
+            <p className="text-sm">Loading reservations...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-16 text-center text-white/40 space-y-2">
+            <Calendar className="w-10 h-10 mx-auto opacity-30 text-[#C59B27]" />
+            <p className="text-sm font-semibold text-white">No confirmed reservations found</p>
+            <p className="text-xs text-white/40 max-w-md mx-auto">
+              When guest inquiries are confirmed and converted into bookings, they will appear here with full guest and payment records.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-white/40 tracking-wider">
+                <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-white/40 tracking-wider bg-black/20">
                   <th className="p-4">Reference</th>
                   <th className="p-4">Guest</th>
-                  <th className="p-4">Residence</th>
+                  <th className="p-4">Residence &amp; Room</th>
                   <th className="p-4">Dates</th>
                   <th className="p-4">Amount</th>
                   <th className="p-4">Payment</th>
@@ -101,41 +110,59 @@ export default function BookingsLedgerPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-xs text-white/80">
-                {filtered.map((b) => (
-                  <tr key={b.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="p-4 font-mono font-bold text-[#C59B27]">
-                      {b.bookingReference || b.id}
-                    </td>
-                    <td className="p-4">
-                      <div className="font-bold text-white">{b.guestName}</div>
-                      <div className="text-[11px] text-white/50">{b.guestPhone || b.guestEmail}</div>
-                    </td>
-                    <td className="p-4">{b.apartmentName || b.apartmentId}</td>
-                    <td className="p-4">
-                      {b.checkIn} → {b.checkOut}
-                    </td>
-                    <td className="p-4 font-mono font-bold">
-                      ${b.totalAmount || 0}
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                        b.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-400' : 'bg-amber-950 text-amber-400'
-                      }`}>
-                        {b.paymentStatus || 'unpaid'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
-                        b.bookingStatus === 'in_house' ? 'bg-blue-950 text-blue-400 border border-blue-500/30' :
-                        b.bookingStatus === 'arriving_today' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' :
-                        b.bookingStatus === 'departing_today' ? 'bg-amber-950 text-amber-400 border border-amber-500/30' :
-                        'bg-stone-800 text-stone-300'
-                      }`}>
-                        {(b.bookingStatus || 'confirmed').replace('_', ' ')}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((b) => {
+                  const roomAlloc = (b.staffNotes || []).find((n: any) => n.text?.startsWith('Room / Unit Allocated:'))?.text?.replace('Room / Unit Allocated:', '').trim();
+                  const payRef = (b.staffNotes || []).find((n: any) => n.text?.startsWith('Payment Reference:'))?.text?.replace('Payment Reference:', '').trim();
+
+                  return (
+                    <tr key={b.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-4 font-mono font-bold text-[#C59B27]">
+                        {b.bookingReference || b.id}
+                      </td>
+                      <td className="p-4">
+                        <div className="font-bold text-white">{b.guestName}</div>
+                        <div className="text-[11px] text-white/50">{b.guestPhone || b.guestEmail}</div>
+                      </td>
+                      <td className="p-4">
+                        <div className="font-semibold text-white">{b.apartmentName || b.apartmentId}</div>
+                        {roomAlloc && (
+                          <div className="text-[10px] text-emerald-400 font-medium">
+                            Unit: {roomAlloc}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 font-mono text-[11px]">
+                        {b.checkIn} → {b.checkOut}
+                      </td>
+                      <td className="p-4 font-mono font-bold text-white">
+                        {b.currency === 'KES' ? 'KES ' : '$'}{Number(b.totalAmount || 0).toLocaleString()}
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                          b.paymentStatus === 'fully_paid' || b.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 
+                          b.paymentStatus === 'deposit_paid' ? 'bg-blue-950 text-blue-400 border border-blue-500/30' :
+                          'bg-amber-950 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {(b.paymentStatus || 'unpaid').replace('_', ' ')}
+                        </span>
+                        {payRef && (
+                          <div className="text-[10px] text-white/40 font-mono mt-0.5">
+                            {payRef}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
+                          b.bookingStatus === 'in_house' ? 'bg-blue-950 text-blue-400 border border-blue-500/30' :
+                          b.bookingStatus === 'confirmed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' :
+                          'bg-stone-800 text-stone-300'
+                        }`}>
+                          {(b.bookingStatus || 'confirmed').replace('_', ' ')}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -305,7 +305,7 @@ export default function AdminEventsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Event Poster Image (MinIO MAM)</label>
+                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Event Poster Image (Media Library MAM)</label>
                 <MediaDropzone
                   folder="events"
                   currentUrl={newEvent.posterUrl}
@@ -417,7 +417,7 @@ export default function AdminEventsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Event Poster Image (MinIO MAM)</label>
+                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Event Poster Image (Media Library MAM)</label>
                 <MediaDropzone
                   folder="events"
                   currentUrl={editingEvent.posterUrl || editingEvent.image}

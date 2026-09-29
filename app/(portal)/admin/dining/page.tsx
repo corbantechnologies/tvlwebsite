@@ -286,7 +286,7 @@ export default function AdminDiningPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Photo (MinIO MAM)</label>
+                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Photo (Media Library MAM)</label>
                 <MediaDropzone
                   folder="dining"
                   currentUrl={editingVenue.image}
@@ -382,7 +382,7 @@ export default function AdminDiningPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Photo (MinIO MAM)</label>
+                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Photo (Media Library MAM)</label>
                 <MediaDropzone
                   folder="dining"
                   currentUrl={newVenue.image}

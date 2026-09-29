@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { getClient, getDb } from "./db";
-import { users, apartments, diningOptions, events, packages, pricingRules } , apartmentInventory, availabilityBlocks } from "./schema";
+import { users, apartments, diningOptions, events, packages, pricingRules, apartmentInventory, availabilityBlocks } from "./schema";
 import { APARTMENTS, DINING, DEFAULT_EVENTS, DEFAULT_RESORT_PACKAGES } from "@/lib/data";
 
 let seedRunning = false;

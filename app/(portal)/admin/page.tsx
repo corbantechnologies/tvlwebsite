@@ -12,10 +12,8 @@ export default function AdminDashboardPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
   const [stats, setStats] = useState({
-    occupancyRate: 84,
-    todayArrivals: 6,
-    activeStays: 24,
     pendingInquiries: 0,
+    bookedInquiries: 0,
     activeEvents: 0,
     activePackages: 0,
   });
@@ -34,12 +32,12 @@ export default function AdminDashboardPage() {
       setEvents(evts);
       setPackages(pkgs);
 
-      setStats(prev => ({
-        ...prev,
-        pendingInquiries: inqs.filter((i: any) => i.status === 'new' || i.status === 'inquiry').length,
+      setStats({
+        pendingInquiries: inqs.filter((i: any) => i.status === 'Pending' || i.status === 'new' || i.status === 'inquiry').length,
+        bookedInquiries: inqs.filter((i: any) => i.status === 'Booked' || i.status === 'confirmed').length,
         activeEvents: evts.length,
         activePackages: pkgs.length,
-      }));
+      });
     });
   }, []);
 
@@ -49,10 +47,10 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white">
-            Operations &amp; Lifestyle Dashboard
+            Website Operations Dashboard
           </h1>
           <p className="text-xs text-white/60 mt-1">
-            Real-time management for Tamarind Village accommodations, dining, dhow cruises, and lifestyle packages.
+            Direct guest inquiry tracking, live site content management, and lifestyle experiences.
           </p>
         </div>
 
@@ -78,25 +76,25 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#1F1615] p-5 rounded-2xl border border-[#C59B27]/25 shadow-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Occupancy</span>
-            <Hotel className="w-4 h-4 text-[#C59B27]" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Confirmed Direct</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-serif font-bold text-white">
-            {stats.occupancyRate}%
+            {stats.bookedInquiries}
           </div>
-          <span className="text-[10px] text-emerald-400 font-medium">Harbour Suites High Demand</span>
+          <span className="text-[10px] text-emerald-400 font-medium">Converted to Booking</span>
         </div>
 
         <div className="bg-[#1F1615] p-5 rounded-2xl border border-[#C59B27]/25 shadow-md">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Pending Inquiries</span>
-            <Bell className="w-4 h-4 text-[#821124]" />
+            <Bell className="w-4 h-4 text-[#C59B27]" />
           </div>
           <div className="text-2xl sm:text-3xl font-serif font-bold text-white">
             {stats.pendingInquiries}
           </div>
           <Link href="/admin/inquiries" className="text-[10px] text-[#C59B27] hover:underline">
-            Requires Quotes / Review →
+            Requires Follow-up →
           </Link>
         </div>
 
@@ -116,7 +114,7 @@ export default function AdminDashboardPage() {
         <div className="bg-[#1F1615] p-5 rounded-2xl border border-[#C59B27]/25 shadow-md">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Curated Packages</span>
-            <Tag className="w-4 h-4 text-emerald-400" />
+            <Tag className="w-4 h-4 text-[#C59B27]" />
           </div>
           <div className="text-2xl sm:text-3xl font-serif font-bold text-white">
             {stats.activePackages}
@@ -133,7 +131,7 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-2 bg-[#1F1615] rounded-2xl p-6 border border-[#C59B27]/25 shadow-lg space-y-4">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <h3 className="font-serif text-lg font-bold text-white">
-              Recent Guest Inquiries &amp; Bookings
+              Recent Website Inquiries
             </h3>
             <Link href="/admin/inquiries" className="text-xs text-[#C59B27] hover:underline font-medium">
               View All ({inquiries.length})
@@ -141,29 +139,37 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="divide-y divide-white/5 space-y-2">
-            {inquiries.slice(0, 5).map((inq) => (
-              <div key={inq.id} className="pt-2 flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-bold text-white block">{inq.guest_name}</span>
-                  <span className="text-white/50 text-[11px]">
-                    {inq.check_in} → {inq.check_out} • {inq.apartment_id}
-                  </span>
+            {inquiries.slice(0, 5).map((inq) => {
+              const name = inq.payload?.name || inq.guest_name || 'Website Guest';
+              const checkIn = inq.payload?.checkIn || inq.check_in || 'Flexible';
+              const checkOut = inq.payload?.checkOut || inq.check_out || 'Flexible';
+              const suite = inq.payload?.apartmentName || inq.apartment_id || 'Suite Inquiry';
+              const status = inq.status || 'Pending';
+              
+              return (
+                <div key={inq.id} className="pt-2 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-white block">{name}</span>
+                    <span className="text-white/50 text-[11px]">
+                      {checkIn} → {checkOut} • {suite}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      status === 'Booked' || status === 'confirmed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' :
+                      status === 'Offer Sent' || status === 'quote_sent' ? 'bg-blue-950 text-blue-400 border border-blue-500/30' :
+                      'bg-amber-950 text-amber-400 border border-amber-500/30'
+                    }`}>
+                      {status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                    inq.status === 'confirmed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' :
-                    inq.status === 'quote_sent' ? 'bg-blue-950 text-blue-400 border border-blue-500/30' :
-                    'bg-amber-950 text-amber-400 border border-amber-500/30'
-                  }`}>
-                    {inq.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {inquiries.length === 0 && (
               <p className="text-xs text-white/50 py-4 text-center">
-                No inquiries lodged yet. Direct web bookings will stream here automatically.
+                No inquiries lodged yet. Direct web inquiries will appear here automatically.
               </p>
             )}
           </div>
@@ -177,12 +183,12 @@ export default function AdminDashboardPage() {
 
           <div className="space-y-2.5">
             <Link
-              href="/admin/frontdesk"
+              href="/admin/inquiries"
               className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <Hotel className="w-4 h-4 text-[#C59B27]" />
-                <span className="font-medium text-white">Front Desk Daily Ledger</span>
+                <Bell className="w-4 h-4 text-[#C59B27]" />
+                <span className="font-medium text-white">Inquiry &amp; Quote Pipeline</span>
               </div>
               <ArrowRight className="w-3.5 h-3.5 text-white/40" />
             </Link>

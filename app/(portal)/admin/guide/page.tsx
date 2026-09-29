@@ -106,9 +106,9 @@ export default function AdminGuidePage() {
               <div className="w-10 h-10 rounded-xl bg-emerald-950 text-emerald-400 flex items-center justify-center">
                 <Activity className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-lg font-bold text-white">Drizzle + PostgreSQL</h3>
+              <h3 className="font-serif text-lg font-bold text-white">Data & Storage</h3>
               <p className="text-xs text-white/70 leading-relaxed">
-                Self-healing database layer. Tables and starter records automatically initialize upon first connection without manual scripts.
+                All guest inquiries, bookings, content, and settings are stored securely in a managed cloud database. Everything is backed up automatically.
               </p>
             </div>
 
@@ -116,7 +116,7 @@ export default function AdminGuidePage() {
               <div className="w-10 h-10 rounded-xl bg-blue-950 text-blue-400 flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-lg font-bold text-white">proxy.ts Edge Guard</h3>
+              <h3 className="font-serif text-lg font-bold text-white">Live Rate Feed</h3>
               <p className="text-xs text-white/70 leading-relaxed">
                 Next.js 16 Edge proxy intercepts all <code className="text-[#C59B27]">/admin/*</code> routes, verifying cryptographically signed JWT cookies.
               </p>

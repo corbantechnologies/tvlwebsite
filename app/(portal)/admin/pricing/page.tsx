@@ -38,7 +38,7 @@ export default function AdminPricingPage() {
       });
 
       if (res.ok) {
-        toast.success('Dynamic revenue rules saved to PostgreSQL!');
+        toast.success('Pricing rules saved successfully!');
       } else {
         toast.error('Failed to save pricing configuration.');
       }

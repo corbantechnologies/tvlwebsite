@@ -13,7 +13,7 @@ export default function FrontDeskPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
-  // Fetch live bookings from PostgreSQL database
+  // Fetch live bookings
   const loadLiveBookings = async () => {
     setIsLoading(true);
     try {

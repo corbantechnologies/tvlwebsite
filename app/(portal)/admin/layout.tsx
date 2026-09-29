@@ -97,6 +97,7 @@ export default function AdminPortalLayout({
       title: 'Management & Control',
       items: [
         { label: 'Hero & Announcements', href: '/admin/hero', icon: Layers },
+        { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3 },
         { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign },
         { label: 'Staff Team', href: '/admin/team', icon: Users },
         { label: 'Audit Logs', href: '/admin/logs', icon: Activity },
@@ -236,7 +237,7 @@ export default function AdminPortalLayout({
             {/* Live Cloud Status Beacon */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Drizzle Postgres Engine Online • Profitroom Active</span>
+              <span>System Online • Live Rates Active</span>
             </div>
           </div>
 
