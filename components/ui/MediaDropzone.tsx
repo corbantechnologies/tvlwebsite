@@ -4,9 +4,11 @@ import React, { useState, useRef } from 'react';
 import { UploadCloud, Image as ImageIcon, X, Loader2, Check, Link as LinkIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-interface MediaDropzoneProps {
-  value: string;
-  onChange: (url: string) => void;
+export interface MediaDropzoneProps {
+  value?: string;
+  currentUrl?: string;
+  onChange?: (url: string) => void;
+  onUploadComplete?: (url: string) => void;
   folder?: string;
   label?: string;
   helperText?: string;
@@ -14,15 +16,23 @@ interface MediaDropzoneProps {
 
 export default function MediaDropzone({
   value,
+  currentUrl,
   onChange,
+  onUploadComplete,
   folder = 'uploads',
-  label = 'Media Asset (MinIO)',
+  label = 'Media Asset (MinIO MAM)',
   helperText = 'Drag & drop image here or paste URL directly',
 }: MediaDropzoneProps) {
+  const activeValue = currentUrl !== undefined ? currentUrl : (value || '');
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [inputUrl, setInputUrl] = useState(value);
+  const [inputUrl, setInputUrl] = useState(activeValue);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const notifyChange = (url: string) => {
+    if (onChange) onChange(url);
+    if (onUploadComplete) onUploadComplete(url);
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -62,7 +72,7 @@ export default function MediaDropzone({
 
       const data = await res.json();
       if (res.ok && data.url) {
-        onChange(data.url);
+        notifyChange(data.url);
         setInputUrl(data.url);
         toast.success(data.note ? `Uploaded: ${data.note}` : 'Asset uploaded to MinIO Media Store!');
       } else {
@@ -76,8 +86,8 @@ export default function MediaDropzone({
   };
 
   const handleUrlBlur = () => {
-    if (inputUrl !== value) {
-      onChange(inputUrl);
+    if (inputUrl !== activeValue) {
+      notifyChange(inputUrl);
     }
   };
 
@@ -87,11 +97,11 @@ export default function MediaDropzone({
         <label className="block text-[11px] font-bold uppercase tracking-wider text-[#C59B27]">
           {label}
         </label>
-        {value && (
+        {activeValue && (
           <button
             type="button"
             onClick={() => {
-              onChange('');
+              notifyChange('');
               setInputUrl('');
             }}
             className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer"
@@ -126,12 +136,12 @@ export default function MediaDropzone({
             <Loader2 className="w-7 h-7 animate-spin text-[#821124]" />
             <span className="font-semibold uppercase tracking-wider text-[11px]">Streaming to MinIO Media Storage...</span>
           </div>
-        ) : value ? (
+        ) : activeValue ? (
           <div className="w-full flex items-center gap-3">
             <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-[#C59B27]/40 shrink-0 bg-black/50 flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={value}
+                src={activeValue}
                 alt="Uploaded media preview"
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -146,7 +156,7 @@ export default function MediaDropzone({
                 <Check className="w-3.5 h-3.5 text-emerald-400" /> Active Media Asset
               </span>
               <span className="font-mono text-[10px] text-[#C59B27] truncate block mt-0.5 select-all">
-                {value}
+                {activeValue}
               </span>
               <span className="text-[10px] text-white/50 block mt-0.5">
                 Click or drop another file to replace
@@ -162,7 +172,7 @@ export default function MediaDropzone({
               Drag &amp; drop media asset from desktop
             </span>
             <span className="text-[10px] text-white/50">
-              MinIO MAM Store (PNG, JPG, WebP up to 25MB)
+              MinIO MAM Store: tvl-website-assets (PNG, JPG, WebP up to 25MB)
             </span>
           </div>
         )}
@@ -177,7 +187,7 @@ export default function MediaDropzone({
           value={inputUrl}
           onChange={(e) => {
             setInputUrl(e.target.value);
-            onChange(e.target.value);
+            notifyChange(e.target.value);
           }}
           onBlur={handleUrlBlur}
           className="w-full bg-black/40 border border-white/15 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#C59B27]"
