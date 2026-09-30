@@ -443,20 +443,20 @@ export default function InquiriesPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="space-y-2.5 pt-2">
+                <div className="space-y-2 pt-2">
                   <button
                     onClick={() => handleUpdateInquiry()}
                     disabled={savingAction}
-                    className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-[#C59B27]" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C59B27]" />
                     <span>Save Quote &amp; Notes</span>
                   </button>
 
                   {/* CONVERT TO CONFIRMED BOOKING BUTTON */}
                   <button
                     onClick={() => openConvertModal(selectedInquiry)}
-                    className="w-full py-3 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    className="w-full py-2.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold uppercase tracking-wider shadow flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <UserCheck className="w-4 h-4 text-emerald-400" />
                     <span>Convert to Confirmed Booking</span>
@@ -469,7 +469,7 @@ export default function InquiriesPage() {
                       navigator.clipboard.writeText(trackUrl);
                       toast.success('Guest tracking link copied to clipboard!');
                     }}
-                    className="w-full py-2 rounded-xl bg-black/30 hover:bg-black/50 text-white/70 hover:text-white text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-white/10"
+                    className="w-full py-1.5 rounded-lg bg-black/30 hover:bg-black/50 text-white/70 hover:text-white text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-white/10"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>Copy Guest Tracking Link</span>
@@ -727,20 +727,20 @@ export default function InquiriesPage() {
                 />
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowConvertModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-white/20 text-white/70 text-xs font-bold uppercase tracking-wider hover:bg-white/5 cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg border border-white/20 text-white/70 text-xs font-semibold hover:bg-white/5 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={converting}
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {converting ? <RotateCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  {converting ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                   <span>Confirm &amp; Create Booking</span>
                 </button>
               </div>

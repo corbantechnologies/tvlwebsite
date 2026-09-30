@@ -48,45 +48,6 @@ const BRAND_DISPLAY: Record<string, string> = {
   golden_key: 'Golden Key Casino',
 };
 
-const DEFAULT_EVENTS: AdminEvent[] = [
-  {
-    id: 'evt_dhow_sunset',
-    title: 'Candlelit Swahili Sunset Dinner Cruise',
-    slug: 'candlelit-swahili-sunset-dinner-cruise',
-    description: 'Sail through the historic Mombasa Old Harbour past Fort Jesus aboard our authentic Swahili sailing dhow with live music and fresh seafood.',
-    brand: 'tamarind_dhow',
-    venue: 'Tamarind Dhow (Nawalikoni)',
-    city: 'Mombasa',
-    category: 'dhow_cruise',
-    startDate: '2026-10-15',
-    timeText: '18:00 – 22:30',
-    priceKes: 8500,
-    priceUsd: 65,
-    maxCapacity: 65,
-    image: 'https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg',
-    paymentEnabled: false,
-    isActive: true,
-  },
-  {
-    id: 'evt_seafood_gala',
-    title: 'Clifftop Seafood & Wine Extravaganza',
-    slug: 'clifftop-seafood-wine-extravaganza',
-    description: 'An extraordinary five-course oceanfront culinary banquet paired with fine Cape wines on the cliffs of Tudor Creek.',
-    brand: 'tamarind_restaurant',
-    venue: 'Tamarind Mombasa Restaurant',
-    city: 'Mombasa',
-    category: 'dining_gala',
-    startDate: '2026-10-24',
-    timeText: '19:00 – 23:00',
-    priceKes: 9500,
-    priceUsd: 75,
-    maxCapacity: 90,
-    image: 'https://media.tamarind.co.ke/tvl-website-assets/seafood_gala.jpg',
-    paymentEnabled: false,
-    isActive: true,
-  },
-];
-
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -310,11 +271,11 @@ export default function AdminEventsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={loadEvents}
             disabled={loading}
-            className="p-2.5 rounded-xl bg-[#1F1615] border border-[#C59B27]/25 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-lg bg-[#1F1615] border border-[#C59B27]/25 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
             title="Refresh Events"
           >
             <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -322,9 +283,9 @@ export default function AdminEventsPage() {
 
           <button
             onClick={openAddModal}
-            className="px-5 py-2.5 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer transition-all"
+            className="px-3.5 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Create New Event</span>
           </button>
         </div>
@@ -347,110 +308,129 @@ export default function AdminEventsPage() {
         ))}
       </div>
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map((evt) => {
-          const brandName = BRAND_DISPLAY[evt.brand] || evt.brand || 'Tamarind Village';
+      {/* Events Grid or Empty State */}
+      {filteredEvents.length === 0 ? (
+        <div className="p-16 text-center text-white/40 space-y-3 bg-[#1F1615] rounded-xl border border-[#C59B27]/25">
+          <Sparkles className="w-10 h-10 mx-auto text-[#C59B27] opacity-30" />
+          <p className="text-sm font-semibold text-white">No Events Published Yet</p>
+          <p className="text-xs text-white/50 max-w-md mx-auto">
+            {brandFilter === 'all'
+              ? 'There are currently no events on the calendar. Click below to create your first event.'
+              : `No events found for ${BRAND_DISPLAY[brandFilter] || brandFilter}.`}
+          </p>
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create Event</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredEvents.map((evt) => {
+            const brandName = BRAND_DISPLAY[evt.brand] || evt.brand || 'Tamarind Village';
 
-          return (
-            <div
-              key={evt.id}
-              className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 overflow-hidden shadow-xl flex flex-col justify-between hover:border-[#C59B27]/50 transition-all duration-300"
-            >
-              <div>
-                {/* Event Poster Header */}
-                <div className="relative h-44 w-full bg-black/40 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={evt.image || evt.posterUrl || 'https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg'}
-                    alt={evt.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1F1615] via-transparent to-transparent" />
+            return (
+              <div
+                key={evt.id}
+                className="bg-[#1F1615] rounded-xl border border-[#C59B27]/25 overflow-hidden shadow-lg flex flex-col justify-between hover:border-[#C59B27]/50 transition-all duration-300"
+              >
+                <div>
+                  {/* Event Poster Header */}
+                  <div className="relative h-44 w-full bg-black/40 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={evt.image || evt.posterUrl || 'https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg'}
+                      alt={evt.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1F1615] via-transparent to-transparent" />
 
-                  {/* Brand Tag Top Left */}
-                  <div className="absolute top-3 left-3">
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/70 backdrop-blur-md text-[#C59B27] border border-[#C59B27]/40 shadow-sm">
-                      {brandName}
-                    </span>
-                  </div>
-
-                  {/* Payment Capability Badge Top Right */}
-                  <div className="absolute top-3 right-3">
-                    {evt.paymentEnabled ? (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-sm">
-                        <CheckCircle2 className="w-2.5 h-2.5" /> Payments Active
+                    {/* Brand Tag Top Left */}
+                    <div className="absolute top-2.5 left-2.5">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/70 backdrop-blur-md text-[#C59B27] border border-[#C59B27]/40 shadow-sm">
+                        {brandName}
                       </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-neutral-900/80 text-neutral-300 border border-neutral-600/40 flex items-center gap-1 shadow-sm">
-                        <Lock className="w-2.5 h-2.5 text-[#C59B27]" /> Inquiries Only
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-serif text-lg font-bold text-white leading-snug">
-                      {evt.title}
-                    </h3>
-                    <p className="text-xs text-white/60 mt-1 line-clamp-2 leading-relaxed">
-                      {evt.description}
-                    </p>
-                  </div>
-
-                  {/* Key metadata grid */}
-                  <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Calendar className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
-                      <span className="truncate">{evt.startDate}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Clock className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
-                      <span className="truncate">{evt.timeText || 'Evening'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 truncate col-span-2">
-                      <MapPin className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
-                      <span className="truncate text-white/80">{evt.venue} · {evt.city || 'Mombasa'}</span>
+
+                    {/* Payment Capability Badge Top Right */}
+                    <div className="absolute top-2.5 right-2.5">
+                      {evt.paymentEnabled ? (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-sm">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Payments Active
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-neutral-900/80 text-neutral-300 border border-neutral-600/40 flex items-center gap-1 shadow-sm">
+                          <Lock className="w-2.5 h-2.5 text-[#C59B27]" /> Inquiries Only
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Ticket Price Box */}
-                  <div className="bg-black/30 rounded-xl p-3 border border-white/5 flex items-baseline justify-between">
+                  <div className="p-4 space-y-3">
                     <div>
-                      <span className="text-xs text-white/40 uppercase font-bold block">Ticket Admission</span>
-                      <span className="text-base font-serif font-bold text-[#C59B27]">
-                        KES {Number(evt.priceKes || 0).toLocaleString()}
-                      </span>
+                      <h3 className="font-serif text-base font-bold text-white leading-snug">
+                        {evt.title}
+                      </h3>
+                      <p className="text-xs text-white/60 mt-1 line-clamp-2 leading-relaxed">
+                        {evt.description}
+                      </p>
                     </div>
-                    <div className="text-right text-xs font-mono text-white/60">
-                      ${evt.priceUsd || 0} USD
+
+                    {/* Key metadata grid */}
+                    <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Calendar className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
+                        <span className="truncate">{evt.startDate}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Clock className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
+                        <span className="truncate">{evt.timeText || 'Evening'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate col-span-2">
+                        <MapPin className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
+                        <span className="truncate text-white/80">{evt.venue} · {evt.city || 'Mombasa'}</span>
+                      </div>
+                    </div>
+
+                    {/* Ticket Price Box */}
+                    <div className="bg-black/30 rounded-lg p-2.5 border border-white/5 flex items-baseline justify-between">
+                      <div>
+                        <span className="text-[10px] text-white/40 uppercase font-bold block">Ticket Admission</span>
+                        <span className="text-sm font-serif font-bold text-[#C59B27]">
+                          KES {Number(evt.priceKes || 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-right text-[11px] font-mono text-white/60">
+                        ${evt.priceUsd || 0} USD
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="p-5 pt-0 flex items-center gap-2 border-t border-white/5 mt-2">
-                <button
-                  onClick={() => openEditModal(evt)}
-                  className="flex-1 py-2 rounded-xl bg-white/10 hover:bg-[#821124] text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit Event</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(evt.id, evt.title)}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-red-950/60 text-white/50 hover:text-red-400 border border-white/10 transition-colors cursor-pointer"
-                  title="Remove event"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Action Buttons */}
+                <div className="p-4 pt-0 flex items-center gap-2 border-t border-white/5 mt-2">
+                  <button
+                    onClick={() => openEditModal(evt)}
+                    className="flex-1 py-1.5 rounded-lg bg-white/10 hover:bg-[#821124] text-white font-semibold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit Event</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(evt.id, evt.title)}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-red-950/60 text-white/50 hover:text-red-400 border border-white/10 transition-colors cursor-pointer"
+                    title="Remove event"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal (Add / Edit) */}
       {(showAddModal || editingEvent) && (
@@ -681,21 +661,21 @@ export default function AdminEventsPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingEvent(null);
                   }}
-                  className="px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-bold hover:bg-white/5"
+                  className="px-4 py-1.5 rounded-lg border border-white/20 text-white text-xs font-semibold hover:bg-white/5 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   {submitting ? 'Saving...' : editingEvent ? 'Save Changes' : 'Publish Event'}
                 </button>

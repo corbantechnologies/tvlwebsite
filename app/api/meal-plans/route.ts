@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       description: body.description || "",
       pricePerPersonPerDayUsd: Number(body.pricePerPersonPerDayUsd || 0),
       pricePerPersonPerDayKes: Number(body.pricePerPersonPerDayKes || 0),
+      image: body.image || null,
       highlights: body.highlights || [],
       isActive: body.isActive !== false,
       sortOrder: Number(body.sortOrder || 99),

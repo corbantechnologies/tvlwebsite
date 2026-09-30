@@ -22,7 +22,7 @@ export async function PATCH(
     const allowed = [
       "name", "shortName", "description",
       "pricePerPersonPerDayUsd", "pricePerPersonPerDayKes",
-      "highlights", "isActive", "sortOrder"
+      "image", "highlights", "isActive", "sortOrder"
     ];
 
     for (const key of allowed) {
@@ -68,13 +68,7 @@ export async function DELETE(
     const { searchParams } = new URL(req.url);
     const hard = searchParams.get("hard") === "true";
 
-    const PROTECTED_IDS = ["room-only", "bed-breakfast", "half-board"];
-    if (hard && PROTECTED_IDS.includes(id)) {
-      return NextResponse.json(
-        { error: "Cannot permanently delete a core meal plan. Use PATCH to deactivate it instead." },
-        { status: 403 }
-      );
-    }
+// Admin has full control to hard delete any plan
 
     const existing = await db.select().from(mealPlans).where(eq(mealPlans.id, id)).limit(1);
     if (existing.length === 0) {

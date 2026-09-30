@@ -12,6 +12,8 @@ export interface MediaDropzoneProps {
   folder?: string;
   label?: string;
   helperText?: string;
+  maxFiles?: number;
+  accept?: string;
 }
 
 export default function MediaDropzone({
@@ -22,6 +24,8 @@ export default function MediaDropzone({
   folder = 'uploads',
   label = 'Media Asset (MinIO MAM)',
   helperText = 'Drag & drop image here or paste URL directly',
+  maxFiles,
+  accept,
 }: MediaDropzoneProps) {
   const activeValue = currentUrl !== undefined ? currentUrl : (value || '');
   const [isDragging, setIsDragging] = useState(false);

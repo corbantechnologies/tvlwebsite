@@ -61,10 +61,10 @@ export default function AdminPricingPage() {
         </p>
       </div>
 
-      <div className="bg-[#1F1615] rounded-2xl p-6 border border-[#C59B27]/25 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="bg-[#1F1615] rounded-xl p-5 border border-[#C59B27]/25 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">
               Global Markup Multiplier
             </label>
             <input
@@ -72,19 +72,19 @@ export default function AdminPricingPage() {
               step="0.05"
               value={markupMultiplier}
               onChange={(e) => setMarkupMultiplier(Number(e.target.value))}
-              className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+              className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27]"
             />
             <span className="text-[10px] text-white/50 mt-1 block">1.0 = Base rates, 1.15 = 15% increase</span>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">
               Seasonal Factor
             </label>
             <select
               value={seasonalFactor}
               onChange={(e) => setSeasonalFactor(e.target.value)}
-              className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+              className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27]"
             >
               <option value="low">Low Season (Coastal Breeze Special)</option>
               <option value="regular">Regular Season</option>
@@ -93,19 +93,19 @@ export default function AdminPricingPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">
               Tourism Catering Levy &amp; Tax (%)
             </label>
             <input
               type="number"
               value={taxRate}
               onChange={(e) => setTaxRate(Number(e.target.value))}
-              className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+              className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">
               USD to KES Pegged Exchange Rate
             </label>
             <input
@@ -113,17 +113,17 @@ export default function AdminPricingPage() {
               step="0.5"
               value={exchangeRate}
               onChange={(e) => setExchangeRate(Number(e.target.value))}
-              className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+              className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27]"
             />
           </div>
         </div>
 
-        <div className="pt-4 flex justify-end">
+        <div className="pt-3 border-t border-white/10 flex justify-end">
           <button
             onClick={handleSave}
-            className="px-6 py-3 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white font-bold text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white font-bold text-xs uppercase tracking-wider shadow flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-3.5 h-3.5" />
             <span>Update Dynamic Rates</span>
           </button>
         </div>

@@ -57,24 +57,24 @@ export default function AdminDashboardPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/admin/events"
-            className="px-4 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#C59B27]" />
             <span>Add Event</span>
           </Link>
           <Link
             href="/admin/packages"
-            className="px-4 py-2 rounded-xl bg-[#C59B27] hover:bg-[#a5811e] text-[#1F1615] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-[#C59B27] hover:bg-[#a5811e] text-[#1F1615] text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
           >
             <Tag className="w-3.5 h-3.5" />
-            <span>New Package</span>
+            <span>Meal Plans</span>
           </Link>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#1F1615] p-5 rounded-2xl border border-[#C59B27]/25 shadow-md">
+        <div className="bg-[#1F1615] p-4 sm:p-5 rounded-xl border border-[#C59B27]/25 shadow-md">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Confirmed Direct</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
           <span className="text-[10px] text-emerald-400 font-medium">Converted to Booking</span>
         </div>
 
-        <div className="bg-[#1F1615] p-5 rounded-2xl border border-[#C59B27]/25 shadow-md">
+        <div className="bg-[#1F1615] p-4 sm:p-5 rounded-xl border border-[#C59B27]/25 shadow-md">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Pending Inquiries</span>
             <Bell className="w-4 h-4 text-[#C59B27]" />
@@ -98,7 +98,7 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        <div className="bg-[#1F1615] p-5 rounded-2xl border border-[#C59B27]/25 shadow-md">
+        <div className="bg-[#1F1615] p-4 sm:p-5 rounded-xl border border-[#C59B27]/25 shadow-md">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Active Events</span>
             <Sparkles className="w-4 h-4 text-[#C59B27]" />
@@ -111,16 +111,16 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        <div className="bg-[#1F1615] p-5 rounded-2xl border border-[#C59B27]/25 shadow-md">
+        <div className="bg-[#1F1615] p-4 sm:p-5 rounded-xl border border-[#C59B27]/25 shadow-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Curated Packages</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-white/60">Curated Meal Plans</span>
             <Tag className="w-4 h-4 text-[#C59B27]" />
           </div>
           <div className="text-2xl sm:text-3xl font-serif font-bold text-white">
             {stats.activePackages}
           </div>
           <Link href="/admin/packages" className="text-[10px] text-[#C59B27] hover:underline">
-            Honeymoon, Dhow, &amp; Retreats →
+            Meal Plan Tiers &amp; Pricing →
           </Link>
         </div>
       </div>
@@ -128,7 +128,7 @@ export default function AdminDashboardPage() {
       {/* Two Column Grid: Recent Inquiries + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Inquiries List */}
-        <div className="lg:col-span-2 bg-[#1F1615] rounded-2xl p-6 border border-[#C59B27]/25 shadow-lg space-y-4">
+        <div className="lg:col-span-2 bg-[#1F1615] rounded-xl p-5 border border-[#C59B27]/25 shadow-lg space-y-4">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <h3 className="font-serif text-lg font-bold text-white">
               Recent Website Inquiries
@@ -176,7 +176,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Launchpad */}
-        <div className="bg-[#1F1615] rounded-2xl p-6 border border-[#C59B27]/25 shadow-lg space-y-4">
+        <div className="bg-[#1F1615] rounded-xl p-5 border border-[#C59B27]/25 shadow-lg space-y-4">
           <h3 className="font-serif text-lg font-bold text-white border-b border-white/10 pb-4">
             Operational Shortcuts
           </h3>

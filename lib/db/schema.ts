@@ -82,6 +82,7 @@ export const mealPlans = pgTable("meal_plans", {
   description: text("description").notNull(),
   pricePerPersonPerDayUsd: doublePrecision("price_per_person_per_day_usd").notNull().default(0),
   pricePerPersonPerDayKes: doublePrecision("price_per_person_per_day_kes").notNull().default(0),
+  image: text("image"),
   highlights: jsonb("highlights").$type<string[]>().notNull().default([]),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),

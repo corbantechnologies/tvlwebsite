@@ -4,11 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Utensils, Ship, Clock, Users, Sparkles, Plus, Trash2, Edit, Save, X, RotateCw, ExternalLink, Mail, Shield, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
-import { DINING } from '@/lib/data';
 
 export default function AdminDiningPage() {
-  const [venues, setVenues] = useState<any[]>(DINING);
-  const [loading, setLoading] = useState(false);
+  const [venues, setVenues] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingVenue, setEditingVenue] = useState<any | null>(null);
 
@@ -29,11 +28,11 @@ export default function AdminDiningPage() {
     try {
       const res = await fetch('/api/dining');
       const data = await res.json();
-      if (data.dining && data.dining.length > 0) {
+      if (data.dining) {
         setVenues(data.dining);
       }
     } catch {
-      console.warn('Using default dining venues');
+      toast.error('Failed to load dining venues from database');
     } finally {
       setLoading(false);
     }
@@ -119,15 +118,15 @@ export default function AdminDiningPage() {
             Tamarind Restaurant &amp; Dhow Venues
           </h1>
           <p className="text-xs text-white/60">
-            Manage operational hours, capacity limits, dhow cruise sailings, menus, and media.
+            Database-backed management for operational hours, capacity limits, dhow cruise sailings, and menus.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={loadVenues}
             disabled={loading}
-            className="p-2.5 rounded-xl bg-[#1F1615] border border-[#C59B27]/25 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-lg bg-[#1F1615] border border-[#C59B27]/25 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
             title="Refresh Venues"
           >
             <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -135,19 +134,19 @@ export default function AdminDiningPage() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-5 py-2.5 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer transition-all"
+            className="px-3.5 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Add Venue</span>
           </button>
         </div>
       </div>
 
       {/* Venue Inquiry Email Routing Panel */}
-      <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/30 p-6 shadow-xl space-y-4">
+      <div className="bg-[#1F1615] rounded-xl border border-[#C59B27]/30 p-5 shadow-lg space-y-3">
         <div className="flex items-center gap-2">
           <Mail className="w-4 h-4 text-[#C59B27]" />
-          <h2 className="font-serif text-base font-bold text-white">
+          <h2 className="font-serif text-sm font-bold text-white">
             Dedicated Venue Inquiry Dispatch &amp; Routing
           </h2>
         </div>
@@ -155,8 +154,8 @@ export default function AdminDiningPage() {
           Guest inquiries submitted across the public platform are automatically routed to the venue’s dedicated reservation desk for prompt response:
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+          <div className="bg-black/30 p-3 rounded-lg border border-white/5 space-y-0.5">
             <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
               Tamarind Mombasa Restaurant
             </span>
@@ -166,7 +165,7 @@ export default function AdminDiningPage() {
             <span className="text-[10px] text-white/40 block">Inquiries only</span>
           </div>
 
-          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+          <div className="bg-black/30 p-3 rounded-lg border border-white/5 space-y-0.5">
             <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
               The Dawa Terrace Lounge
             </span>
@@ -176,7 +175,7 @@ export default function AdminDiningPage() {
             <span className="text-[10px] text-white/40 block">Inquiries only</span>
           </div>
 
-          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+          <div className="bg-black/30 p-3 rounded-lg border border-white/5 space-y-0.5">
             <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
               Tamarind Dhow (Mombasa)
             </span>
@@ -186,7 +185,7 @@ export default function AdminDiningPage() {
             <span className="text-[10px] text-white/40 block">Inquiries &amp; Private Charters</span>
           </div>
 
-          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+          <div className="bg-black/30 p-3 rounded-lg border border-white/5 space-y-0.5">
             <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
               Golden Key Casino
             </span>
@@ -196,7 +195,7 @@ export default function AdminDiningPage() {
             <span className="text-[10px] text-white/40 block">VIP &amp; Event Inquiries</span>
           </div>
 
-          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+          <div className="bg-black/30 p-3 rounded-lg border border-white/5 space-y-0.5">
             <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
               Tamarind Village Apartments
             </span>
@@ -206,7 +205,7 @@ export default function AdminDiningPage() {
             <span className="text-[10px] text-emerald-400 font-bold block">Online Booking &amp; Inquiries</span>
           </div>
 
-          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+          <div className="bg-black/30 p-3 rounded-lg border border-white/5 space-y-0.5">
             <span className="text-[10px] text-white/50 uppercase font-bold tracking-wider block">
               Harbour Restaurant &amp; Pools
             </span>
@@ -219,85 +218,107 @@ export default function AdminDiningPage() {
       </div>
 
       {/* Venues List */}
-      <div className="space-y-6">
-        {venues.map((venue) => (
-          <div
-            key={venue.id}
-            className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 overflow-hidden shadow-xl"
+      {loading ? (
+        <div className="py-20 text-center text-white/50 text-xs space-y-2">
+          <RotateCw className="w-6 h-6 animate-spin mx-auto text-[#C59B27]" />
+          <p>Loading dining venues from database...</p>
+        </div>
+      ) : venues.length === 0 ? (
+        <div className="p-16 text-center text-white/40 space-y-3 bg-[#1F1615] rounded-xl border border-[#C59B27]/25">
+          <Utensils className="w-10 h-10 mx-auto text-[#C59B27] opacity-30" />
+          <p className="text-sm font-semibold text-white">No Dining Venues Found</p>
+          <p className="text-xs text-white/50 max-w-md mx-auto">
+            Your dining inventory is clear. Add restaurants, bars, or dhow experiences using the button below.
+          </p>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-6">
-              <div className="md:col-span-4 h-56 rounded-xl overflow-hidden bg-black/40 relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={venue.image}
-                  alt={venue.title || venue.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-[#821124] text-white text-[10px] font-bold uppercase tracking-wider shadow">
-                  {venue.cuisine || 'Cuisine'}
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create Venue</span>
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {venues.map((venue) => (
+            <div
+              key={venue.id}
+              className="bg-[#1F1615] rounded-xl border border-[#C59B27]/25 overflow-hidden shadow-lg"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 p-5">
+                <div className="md:col-span-4 h-48 rounded-lg overflow-hidden bg-black/40 relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={venue.image}
+                    alt={venue.title || venue.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-[#821124] text-white text-[10px] font-bold uppercase tracking-wider shadow">
+                    {venue.cuisine || 'Cuisine'}
+                  </div>
                 </div>
-              </div>
 
-              <div className="md:col-span-8 flex flex-col justify-between space-y-4">
-                <div>
-                  <div className="flex items-start justify-between">
+                <div className="md:col-span-8 flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-serif text-xl font-bold text-white">
+                          {venue.title || venue.name}
+                        </h3>
+                        <span className="text-xs text-[#C59B27] font-semibold block mt-0.5">
+                          {venue.hours || 'Open Daily'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setEditingVenue({ ...venue, name: venue.title || venue.name })}
+                          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Edit className="w-3 h-3" />
+                          <span>Edit Venue</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(venue.id, venue.title || venue.name)}
+                          className="p-1.5 text-white/40 hover:text-red-400 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                          title="Delete Venue"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-white/70 mt-2.5 leading-relaxed">
+                      {venue.description}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-black/40 border border-white/10 text-xs">
                     <div>
-                      <h3 className="font-serif text-2xl font-bold text-white">
-                        {venue.title || venue.name}
-                      </h3>
-                      <span className="text-xs text-[#C59B27] font-semibold block mt-0.5">
-                        {venue.hours || 'Open Daily'}
-                      </span>
+                      <span className="text-white/40 block text-[9px] uppercase">Service Hours:</span>
+                      <span className="font-semibold text-white truncate block text-[11px]">{venue.hours || '12:00 - 23:00'}</span>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setEditingVenue({ ...venue, name: venue.title || venue.name })}
-                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>Edit Venue</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleDelete(venue.id, venue.title || venue.name)}
-                        className="p-2 text-white/40 hover:text-red-400 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
-                        title="Delete Venue"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div>
+                      <span className="text-white/40 block text-[9px] uppercase">Dress Code:</span>
+                      <span className="font-semibold text-white text-[11px]">{venue.dressCode || 'Smart Casual'}</span>
                     </div>
-                  </div>
-
-                  <p className="text-xs text-white/70 mt-3 leading-relaxed">
-                    {venue.description}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 p-3 rounded-xl bg-black/40 border border-white/10 text-xs">
-                  <div>
-                    <span className="text-white/40 block text-[10px] uppercase">Service Hours:</span>
-                    <span className="font-semibold text-white truncate block">{venue.hours || '12:00 - 23:00'}</span>
-                  </div>
-                  <div>
-                    <span className="text-white/40 block text-[10px] uppercase">Dress Code:</span>
-                    <span className="font-semibold text-white">{venue.dressCode || 'Smart Casual'}</span>
-                  </div>
-                  <div>
-                    <span className="text-white/40 block text-[10px] uppercase">Capacity:</span>
-                    <span className="font-semibold text-[#C59B27]">{venue.maxCapacity || 120} Guests</span>
+                    <div>
+                      <span className="text-white/40 block text-[9px] uppercase">Capacity:</span>
+                      <span className="font-semibold text-[#C59B27] text-[11px]">{venue.maxCapacity || 120} Guests</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Edit Venue Modal */}
       {editingVenue && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#1F1615] rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-[#C59B27]/40 shadow-2xl relative text-[#FAF6F0] space-y-4 my-8">
+          <div className="bg-[#1F1615] rounded-xl max-w-lg w-full p-6 border border-[#C59B27]/40 shadow-2xl relative text-[#FAF6F0] space-y-3.5 my-8">
             <button
               onClick={() => setEditingVenue(null)}
               className="absolute top-4 right-4 text-white/60 hover:text-white"
@@ -305,63 +326,63 @@ export default function AdminDiningPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <h2 className="font-serif text-2xl font-bold text-white">Edit Dining Venue</h2>
+            <h2 className="font-serif text-xl font-bold text-white">Edit Dining Venue</h2>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
+            <form onSubmit={handleEditSubmit} className="space-y-3.5 max-h-[75vh] overflow-y-auto pr-1">
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Title *</label>
+                <label className="block text-[10px] font-bold uppercase text-[#C59B27] mb-1">Venue Title *</label>
                 <input
                   type="text"
                   required
                   value={editingVenue.name || editingVenue.title}
                   onChange={(e) => setEditingVenue({ ...editingVenue, name: e.target.value, title: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs text-white"
+                  className="w-full bg-black/50 border border-white/20 rounded-lg px-3 py-2 text-xs text-white"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Cuisine / Category</label>
+                  <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Cuisine / Category</label>
                   <input
                     type="text"
                     value={editingVenue.cuisine || ''}
                     onChange={(e) => setEditingVenue({ ...editingVenue, cuisine: e.target.value })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-black/50 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Capacity</label>
+                  <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Capacity</label>
                   <input
                     type="number"
                     value={editingVenue.maxCapacity || 100}
                     onChange={(e) => setEditingVenue({ ...editingVenue, maxCapacity: parseInt(e.target.value) || 100 })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-black/50 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-white/70 mb-1">Operating Hours</label>
+                <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Operating Hours</label>
                 <input
                   type="text"
                   value={editingVenue.hours || ''}
                   onChange={(e) => setEditingVenue({ ...editingVenue, hours: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2 text-xs text-white"
+                  className="w-full bg-black/50 border border-white/20 rounded-lg px-3 py-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-white/70 mb-1">Description</label>
+                <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={editingVenue.description || ''}
                   onChange={(e) => setEditingVenue({ ...editingVenue, description: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-xs text-white"
+                  className="w-full bg-black/50 border border-white/20 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Photo (Media Library MAM)</label>
+                <label className="block text-[10px] font-bold uppercase text-[#C59B27] mb-1">Venue Photo (Media Library MAM)</label>
                 <MediaDropzone
                   folder="dining"
                   currentUrl={editingVenue.image}
@@ -369,17 +390,17 @@ export default function AdminDiningPage() {
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-white/10">
+              <div className="pt-3 flex justify-end gap-2.5 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setEditingVenue(null)}
-                  className="px-5 py-2.5 rounded-xl border border-white/20 text-white/70 text-xs font-bold uppercase"
+                  className="px-4 py-1.5 rounded-lg border border-white/20 text-white/70 text-xs font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider"
+                  className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
                 >
                   Save Changes
                 </button>
@@ -392,7 +413,7 @@ export default function AdminDiningPage() {
       {/* Add Venue Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#1F1615] rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-[#C59B27]/40 shadow-2xl relative text-[#FAF6F0] space-y-4 my-8">
+          <div className="bg-[#1F1615] rounded-xl max-w-lg w-full p-6 border border-[#C59B27]/40 shadow-2xl relative text-[#FAF6F0] space-y-3.5 my-8">
             <button
               onClick={() => setShowAddModal(false)}
               className="absolute top-4 right-4 text-white/60 hover:text-white"
@@ -400,64 +421,64 @@ export default function AdminDiningPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <h2 className="font-serif text-2xl font-bold text-white">Create Dining Venue</h2>
+            <h2 className="font-serif text-xl font-bold text-white">Create Dining Venue</h2>
 
-            <form onSubmit={handleCreate} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
+            <form onSubmit={handleCreate} className="space-y-3.5 max-h-[75vh] overflow-y-auto pr-1">
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Name *</label>
+                <label className="block text-[10px] font-bold uppercase text-[#C59B27] mb-1">Venue Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Tamarind Harbour Wine & Cigar Lounge"
                   value={newVenue.name}
                   onChange={(e) => setNewVenue({ ...newVenue, name: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs text-white"
+                  className="w-full bg-black/50 border border-white/20 rounded-lg px-3 py-2 text-xs text-white"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Cuisine / Category</label>
+                  <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Cuisine / Category</label>
                   <input
                     type="text"
                     value={newVenue.cuisine}
                     onChange={(e) => setNewVenue({ ...newVenue, cuisine: e.target.value })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-black/50 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Capacity</label>
+                  <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Capacity</label>
                   <input
                     type="number"
                     value={newVenue.maxCapacity}
                     onChange={(e) => setNewVenue({ ...newVenue, maxCapacity: parseInt(e.target.value) || 100 })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-black/50 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-white/70 mb-1">Operating Hours</label>
+                <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Operating Hours</label>
                 <input
                   type="text"
                   value={newVenue.hours}
                   onChange={(e) => setNewVenue({ ...newVenue, hours: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2 text-xs text-white"
+                  className="w-full bg-black/50 border border-white/20 rounded-lg px-3 py-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-white/70 mb-1">Description</label>
+                <label className="block text-[10px] font-bold uppercase text-white/70 mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={newVenue.description}
                   onChange={(e) => setNewVenue({ ...newVenue, description: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-xs text-white"
+                  className="w-full bg-black/50 border border-white/20 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Venue Photo (Media Library MAM)</label>
+                <label className="block text-[10px] font-bold uppercase text-[#C59B27] mb-1">Venue Photo (Media Library MAM)</label>
                 <MediaDropzone
                   folder="dining"
                   currentUrl={newVenue.image}
@@ -465,17 +486,17 @@ export default function AdminDiningPage() {
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-white/10">
+              <div className="pt-3 flex justify-end gap-2.5 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-white/20 text-white/70 text-xs font-bold uppercase"
+                  className="px-4 py-1.5 rounded-lg border border-white/20 text-white/70 text-xs font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#821124] text-white text-xs font-bold uppercase tracking-wider"
+                  className="px-4 py-1.5 rounded-lg bg-[#821124] text-white text-xs font-semibold"
                 >
                   Create Venue
                 </button>

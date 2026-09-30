@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { diningOptions } from "@/lib/db/schema";
-import { DINING } from "@/lib/data";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 
 export async function GET() {
@@ -9,12 +8,10 @@ export async function GET() {
     await ensureDatabaseSeeded();
     const db = getDb();
     const data = await db.select().from(diningOptions);
-    if (!data || data.length === 0) {
-      return NextResponse.json({ dining: DINING, fallback: true });
-    }
-    return NextResponse.json({ dining: data });
+    return NextResponse.json({ dining: data || [] });
   } catch (err: any) {
-    return NextResponse.json({ dining: DINING, fallback: true, error: err.message });
+    console.error("GET /api/dining database error:", err);
+    return NextResponse.json({ dining: [], error: err.message }, { status: 500 });
   }
 }
 

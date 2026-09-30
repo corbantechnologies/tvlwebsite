@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { apartments } from "@/lib/db/schema";
-import { APARTMENTS } from "@/lib/data";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 
 export async function GET() {
@@ -9,13 +8,10 @@ export async function GET() {
     await ensureDatabaseSeeded();
     const db = getDb();
     const data = await db.select().from(apartments);
-    if (!data || data.length === 0) {
-      return NextResponse.json({ apartments: APARTMENTS, fallback: true });
-    }
-    return NextResponse.json({ apartments: data });
+    return NextResponse.json({ apartments: data || [] });
   } catch (err: any) {
-    console.warn("Apartments DB lookup failed, returning baseline:", err);
-    return NextResponse.json({ apartments: APARTMENTS, fallback: true, database_error: err.message });
+    console.error("GET /api/apartments database error:", err);
+    return NextResponse.json({ apartments: [], error: err.message }, { status: 500 });
   }
 }
 

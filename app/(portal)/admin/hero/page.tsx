@@ -98,16 +98,16 @@ export default function AdminHeroPage() {
         <button
           onClick={loadSettings}
           disabled={loading}
-          className="p-2.5 rounded-xl bg-[#1F1615] border border-[#C59B27]/25 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
+          className="p-2 rounded-lg bg-[#1F1615] border border-[#C59B27]/25 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
           title="Reload Settings"
         >
           <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      <form onSubmit={handleSave} className="bg-[#1F1615] rounded-2xl p-6 border border-[#C59B27]/25 space-y-6 shadow-xl">
+      <form onSubmit={handleSave} className="bg-[#1F1615] rounded-xl p-5 border border-[#C59B27]/25 space-y-4 shadow-lg">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">
             Main Hero Headline
           </label>
           <input
@@ -115,20 +115,18 @@ export default function AdminHeroPage() {
             required
             value={headline}
             onChange={(e) => setHeadline(e.target.value)}
-            className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+            className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27]"
           />
         </div>
 
         <MediaDropzone
-          value={heroMediaUrl}
-          onChange={setHeroMediaUrl}
           folder="hero"
-          label="Hero Background Media / Video (Media Library)"
-          helperText="Drag & drop clifftop pool/harbour image or enter CDN asset URL"
+          currentUrl={heroMediaUrl}
+          onUploadComplete={setHeroMediaUrl}
         />
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#C59B27] mb-1">
             Hero Subtext
           </label>
           <textarea
@@ -136,13 +134,13 @@ export default function AdminHeroPage() {
             required
             value={subtext}
             onChange={(e) => setSubtext(e.target.value)}
-            className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+            className="w-full bg-black/40 border border-white/15 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
           />
         </div>
 
-        <div className="pt-4 border-t border-white/10 space-y-3">
+        <div className="pt-3 border-t border-white/10 space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#C59B27]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#C59B27]">
               Top Promotional Alert Ribbon
             </span>
             <label className="inline-flex items-center gap-2 cursor-pointer text-xs">
@@ -152,7 +150,7 @@ export default function AdminHeroPage() {
                 onChange={(e) => setBannerActive(e.target.checked)}
                 className="rounded text-[#821124]"
               />
-              <span className="text-white/80">Active on Public Site</span>
+              <span className="text-white/80 text-[11px]">Active on Public Site</span>
             </label>
           </div>
 
@@ -160,25 +158,25 @@ export default function AdminHeroPage() {
             type="text"
             value={bannerAlert}
             onChange={(e) => setBannerAlert(e.target.value)}
-            className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+            className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C59B27]"
           />
         </div>
 
-        <div className="pt-4 flex justify-end border-t border-white/10">
+        <div className="pt-3 flex justify-end border-t border-white/10">
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white font-bold text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer transition-all"
+            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white font-bold text-xs uppercase tracking-wider shadow flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             {saving ? (
               <>
-                <RotateCw className="w-4 h-4 animate-spin" />
+                <RotateCw className="w-3.5 h-3.5 animate-spin" />
                 <span>Publishing...</span>
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
-                <span>Publish Changes to Live Site</span>
+                <Save className="w-3.5 h-3.5" />
+                <span>Publish Changes</span>
               </>
             )}
           </button>
