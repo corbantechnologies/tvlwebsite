@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Search, Filter, CheckCircle2, Clock, XCircle, 
-  ArrowRight, ShieldCheck, RotateCw, BedDouble, Key, Plus, X, Tag 
+  ArrowRight, ShieldCheck, RotateCw, BedDouble, Key, Plus, X, Tag, Loader2, Check 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -94,17 +94,17 @@ export default function BookingsLedgerPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 px-2 sm:px-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs text-[#C59B27] font-semibold uppercase tracking-wider mb-1">
+          <div className="inline-flex items-center gap-1.5 text-xs text-[#821124] font-bold uppercase tracking-wider mb-1">
             <Calendar className="w-3.5 h-3.5" /> Master Ledger
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white">
+          <h1 className="font-serif text-2xl font-bold text-slate-900 tracking-tight">
             Reservations Ledger &amp; Room Allocations
           </h1>
-          <p className="text-xs text-white/60">
+          <p className="text-xs text-slate-500 mt-0.5">
             Confirmed reservations, guest portal tokens, meal plans, and physical apartment allocations.
           </p>
         </div>
@@ -113,37 +113,38 @@ export default function BookingsLedgerPage() {
           <button
             onClick={loadLiveBookings}
             disabled={isLoading}
-            className="p-2.5 rounded-xl bg-[#1F1615] border border-[#C59B27]/25 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
             title="Refresh Ledger"
           >
-            <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
 
           <div className="relative">
-            <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by name, ref, unit..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-[#1F1615] border border-[#C59B27]/25 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#C59B27] w-64"
+              className="bg-white border border-slate-300 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124] w-64 shadow-xs"
             />
           </div>
         </div>
       </div>
 
       {/* Table Card */}
-      <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 overflow-hidden shadow-xl">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
         {isLoading ? (
-          <div className="py-20 text-center text-white/50 space-y-3">
-            <RotateCw className="w-8 h-8 animate-spin mx-auto text-[#C59B27]" />
+          <div className="py-20 text-center text-slate-500 space-y-3">
+            <RotateCw className="w-8 h-8 animate-spin mx-auto text-[#821124]" />
             <p className="text-sm">Loading reservations...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-16 text-center text-white/40 space-y-2">
-            <Calendar className="w-10 h-10 mx-auto opacity-30 text-[#C59B27]" />
-            <p className="text-sm font-semibold text-white">No confirmed reservations found</p>
-            <p className="text-xs text-white/40 max-w-md mx-auto">
+          <div className="p-16 text-center text-slate-500 space-y-2">
+            <Calendar className="w-10 h-10 mx-auto opacity-30 text-[#821124]" />
+            <p className="text-sm font-semibold text-slate-900">No confirmed reservations found</p>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
               When guest inquiries or Paystack checkouts are confirmed, they will appear here with full stay details and room allocation actions.
             </p>
           </div>
@@ -151,7 +152,7 @@ export default function BookingsLedgerPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-white/40 tracking-wider bg-black/20">
+                <tr className="border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider bg-slate-50">
                   <th className="p-4">Reference &amp; Token</th>
                   <th className="p-4">Guest</th>
                   <th className="p-4">Residence &amp; Allocated Unit</th>
@@ -163,69 +164,69 @@ export default function BookingsLedgerPage() {
                   <th className="p-4 text-right">Unit Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-xs text-white/80">
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {filtered.map((b) => {
                   return (
-                    <tr key={b.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="p-4">
-                        <div className="font-mono font-bold text-[#C59B27]">
+                        <div className="font-mono font-bold text-[#821124]">
                           {b.bookingReference || b.id}
                         </div>
                         {b.guestToken && (
-                          <div className="text-[10px] text-white/40 font-mono mt-0.5">
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                             Token: {b.guestToken}
                           </div>
                         )}
                       </td>
                       <td className="p-4">
-                        <div className="font-bold text-white">{b.guestName}</div>
-                        <div className="text-[11px] text-white/50">{b.guestPhone || b.guestEmail}</div>
+                        <div className="font-bold text-slate-900">{b.guestName}</div>
+                        <div className="text-[11px] text-slate-500">{b.guestPhone || b.guestEmail}</div>
                       </td>
                       <td className="p-4">
-                        <div className="font-semibold text-white">{b.apartmentName || b.apartmentId}</div>
+                        <div className="font-semibold text-slate-900">{b.apartmentName || b.apartmentId}</div>
                         {b.allocatedUnit ? (
-                          <div className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono mt-1 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
-                            <Key className="w-2.5 h-2.5" />
+                          <div className="inline-flex items-center gap-1 text-[10px] text-emerald-800 font-mono mt-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            <Key className="w-2.5 h-2.5 text-emerald-600" />
                             <span>{b.allocatedUnit}</span>
                           </div>
                         ) : (
-                          <div className="inline-flex items-center gap-1 text-[10px] text-amber-400/80 font-mono mt-1 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/20">
+                          <div className="inline-flex items-center gap-1 text-[10px] text-amber-800 font-mono mt-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                             <span>Unallocated</span>
                           </div>
                         )}
                       </td>
                       <td className="p-4">
                         {b.mealPlanName ? (
-                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/10 text-[#C59B27] border border-white/5">
+                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-[#821124] border border-slate-200">
                             {b.mealPlanName}
                           </span>
                         ) : (
-                          <span className="text-white/40 text-[11px]">Room Only</span>
+                          <span className="text-slate-400 text-[11px]">Room Only</span>
                         )}
                       </td>
                       <td className="p-4 font-mono text-[11px]">
                         <div>{b.checkIn} → {b.checkOut}</div>
-                        <div className="text-[10px] text-white/40 mt-0.5">
+                        <div className="text-[10px] text-slate-400 mt-0.5">
                           {b.adults} adult{b.adults !== 1 ? 's' : ''}{b.children > 0 ? `, ${b.children} child` : ''}
                         </div>
                       </td>
-                      <td className="p-4 font-mono font-bold text-white">
+                      <td className="p-4 font-mono font-bold text-slate-900">
                         {b.currency === 'KES' ? 'KES ' : '$'}{Number(b.totalAmount || 0).toLocaleString()}
                       </td>
                       <td className="p-4">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                          b.paymentStatus === 'fully_paid' || b.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 
-                          b.paymentStatus === 'deposit_paid' ? 'bg-blue-950 text-blue-400 border border-blue-500/30' :
-                          'bg-amber-950 text-amber-400 border border-amber-500/30'
+                        <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${
+                          b.paymentStatus === 'fully_paid' || b.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 
+                          b.paymentStatus === 'deposit_paid' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                          'bg-amber-50 text-amber-700 border border-amber-200'
                         }`}>
                           {(b.paymentStatus || 'unpaid').replace('_', ' ')}
                         </span>
                       </td>
                       <td className="p-4">
-                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
-                          b.bookingStatus === 'in_house' ? 'bg-blue-950 text-blue-400 border border-blue-500/30' :
-                          b.bookingStatus === 'confirmed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' :
-                          'bg-stone-800 text-stone-300'
+                        <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full ${
+                          b.bookingStatus === 'in_house' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                          b.bookingStatus === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          'bg-slate-100 text-slate-600 border border-slate-200'
                         }`}>
                           {(b.bookingStatus || 'confirmed').replace('_', ' ')}
                         </span>
@@ -233,9 +234,9 @@ export default function BookingsLedgerPage() {
                       <td className="p-4 text-right">
                         <button
                           onClick={() => openAllocateModal(b)}
-                          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#821124] text-white text-[11px] font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-[#821124] hover:text-white text-slate-700 text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1.5 border border-slate-200 shadow-2xs"
                         >
-                          <Key className="w-3 h-3 text-[#C59B27]" />
+                          <Key className="w-3 h-3 text-slate-400 group-hover:text-white" />
                           <span>{b.allocatedUnit ? 'Change Unit' : 'Allocate Unit'}</span>
                         </button>
                       </td>
@@ -250,77 +251,70 @@ export default function BookingsLedgerPage() {
 
       {/* Allocate Unit Modal */}
       {allocatingBooking && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1F1615] border border-[#C59B27]/40 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div>
-                <span className="text-[10px] font-mono text-[#C59B27] uppercase tracking-wider">
-                  Booking Ref: {allocatingBooking.bookingReference}
-                </span>
-                <h3 className="font-serif text-lg font-bold text-white">
-                  Allocate Physical Unit
-                </h3>
-              </div>
-              <button
-                onClick={() => setAllocatingBooking(null)}
-                className="p-1 rounded-lg text-white/50 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-slate-200 shadow-2xl relative text-slate-900 space-y-4">
+            <button
+              onClick={() => setAllocatingBooking(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1 text-xs">
-              <div className="text-white/50">Guest: <strong className="text-white">{allocatingBooking.guestName}</strong></div>
-              <div className="text-white/50">Suite Type: <strong className="text-[#C59B27]">{allocatingBooking.apartmentName}</strong></div>
-              <div className="text-white/50">Dates: <span className="font-mono text-white/80">{allocatingBooking.checkIn} → {allocatingBooking.checkOut}</span></div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-[#821124] tracking-wider mb-0.5">
+                Front Desk Key Allocation
+              </div>
+              <h2 className="font-serif text-xl font-bold text-slate-900">
+                Allocate Apartment Unit
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Guest: <strong className="text-slate-900">{allocatingBooking.guestName}</strong> ({allocatingBooking.apartmentName || allocatingBooking.apartmentId})
+              </p>
             </div>
 
             <form onSubmit={handleSaveAllocation} className="space-y-4">
               <div>
-                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
-                  Physical Apartment Unit
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Apartment Unit / Room Number <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Unit 4B, 2nd Floor Oceanfront"
+                  placeholder="e.g. Villa 12, Penthouse 3B, Suite 104"
                   value={allocatedUnit}
                   onChange={(e) => setAllocatedUnit(e.target.value)}
-                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
-                  autoFocus
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 font-mono font-bold focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                 />
-                <p className="text-[10px] text-white/40 mt-1">
-                  This unit will be recorded on the reservation and visible across Front Desk and guest records.
-                </p>
               </div>
 
               <div>
-                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
-                  Allocation Note (Optional)
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Concierge / Internal Key Note (Optional)
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Quiet creek-view block requested by guest"
+                <textarea
+                  rows={2}
+                  placeholder="e.g. VIP fruit platter arranged, keycard handed to guest upon arrival."
                   value={allocationNote}
                   onChange={(e) => setAllocationNote(e.target.value)}
-                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setAllocatingBooking(null)}
-                  className="px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-bold hover:bg-white/5"
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingAlloc}
-                  className="px-5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmittingAlloc ? 'Assigning...' : 'Assign Unit'}
+                  {isSubmittingAlloc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  <span>Save Allocation</span>
                 </button>
               </div>
             </form>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar as CalendarIcon, Clock, Plus, Trash2, Edit3, Save, X,
   ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, ShieldAlert,
-  Layers, BedDouble, DollarSign, Filter, RefreshCw, Info, Lock
+  Layers, BedDouble, DollarSign, Filter, RefreshCw, Info, Lock, Loader2, Check
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -99,7 +99,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const [cellDetailModal, setCellDetailModal] = useState<{
-    apartment: Apartment | { id: string; name: string };
+    apartment: Apartment;
     dateStr: string;
     availableUnits: number;
     totalUnits: number;
@@ -108,50 +108,55 @@ export default function AvailabilityManager({ apartments: propApartments, curren
     activeBookings: BookingRecord[];
   } | null>(null);
 
-  // Block form
-  const [blockAptId, setBlockAptId] = useState('all');
-  const [blockStart, setBlockStart] = useState('');
-  const [blockEnd, setBlockEnd] = useState('');
+  // Form states for Block
+  const [blockAptId, setBlockAptId] = useState<string>('all');
+  const [blockStart, setBlockStart] = useState<string>('');
+  const [blockEnd, setBlockEnd] = useState<string>('');
+  const [blockReason, setBlockReason] = useState<string>(BLOCK_REASONS[0]);
+  const [blockCustomReason, setBlockCustomReason] = useState<string>('');
   const [blockType, setBlockType] = useState<'hard_block' | 'rate_hold'>('hard_block');
-  const [blockReason, setBlockReason] = useState(BLOCK_REASONS[0]);
-  const [blockCustomReason, setBlockCustomReason] = useState('');
-  const [blockSource, setBlockSource] = useState('direct');
+  const [blockSource, setBlockSource] = useState<string>('direct');
   const [submittingBlock, setSubmittingBlock] = useState(false);
 
-  // Rate Override form
-  const [rateAptId, setRateAptId] = useState('all');
-  const [rateStart, setRateStart] = useState('');
-  const [rateEnd, setRateEnd] = useState('');
-  const [rateUsd, setRateUsd] = useState<number | ''>(220);
-  const [rateKes, setRateKes] = useState<number | ''>(28600);
-  const [rateMinNights, setRateMinNights] = useState(1);
-  const [rateLabel, setRateLabel] = useState('Peak Season 2026');
+  // Form states for Rate Override
+  const [rateAptId, setRateAptId] = useState<string>('all');
+  const [rateStart, setRateStart] = useState<string>('');
+  const [rateEnd, setRateEnd] = useState<string>('');
+  const [rateUsd, setRateUsd] = useState<number | ''>(320);
+  const [rateKes, setRateKes] = useState<number | ''>(42000);
+  const [rateMinNights, setRateMinNights] = useState<number>(1);
+  const [rateLabel, setRateLabel] = useState<string>('Peak Season Special');
   const [submittingRate, setSubmittingRate] = useState(false);
 
-  // Load all availability data
+  // Fetch all availability data
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [invRes, blockRes, ratesRes, bkgRes] = await Promise.all([
+      const [invRes, blkRes, ratRes, bkgRes] = await Promise.all([
         fetch('/api/inventory'),
         fetch('/api/availability/blocks'),
         fetch('/api/availability/rates'),
         fetch('/api/bookings'),
       ]);
 
-      const [invData, blockData, ratesData, bkgData] = await Promise.all([
-        invRes.json().catch(() => ({})),
-        blockRes.json().catch(() => ({})),
-        ratesRes.json().catch(() => ({})),
-        bkgRes.json().catch(() => ({})),
-      ]);
+      const invData = await invRes.json();
+      const blkData = await blkRes.json();
+      const ratData = await ratRes.json();
+      const bkgData = await bkgRes.json();
 
-      if (invData.success) setInventory(invData.inventory || []);
-      if (blockData.success) setBlocks(blockData.blocks || []);
-      if (ratesData.success) setRateOverridesList(ratesData.rateOverrides || []);
-      if (bkgData.bookings) setBookingsList(bkgData.bookings || []);
+      if (invData.inventory) {
+        setInventory(invData.inventory);
+        const map: Record<string, number> = {};
+        invData.inventory.forEach((i: InventoryItem) => {
+          map[i.id] = i.totalUnits;
+        });
+        setEditingInv(map);
+      }
+      if (blkData.blocks) setBlocks(blkData.blocks);
+      if (ratData.rates) setRateOverridesList(ratData.rates);
+      if (bkgData.bookings) setBookingsList(bkgData.bookings);
     } catch {
-      toast.error('Failed to load live availability records');
+      toast.error('Failed to load live availability data');
     } finally {
       setLoading(false);
     }
@@ -161,22 +166,15 @@ export default function AvailabilityManager({ apartments: propApartments, curren
     fetchData();
   }, []);
 
-  // Sync inventory edit state
-  useEffect(() => {
-    const map: Record<string, number> = {};
-    apartments.forEach((apt) => {
-      const inv = inventory.find((i) => i.id === apt.id);
-      map[apt.id] = inv?.totalUnits ?? 5; // default 5 units per tier if unconfigured
-    });
-    setEditingInv(map);
-  }, [inventory, apartments]);
-
-  // Calendar calculations
+  // Compute month layout
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthName = currentDate.toLocaleDateString('en-KE', { month: 'long', year: 'numeric' });
 
+  // Number of days in current month
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Array of date strings for current month: YYYY-MM-DD
   const monthDates = useMemo(() => {
     const dates: string[] = [];
     for (let day = 1; day <= daysInMonth; day++) {
@@ -260,10 +258,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
     }
   };
 
-  const handleDeleteBlock = async (blockId: string) => {
-    if (!confirm('Remove this availability block and restore unit inventory?')) return;
+  const handleDeleteBlock = async (id: string) => {
+    if (!confirm('Remove this availability block?')) return;
     try {
-      const res = await fetch(`/api/availability/blocks?id=${blockId}`, {
+      const res = await fetch(`/api/availability/blocks?id=${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -297,11 +295,11 @@ export default function AvailabilityManager({ apartments: propApartments, curren
           apartmentId: rateAptId,
           startDate: rateStart,
           endDate: rateEnd,
-          rateUsd: rateUsd !== '' ? Number(rateUsd) : null,
-          rateKes: rateKes !== '' ? Number(rateKes) : null,
+          rateUsd: rateUsd === '' ? null : Number(rateUsd),
+          rateKes: rateKes === '' ? null : Number(rateKes),
           minNights: Number(rateMinNights || 1),
-          label: rateLabel || null,
-          createdBy: currentUserName || 'Admin',
+          label: rateLabel || 'Seasonal Rate',
+          createdBy: currentUserName || 'Reservations Staff',
         }),
       });
 
@@ -311,7 +309,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
         fetchData();
       } else {
         const d = await res.json();
-        toast.error(d.error || 'Failed to set rate override');
+        toast.error(d.error || 'Failed to save rate override');
       }
     } catch {
       toast.error('Network error saving rate override');
@@ -371,13 +369,13 @@ export default function AvailabilityManager({ apartments: propApartments, curren
         dateStr < ro.endDate
     ) || null;
 
-    let badgeColor = 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30';
+    let badgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200';
     if (hasHardBlock) {
-      badgeColor = 'bg-neutral-800 text-neutral-400 border-neutral-600';
+      badgeColor = 'bg-slate-100 text-slate-500 border-slate-300';
     } else if (availableUnits === 0) {
-      badgeColor = 'bg-red-950/70 text-red-400 border-red-500/30';
+      badgeColor = 'bg-rose-50 text-rose-800 border-rose-200';
     } else if (availableUnits < totalUnits) {
-      badgeColor = 'bg-amber-950/60 text-amber-300 border-amber-500/30';
+      badgeColor = 'bg-amber-50 text-amber-800 border-amber-200';
     }
 
     return {
@@ -395,15 +393,15 @@ export default function AvailabilityManager({ apartments: propApartments, curren
   return (
     <div className="space-y-6">
       {/* Top Controls: Tabs and Quick Action Buttons */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#1F1615] p-4 rounded-2xl border border-[#C59B27]/25 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
         {/* Navigation Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'calendar'
-                ? 'bg-[#821124] text-white shadow-md'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-[#821124] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <CalendarIcon className="w-3.5 h-3.5" />
@@ -412,10 +410,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
           <button
             onClick={() => setActiveTab('rates')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'rates'
-                ? 'bg-[#821124] text-white shadow-md'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-[#821124] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <DollarSign className="w-3.5 h-3.5" />
@@ -424,10 +422,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
           <button
             onClick={() => setActiveTab('blocks')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'blocks'
-                ? 'bg-[#821124] text-white shadow-md'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-[#821124] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
@@ -436,10 +434,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
           <button
             onClick={() => setActiveTab('inventory')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 ${
               activeTab === 'inventory'
-                ? 'bg-[#821124] text-white shadow-md'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-[#821124] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <BedDouble className="w-3.5 h-3.5" />
@@ -452,10 +450,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
           <button
             onClick={fetchData}
             disabled={loading}
-            className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-[#C59B27] hover:bg-[#821124] hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-xs disabled:opacity-50"
             title="Refresh availability"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
           <button
@@ -464,9 +462,9 @@ export default function AvailabilityManager({ apartments: propApartments, curren
               setBlockEnd(monthDates[Math.min(3, monthDates.length - 1)]);
               setShowBlockModal(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-black/40 hover:bg-[#821124] border border-[#C59B27]/30 text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
-            <Lock className="w-3.5 h-3.5 text-[#C59B27]" />
+            <Lock className="w-3.5 h-3.5 text-[#821124]" />
             <span>Add Block</span>
           </button>
 
@@ -476,7 +474,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
               setRateEnd(monthDates[monthDates.length - 1]);
               setShowRateModal(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shadow-md"
+            className="px-3.5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white font-semibold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <DollarSign className="w-3.5 h-3.5" />
             <span>Set Override Rate</span>
@@ -486,23 +484,23 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
       {/* TAB 1: CALENDAR SWIMLANES */}
       {activeTab === 'calendar' && (
-        <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 shadow-2xl p-5 space-y-6">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-6">
           {/* Month Navigator Header */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={handlePrevMonth}
-                className="p-2 rounded-xl bg-black/40 hover:bg-white/10 text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer border border-slate-200"
                 title="Previous Month"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <h2 className="font-serif text-xl font-bold text-white tracking-wide">
+              <h2 className="font-serif text-xl font-bold text-slate-900 tracking-tight">
                 {monthName}
               </h2>
               <button
                 onClick={handleNextMonth}
-                className="p-2 rounded-xl bg-black/40 hover:bg-white/10 text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer border border-slate-200"
                 title="Next Month"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -510,26 +508,26 @@ export default function AvailabilityManager({ apartments: propApartments, curren
             </div>
 
             {/* Legend */}
-            <div className="hidden lg:flex items-center gap-4 text-[11px] font-semibold">
+            <div className="hidden lg:flex items-center gap-4 text-[11px] font-medium text-slate-600">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span className="text-white/70">Available</span>
+                <span>Available</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                <span className="text-white/70">Partially Booked</span>
+                <span>Partially Booked</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <span className="text-white/70">Fully Booked</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                <span>Fully Booked</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-neutral-500" />
-                <span className="text-white/70">Blocked / Hold</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                <span>Blocked / Hold</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#C59B27] ring-1 ring-white" />
-                <span className="text-[#C59B27]">Rate Override</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#821124]" />
+                <span className="text-[#821124] font-semibold">Rate Override</span>
               </div>
             </div>
           </div>
@@ -538,7 +536,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
           <div className="overflow-x-auto scrollbar-thin">
             <div className="min-w-[950px] space-y-4">
               {/* Date Header Row */}
-              <div className="grid grid-cols-[180px_repeat(auto-fit,minmax(28px,1fr))] items-center border-b border-white/10 pb-2 text-[10px] uppercase font-bold text-white/40">
+              <div className="grid grid-cols-[180px_repeat(auto-fit,minmax(28px,1fr))] items-center border-b border-slate-200 pb-2 text-[10px] uppercase font-bold text-slate-400">
                 <div className="pl-2">Apartment Tier</div>
                 <div className="contents">
                   {monthDates.map((dateStr) => {
@@ -550,10 +548,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     return (
                       <div
                         key={dateStr}
-                        className={`text-center py-1 ${isWeekend ? 'text-[#C59B27]' : 'text-white/70'}`}
+                        className={`text-center py-1 ${isWeekend ? 'text-[#821124] font-bold' : 'text-slate-600'}`}
                       >
                         <div className="font-mono font-bold text-xs">{dayNum}</div>
-                        <div className="text-[9px] opacity-60">{dayLetter}</div>
+                        <div className="text-[9px] opacity-70">{dayLetter}</div>
                       </div>
                     );
                   })}
@@ -565,14 +563,14 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                 return (
                   <div
                     key={apt.id}
-                    className="grid grid-cols-[180px_repeat(auto-fit,minmax(28px,1fr))] items-center py-2.5 rounded-xl hover:bg-white/[0.02] border border-transparent hover:border-white/5 transition-all"
+                    className="grid grid-cols-[180px_repeat(auto-fit,minmax(28px,1fr))] items-center py-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
                   >
                     {/* Apartment Name Column */}
                     <div className="pr-3 pl-2 truncate">
-                      <span className="text-xs font-serif font-bold text-white block truncate">
+                      <span className="text-xs font-serif font-bold text-slate-900 block truncate">
                         {apt.name}
                       </span>
-                      <span className="text-[10px] text-[#C59B27] font-mono">
+                      <span className="text-[10px] text-slate-500 font-mono">
                         {editingInv[apt.id] ?? 5} units total
                       </span>
                     </div>
@@ -597,19 +595,19 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                               })
                             }
                             className={`mx-0.5 h-11 rounded-lg border text-center flex flex-col justify-center items-center cursor-pointer transition-transform hover:scale-105 relative ${status.badgeColor} ${
-                              status.activeOverride ? 'ring-1 ring-[#C59B27]' : ''
+                              status.activeOverride ? 'ring-1 ring-[#821124]' : ''
                             }`}
                             title={`${apt.name} on ${dateStr}: ${status.availableUnits} free / ${status.totalUnits} total`}
                           >
                             {status.hasHardBlock ? (
-                              <Lock className="w-3.5 h-3.5 text-neutral-400" />
+                              <Lock className="w-3.5 h-3.5 text-slate-400" />
                             ) : (
                               <>
                                 <span className="font-mono text-xs font-bold leading-none">
                                   {status.availableUnits}
                                 </span>
                                 {status.activeOverride?.rateUsd && (
-                                  <span className="text-[8px] font-mono text-[#C59B27] mt-0.5 leading-none">
+                                  <span className="text-[8px] font-mono text-[#821124] mt-0.5 leading-none font-bold">
                                     ${status.activeOverride.rateUsd}
                                   </span>
                                 )}
@@ -629,19 +627,19 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
       {/* TAB 2: RATE OVERRIDES MANAGER */}
       {activeTab === 'rates' && (
-        <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 shadow-xl p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h2 className="font-serif text-lg font-bold text-white">
+              <h2 className="font-serif text-lg font-bold text-slate-900">
                 Period Pricing &amp; Minimum Stays
               </h2>
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-slate-500">
                 Override apartment standard rates for peak holidays, events, or low-season specials.
               </p>
             </div>
             <button
               onClick={() => setShowRateModal(true)}
-              className="px-4 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>New Rate Override</span>
@@ -649,10 +647,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
           </div>
 
           {rateOverridesList.length === 0 ? (
-            <div className="p-12 text-center text-white/40 space-y-2">
-              <DollarSign className="w-8 h-8 mx-auto opacity-30 text-[#C59B27]" />
-              <p className="text-sm font-semibold text-white">No active rate overrides</p>
-              <p className="text-xs text-white/40">
+            <div className="p-12 text-center text-slate-400 space-y-2 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <DollarSign className="w-8 h-8 mx-auto opacity-30 text-slate-400" />
+              <p className="text-sm font-semibold text-slate-900">No active rate overrides</p>
+              <p className="text-xs text-slate-500">
                 All dates currently use base apartment pricing. Add seasonal periods to adjust rates for peak periods.
               </p>
             </div>
@@ -660,7 +658,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-white/40 tracking-wider">
+                  <tr className="border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider bg-slate-50">
                     <th className="p-3">Period Label</th>
                     <th className="p-3">Apartment</th>
                     <th className="p-3">Date Range</th>
@@ -669,10 +667,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-xs text-white/80">
+                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                   {rateOverridesList.map((ro) => (
-                    <tr key={ro.id} className="hover:bg-white/[0.02]">
-                      <td className="p-3 font-bold text-white">
+                    <tr key={ro.id} className="hover:bg-slate-50/80">
+                      <td className="p-3 font-bold text-slate-900">
                         {ro.label || 'Custom Override'}
                       </td>
                       <td className="p-3 capitalize">
@@ -680,19 +678,19 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                           ? 'Property-Wide (All Suites)'
                           : apartments.find((a) => a.id === ro.apartmentId)?.name || ro.apartmentId}
                       </td>
-                      <td className="p-3 font-mono text-[#C59B27]">
+                      <td className="p-3 font-mono text-[#821124] font-semibold">
                         {ro.startDate} → {ro.endDate}
                       </td>
                       <td className="p-3 font-mono">
                         {ro.rateUsd ? (
-                          <span className="text-emerald-400 font-bold">
+                          <span className="text-emerald-700 font-bold">
                             ${ro.rateUsd} USD{' '}
-                            <span className="text-white/50 text-[11px]">
+                            <span className="text-slate-500 text-[11px]">
                               ({ro.rateKes ? `KES ${ro.rateKes.toLocaleString()}` : ''})
                             </span>
                           </span>
                         ) : (
-                          <span className="text-white/40">Base Rate Unchanged</span>
+                          <span className="text-slate-400">Base Rate Unchanged</span>
                         )}
                       </td>
                       <td className="p-3 font-mono font-bold">
@@ -701,7 +699,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                       <td className="p-3 text-right">
                         <button
                           onClick={() => handleDeleteRateOverride(ro.id)}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                           title="Delete override"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -718,19 +716,19 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
       {/* TAB 3: DATE BLOCKS MANAGER */}
       {activeTab === 'blocks' && (
-        <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 shadow-xl p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h2 className="font-serif text-lg font-bold text-white">
+              <h2 className="font-serif text-lg font-bold text-slate-900">
                 Date Closures &amp; Inventory Blocks
               </h2>
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-slate-500">
                 Manual reservation holds for maintenance, private charters, or external Opera reservations.
               </p>
             </div>
             <button
               onClick={() => setShowBlockModal(true)}
-              className="px-4 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Create Block</span>
@@ -738,10 +736,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
           </div>
 
           {blocks.length === 0 ? (
-            <div className="p-12 text-center text-white/40 space-y-2">
-              <Lock className="w-8 h-8 mx-auto opacity-30 text-[#C59B27]" />
-              <p className="text-sm font-semibold text-white">No active inventory blocks</p>
-              <p className="text-xs text-white/40">
+            <div className="p-12 text-center text-slate-400 space-y-2 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <Lock className="w-8 h-8 mx-auto opacity-30 text-slate-400" />
+              <p className="text-sm font-semibold text-slate-900">No active inventory blocks</p>
+              <p className="text-xs text-slate-500">
                 All physical units are open for direct booking.
               </p>
             </div>
@@ -749,7 +747,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-white/40 tracking-wider">
+                  <tr className="border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider bg-slate-50">
                     <th className="p-3">Apartment</th>
                     <th className="p-3">Block Dates</th>
                     <th className="p-3">Reason</th>
@@ -758,30 +756,30 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-xs text-white/80">
+                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                   {blocks.map((b) => (
-                    <tr key={b.id} className="hover:bg-white/[0.02]">
-                      <td className="p-3 font-bold text-white">
+                    <tr key={b.id} className="hover:bg-slate-50/80">
+                      <td className="p-3 font-bold text-slate-900">
                         {b.apartmentId === 'all'
                           ? 'Property-Wide'
                           : apartments.find((a) => a.id === b.apartmentId)?.name || b.apartmentId}
                       </td>
-                      <td className="p-3 font-mono text-[#C59B27]">
+                      <td className="p-3 font-mono text-[#821124] font-semibold">
                         {b.startDate} → {b.endDate}
                       </td>
                       <td className="p-3">{b.reason || 'Manual block'}</td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-black/40 border border-white/10 text-white/70">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-slate-100 border border-slate-200 text-slate-700">
                           {b.blockType || 'hard_block'}
                         </span>
                       </td>
-                      <td className="p-3 text-white/50 text-[11px]">
+                      <td className="p-3 text-slate-500 text-[11px]">
                         {b.blockedBy || b.source || 'Staff'}
                       </td>
                       <td className="p-3 text-right">
                         <button
                           onClick={() => handleDeleteBlock(b.id)}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                           title="Remove block"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -798,12 +796,12 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
       {/* TAB 4: UNIT CAPACITY (INVENTORY) */}
       {activeTab === 'inventory' && (
-        <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 shadow-xl p-6 space-y-6">
-          <div className="border-b border-white/10 pb-4">
-            <h2 className="font-serif text-lg font-bold text-white">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h2 className="font-serif text-lg font-bold text-slate-900">
               Physical Unit Inventory Settings
             </h2>
-            <p className="text-xs text-white/60">
+            <p className="text-xs text-slate-500">
               Set the total physical rentable unit count for each apartment tier.
             </p>
           </div>
@@ -812,15 +810,15 @@ export default function AvailabilityManager({ apartments: propApartments, curren
             {apartments.map((apt) => (
               <div
                 key={apt.id}
-                className="bg-black/30 border border-[#C59B27]/25 rounded-2xl p-5 space-y-4 shadow-lg"
+                className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs"
               >
                 <div>
-                  <h3 className="font-serif text-base font-bold text-white">{apt.name}</h3>
-                  <span className="text-[10px] font-mono text-[#C59B27]">ID: {apt.id}</span>
+                  <h3 className="font-serif text-base font-bold text-slate-900">{apt.name}</h3>
+                  <span className="text-[10px] font-mono text-[#821124] font-semibold">ID: {apt.id}</span>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-white/70">
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-slate-600">
                     Total Rentable Units
                   </label>
                   <input
@@ -834,18 +832,18 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                         [apt.id]: Math.max(1, Number(e.target.value)),
                       })
                     }
-                    className="w-full bg-[#1F1615] border border-white/15 rounded-xl px-4 py-2.5 text-base font-mono font-bold text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-base font-mono font-bold text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
-                  <p className="text-[10px] text-white/40">
+                  <p className="text-[10px] text-slate-400">
                     The booking engine checks this capacity against confirmed reservations.
                   </p>
                 </div>
 
                 <button
                   onClick={() => handleSaveInventory(apt.id)}
-                  className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-[#821124] text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                 >
-                  <Save className="w-3.5 h-3.5" />
+                  <Save className="w-3.5 h-3.5 text-[#821124]" />
                   <span>Save Capacity</span>
                 </button>
               </div>
@@ -856,20 +854,20 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
       {/* CELL DETAIL MODAL (Click on any cell in grid) */}
       {cellDetailModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1F1615] border border-[#C59B27]/40 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5 text-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <span className="text-[10px] font-mono text-[#C59B27] uppercase tracking-wider">
+                <span className="text-[10px] font-mono text-[#821124] uppercase tracking-wider font-semibold">
                   {cellDetailModal.dateStr}
                 </span>
-                <h3 className="font-serif text-lg font-bold text-white">
+                <h3 className="font-serif text-lg font-bold text-slate-900">
                   {cellDetailModal.apartment.name}
                 </h3>
               </div>
               <button
                 onClick={() => setCellDetailModal(null)}
-                className="p-1 rounded-lg text-white/50 hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -877,15 +875,15 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
             {/* Quick summary stats */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] text-white/50 uppercase font-bold block">Availability</span>
-                <span className="text-xl font-mono font-bold text-emerald-400">
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Availability</span>
+                <span className="text-xl font-mono font-bold text-emerald-700">
                   {cellDetailModal.availableUnits} / {cellDetailModal.totalUnits} free
                 </span>
               </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] text-white/50 uppercase font-bold block">Rate Override</span>
-                <span className="text-sm font-mono font-bold text-[#C59B27] block truncate">
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Rate Override</span>
+                <span className="text-sm font-mono font-bold text-[#821124] block truncate">
                   {cellDetailModal.rateOverride
                     ? `$${cellDetailModal.rateOverride.rateUsd} USD (${cellDetailModal.rateOverride.label || 'Override'})`
                     : 'Standard Base Rate'}
@@ -895,25 +893,25 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
             {/* Active Bookings on this date */}
             <div className="space-y-2">
-              <span className="text-[11px] font-bold text-[#C59B27] uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider block">
                 Active Bookings ({cellDetailModal.activeBookings.length}):
               </span>
               {cellDetailModal.activeBookings.length === 0 ? (
-                <p className="text-xs text-white/40 italic">No confirmed reservations on this date.</p>
+                <p className="text-xs text-slate-400 italic">No confirmed reservations on this date.</p>
               ) : (
                 <div className="space-y-1.5 max-h-36 overflow-y-auto">
                   {cellDetailModal.activeBookings.map((b) => (
                     <div
                       key={b.id}
-                      className="bg-black/40 p-2.5 rounded-lg border border-white/5 flex items-center justify-between text-xs"
+                      className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center justify-between text-xs"
                     >
                       <div>
-                        <span className="font-bold text-white block">{b.guestName}</span>
-                        <span className="text-[10px] font-mono text-[#C59B27]">
+                        <span className="font-bold text-slate-900 block">{b.guestName}</span>
+                        <span className="text-[10px] font-mono text-[#821124]">
                           Ref: {b.bookingReference} · Unit: {b.allocatedUnit || 'Unallocated'}
                         </span>
                       </div>
-                      <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold bg-[#821124]/50 text-white">
+                      <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold bg-[#821124] text-white">
                         {b.bookingStatus}
                       </span>
                     </div>
@@ -924,18 +922,18 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
             {/* Active Blocks on this date */}
             {cellDetailModal.activeBlocks.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-white/10">
-                <span className="text-[11px] font-bold text-red-400 uppercase tracking-wider block">
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider block">
                   Active Closures / Blocks ({cellDetailModal.activeBlocks.length}):
                 </span>
                 <div className="space-y-1.5">
                   {cellDetailModal.activeBlocks.map((bl) => (
                     <div
                       key={bl.id}
-                      className="bg-red-950/30 border border-red-500/20 p-2.5 rounded-lg text-xs flex items-center justify-between"
+                      className="bg-rose-50 border border-rose-200 p-2.5 rounded-lg text-xs flex items-center justify-between text-rose-900"
                     >
-                      <span className="text-white/80">{bl.reason || 'Manual block'}</span>
-                      <span className="text-[10px] font-mono text-red-300">
+                      <span>{bl.reason || 'Manual block'}</span>
+                      <span className="text-[10px] font-mono text-rose-700 font-bold">
                         {bl.startDate} → {bl.endDate}
                       </span>
                     </div>
@@ -944,10 +942,10 @@ export default function AvailabilityManager({ apartments: propApartments, curren
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
               <button
                 onClick={() => setCellDetailModal(null)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-white text-xs font-bold hover:bg-white/20"
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer"
               >
                 Close
               </button>
@@ -958,15 +956,15 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
       {/* CREATE BLOCK MODAL */}
       {showBlockModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1F1615] border border-[#C59B27]/40 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <h3 className="font-serif text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5 text-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <h3 className="font-serif text-lg font-bold text-slate-900">
                 Place Date Closure / Block
               </h3>
               <button
                 onClick={() => setShowBlockModal(false)}
-                className="p-1 rounded-lg text-white/50 hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -974,13 +972,13 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
             <form onSubmit={handleCreateBlock} className="space-y-4">
               <div>
-                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Apartment Tier
                 </label>
                 <select
                   value={blockAptId}
                   onChange={(e) => setBlockAptId(e.target.value)}
-                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                 >
                   <option value="all">Property-Wide (All Apartments)</option>
                   {apartments.map((a) => (
@@ -993,7 +991,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Start Date (Check-In)
                   </label>
                   <input
@@ -1001,12 +999,12 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     required
                     value={blockStart}
                     onChange={(e) => setBlockStart(e.target.value)}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     End Date (Check-Out)
                   </label>
                   <input
@@ -1014,19 +1012,19 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     required
                     value={blockEnd}
                     onChange={(e) => setBlockEnd(e.target.value)}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Block Reason
                 </label>
                 <select
                   value={blockReason}
                   onChange={(e) => setBlockReason(e.target.value)}
-                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                 >
                   {BLOCK_REASONS.map((r) => (
                     <option key={r} value={r}>
@@ -1038,7 +1036,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
               {blockReason === 'Custom Reason' && (
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Custom Reason Details
                   </label>
                   <input
@@ -1047,20 +1045,20 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     placeholder="Specify reason..."
                     value={blockCustomReason}
                     onChange={(e) => setBlockCustomReason(e.target.value)}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Block Type
                   </label>
                   <select
                     value={blockType}
                     onChange={(e) => setBlockType(e.target.value as any)}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   >
                     <option value="hard_block">Hard Block (Close Sales)</option>
                     <option value="rate_hold">Rate Hold (Waitlist / Special)</option>
@@ -1068,13 +1066,13 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Booking Source
                   </label>
                   <select
                     value={blockSource}
                     onChange={(e) => setBlockSource(e.target.value)}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   >
                     <option value="direct">Direct Property Block</option>
                     <option value="opera">Opera PMS Hold</option>
@@ -1083,20 +1081,21 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowBlockModal(false)}
-                  className="px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-bold hover:bg-white/5"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingBlock}
-                  className="px-5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  {submittingBlock ? 'Placing Block...' : 'Confirm Block'}
+                  {submittingBlock ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  <span>Confirm Block</span>
                 </button>
               </div>
             </form>
@@ -1106,15 +1105,15 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
       {/* CREATE RATE OVERRIDE MODAL */}
       {showRateModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1F1615] border border-[#C59B27]/40 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <h3 className="font-serif text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5 text-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <h3 className="font-serif text-lg font-bold text-slate-900">
                 Set Seasonal Rate Override
               </h3>
               <button
                 onClick={() => setShowRateModal(false)}
-                className="p-1 rounded-lg text-white/50 hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1122,13 +1121,13 @@ export default function AvailabilityManager({ apartments: propApartments, curren
 
             <form onSubmit={handleCreateRateOverride} className="space-y-4">
               <div>
-                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Apartment Tier
                 </label>
                 <select
                   value={rateAptId}
                   onChange={(e) => setRateAptId(e.target.value)}
-                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                 >
                   <option value="all">Property-Wide (All Apartments)</option>
                   {apartments.map((a) => (
@@ -1140,7 +1139,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
               </div>
 
               <div>
-                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Period / Season Label
                 </label>
                 <input
@@ -1148,13 +1147,13 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                   placeholder="e.g. Christmas 2026 Peak, Easter Weekend"
                   value={rateLabel}
                   onChange={(e) => setRateLabel(e.target.value)}
-                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Start Date
                   </label>
                   <input
@@ -1162,12 +1161,12 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     required
                     value={rateStart}
                     onChange={(e) => setRateStart(e.target.value)}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     End Date
                   </label>
                   <input
@@ -1175,14 +1174,14 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     required
                     value={rateEnd}
                     onChange={(e) => setRateEnd(e.target.value)}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
                     Rate (USD)
                   </label>
                   <input
@@ -1191,12 +1190,12 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     step="any"
                     value={rateUsd}
                     onChange={(e) => setRateUsd(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
                     Rate (KES)
                   </label>
                   <input
@@ -1205,12 +1204,12 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     step="any"
                     value={rateKes}
                     onChange={(e) => setRateKes(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
                     Min Nights
                   </label>
                   <input
@@ -1219,29 +1218,30 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     max={30}
                     value={rateMinNights}
                     onChange={(e) => setRateMinNights(Math.max(1, Number(e.target.value)))}
-                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>
               </div>
 
-              <p className="text-[11px] text-white/50 leading-relaxed">
+              <p className="text-[11px] text-slate-500 leading-relaxed">
                 When a guest selects dates overlapping this period, the booking engine will quote this override rate and enforce the minimum stay requirement.
               </p>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowRateModal(false)}
-                  className="px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-bold hover:bg-white/5"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingRate}
-                  className="px-5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  {submittingRate ? 'Saving...' : 'Set Override'}
+                  {submittingRate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  <span>Set Override</span>
                 </button>
               </div>
             </form>

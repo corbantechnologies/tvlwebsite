@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Tag, Sparkles, Plus, Edit3, Trash2, Check, X, RotateCw, 
+  Tag, Plus, Edit3, Trash2, Check, X, RotateCw, 
   DollarSign, Users, Calendar, AlertCircle, Image as ImageIcon,
-  CheckCircle2, ArrowRight
+  CheckCircle2, ArrowRight, Loader2, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
@@ -42,6 +42,7 @@ export default function AdminMealPlansPage() {
   const [formSortOrder, setFormSortOrder] = useState<number | ''>(1);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Formula Simulator state
   const [simGuests, setSimGuests] = useState(2);
@@ -138,7 +139,6 @@ export default function AdminMealPlansPage() {
       };
 
       if (editingPlan) {
-        // PATCH
         const res = await fetch(`/api/meal-plans/${editingPlan.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -148,7 +148,6 @@ export default function AdminMealPlansPage() {
         if (!res.ok) throw new Error(data.error || 'Failed to update plan');
         toast.success(`Updated "${payload.name}" successfully!`);
       } else {
-        // POST
         const res = await fetch('/api/meal-plans', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -191,6 +190,7 @@ export default function AdminMealPlansPage() {
   };
 
   const handleToggleActive = async (plan: MealPlan) => {
+    setTogglingId(plan.id);
     try {
       const res = await fetch(`/api/meal-plans/${plan.id}`, {
         method: 'PATCH',
@@ -201,12 +201,13 @@ export default function AdminMealPlansPage() {
         toast.success(`Plan ${plan.isActive ? 'paused' : 'activated'}`);
         loadPlans();
       }
-    } catch (e) {
+    } catch {
       toast.error('Failed to change status');
+    } finally {
+      setTogglingId(null);
     }
   };
 
-  // Selected plan for simulator
   const simPlan = plans.find(p => p.id === simSelectedPlanId) || plans[0];
   const simDailyUsd = simPlan ? simPlan.pricePerPersonPerDayUsd : 0;
   const simDailyKes = simPlan ? simPlan.pricePerPersonPerDayKes : 0;
@@ -216,15 +217,15 @@ export default function AdminMealPlansPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#C59B27]/20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs text-[#C59B27] font-semibold uppercase tracking-wider mb-1">
+          <div className="inline-flex items-center gap-1.5 text-xs text-[#821124] font-bold uppercase tracking-wider mb-1">
             <Tag className="w-3.5 h-3.5" /> Rate &amp; Boarding Engine
           </div>
-          <h1 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <h1 className="font-serif text-2xl font-bold text-slate-900 tracking-tight">
             Meal Plans &amp; Boarding Packages
           </h1>
-          <p className="text-xs text-stone-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Configure Room Only, Bed &amp; Breakfast, Half Board, and custom meal plans with rates per person per night.
           </p>
         </div>
@@ -233,7 +234,7 @@ export default function AdminMealPlansPage() {
           <button
             onClick={loadPlans}
             disabled={loading}
-            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-stone-300 border border-white/10 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
             title="Refresh meal plans"
           >
             <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -244,7 +245,7 @@ export default function AdminMealPlansPage() {
             className="px-3.5 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             id="btn-add-meal-plan"
           >
-            <Plus className="w-4 h-4 text-[#C59B27]" />
+            <Plus className="w-4 h-4 text-white" />
             <span>Create Meal Plan</span>
           </button>
         </div>
@@ -252,24 +253,24 @@ export default function AdminMealPlansPage() {
 
       {/* Grid of Meal Plans */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-stone-400 flex items-center justify-center gap-2">
-          <RotateCw className="w-4 h-4 animate-spin text-[#C59B27]" />
+        <div className="p-12 text-center text-xs text-slate-500 flex items-center justify-center gap-2 bg-white rounded-xl border border-slate-200 shadow-xs">
+          <RotateCw className="w-4 h-4 animate-spin text-[#821124]" />
           <span>Loading meal plans from database...</span>
         </div>
       ) : plans.length === 0 ? (
-        <div className="p-12 text-center bg-[#1F1615] rounded-xl border border-dashed border-[#C59B27]/30 max-w-xl mx-auto space-y-3">
-          <div className="w-10 h-10 rounded-full bg-[#821124]/20 text-[#821124] flex items-center justify-center mx-auto">
-            <Tag className="w-5 h-5 text-[#C59B27]" />
+        <div className="p-12 text-center bg-white rounded-xl border border-dashed border-slate-300 max-w-xl mx-auto space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-slate-100 text-[#821124] flex items-center justify-center mx-auto">
+            <Tag className="w-6 h-6" />
           </div>
-          <h3 className="font-serif text-lg font-bold text-white">No Meal Plans Configured</h3>
-          <p className="text-xs text-stone-400 leading-relaxed">
+          <h3 className="font-serif text-lg font-bold text-slate-900">No Meal Plans Configured</h3>
+          <p className="text-xs text-slate-500 leading-relaxed">
             There are currently no meal plans stored in the database. Click below to add your first meal plan (e.g. Room Only, Bed &amp; Breakfast, or Half Board).
           </p>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
-            <Plus className="w-4 h-4 text-[#C59B27]" />
+            <Plus className="w-4 h-4" />
             <span>Add First Meal Plan</span>
           </button>
         </div>
@@ -277,19 +278,20 @@ export default function AdminMealPlansPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {plans.map((p) => {
             const isDeleting = deletingId === p.id;
+            const isToggling = togglingId === p.id;
 
             return (
               <div
                 key={p.id}
-                className={`bg-[#1F1615] rounded-xl border transition-all flex flex-col justify-between overflow-hidden shadow-md ${
+                className={`bg-white rounded-xl border transition-all flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md ${
                   p.isActive 
-                    ? 'border-[#C59B27]/25 hover:border-[#C59B27]/50' 
-                    : 'border-white/10 opacity-75'
+                    ? 'border-slate-200' 
+                    : 'border-slate-200 opacity-60'
                 }`}
                 id={`plan-card-${p.id}`}
               >
                 {/* Plan Image Header */}
-                <div className="relative aspect-[16/9] w-full bg-stone-900 overflow-hidden border-b border-white/10">
+                <div className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden border-b border-slate-200">
                   {p.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -298,32 +300,32 @@ export default function AdminMealPlansPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-stone-600 gap-1">
-                      <ImageIcon className="w-8 h-8 opacity-40 text-[#C59B27]" />
-                      <span className="text-[10px] text-stone-500 uppercase tracking-widest font-mono">No Image Added</span>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1">
+                      <ImageIcon className="w-8 h-8 opacity-40 text-slate-400" />
+                      <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">No Image Added</span>
                     </div>
                   )}
 
                   {/* Badges on Image */}
                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[11px] font-mono font-bold text-[#C59B27] border border-[#C59B27]/40 shadow-xs">
+                    <span className="px-2 py-0.5 rounded bg-white/90 backdrop-blur-md text-[11px] font-mono font-bold text-slate-900 border border-slate-200 shadow-xs">
                       {p.shortName}
                     </span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
                       p.isActive 
-                        ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30' 
-                        : 'bg-stone-800 text-stone-400'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : 'bg-slate-100 text-slate-500 border border-slate-200'
                     }`}>
                       {p.isActive ? 'Active' : 'Paused'}
                     </span>
                   </div>
 
-                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded bg-black/85 backdrop-blur-md text-right border border-white/10 shadow-sm">
-                    <span className="font-serif font-bold text-sm text-white block">
+                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded bg-white/95 backdrop-blur-md text-right border border-slate-200 shadow-xs">
+                    <span className="font-serif font-bold text-sm text-slate-900 block">
                       ${p.pricePerPersonPerDayUsd}
-                      <span className="text-[10px] font-sans text-stone-400 font-normal"> / adult / night</span>
+                      <span className="text-[10px] font-sans text-slate-500 font-normal"> / person / day</span>
                     </span>
-                    <span className="text-[10px] font-mono text-[#C59B27] block">
+                    <span className="text-[10px] font-mono font-medium text-[#821124] block">
                       KES {p.pricePerPersonPerDayKes.toLocaleString()}
                     </span>
                   </div>
@@ -332,61 +334,63 @@ export default function AdminMealPlansPage() {
                 {/* Plan Content */}
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
-                    <h3 className="font-serif text-base font-bold text-white tracking-tight">
+                    <h3 className="font-serif text-base font-bold text-slate-900 tracking-tight">
                       {p.name}
                     </h3>
-                    <p className="text-xs text-stone-400 font-light leading-relaxed line-clamp-2">
-                      {p.description}
+                    <p className="text-xs text-slate-600 font-normal leading-relaxed line-clamp-2">
+                      {p.description || 'Standard meal plan arrangement for Tamarind Village residents.'}
                     </p>
 
                     {/* Highlights */}
                     <div className="pt-2 space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
                         Included Inclusions:
                       </span>
                       {p.highlights && p.highlights.length > 0 ? (
                         p.highlights.slice(0, 3).map((h, i) => (
-                          <div key={i} className="flex items-start gap-1.5 text-xs text-stone-300">
-                            <Check className="w-3.5 h-3.5 text-[#C59B27] shrink-0 mt-0.5" />
+                          <div key={i} className="flex items-start gap-1.5 text-xs text-slate-700">
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                             <span className="line-clamp-1">{h}</span>
                           </div>
                         ))
                       ) : (
-                        <span className="text-[11px] text-stone-500 italic block">No specific bullet inclusions.</span>
+                        <span className="text-[11px] text-slate-400 italic block">No specific bullet inclusions.</span>
                       )}
                     </div>
                   </div>
 
                   {/* Actions Footer */}
-                  <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                     <button
                       onClick={() => handleToggleActive(p)}
-                      className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                      disabled={isToggling}
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center gap-1 ${
                         p.isActive 
-                          ? 'text-stone-400 hover:text-white hover:bg-white/5' 
-                          : 'text-emerald-400 hover:bg-emerald-950/40'
+                          ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' 
+                          : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
                       }`}
                     >
-                      {p.isActive ? 'Pause' : 'Activate'}
+                      {isToggling ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      <span>{p.isActive ? 'Pause' : 'Activate'}</span>
                     </button>
 
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => openEditModal(p)}
-                        className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-stone-200 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
                         id={`btn-edit-plan-${p.id}`}
                       >
-                        <Edit3 className="w-3 h-3 text-[#C59B27]" />
+                        <Edit3 className="w-3 h-3 text-slate-500" />
                         <span>Edit</span>
                       </button>
                       <button
                         onClick={() => handleDelete(p)}
                         disabled={isDeleting}
-                        className="p-1 rounded text-stone-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
                         title="Delete meal plan"
                         id={`btn-delete-plan-${p.id}`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" /> : <Trash2 className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -399,24 +403,24 @@ export default function AdminMealPlansPage() {
 
       {/* Interactive Formula Calculator Simulator */}
       {plans.length > 0 && (
-        <div className="p-4 sm:p-5 bg-[#1F1615] rounded-xl border border-[#C59B27]/25 space-y-3">
+        <div className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200 space-y-3 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#C59B27] tracking-wider block">Formula Simulator</span>
-              <h3 className="font-serif text-sm font-bold text-white">Live Booking Total Preview</h3>
+              <span className="text-[10px] uppercase font-bold text-[#821124] tracking-wider block">Formula Simulator</span>
+              <h3 className="font-serif text-sm font-bold text-slate-900">Live Booking Total Preview</h3>
             </div>
-            <span className="text-[11px] font-mono text-stone-400">
+            <span className="text-[11px] font-mono text-slate-500">
               Formula: (Meal Plan Rate × Total Guests × Nights)
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
             <div>
-              <label className="text-[10px] text-stone-400 uppercase font-semibold block mb-1">Select Plan:</label>
+              <label className="text-[10px] text-slate-600 uppercase font-semibold block mb-1">Select Plan:</label>
               <select
                 value={simSelectedPlanId}
                 onChange={(e) => setSimSelectedPlanId(e.target.value)}
-                className="w-full bg-[#16100F] border border-white/15 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
               >
                 {plans.map(p => (
                   <option key={p.id} value={p.id}>{p.name} (${p.pricePerPersonPerDayUsd})</option>
@@ -425,83 +429,75 @@ export default function AdminMealPlansPage() {
             </div>
 
             <div>
-              <label className="text-[10px] text-stone-400 uppercase font-semibold block mb-1">Total Guests:</label>
+              <label className="text-[10px] text-slate-600 uppercase font-semibold block mb-1">Total Guests:</label>
               <input
                 type="number"
                 min="1"
                 max="10"
                 value={simGuests}
                 onChange={(e) => setSimGuests(Math.max(1, Number(e.target.value)))}
-                className="w-full bg-[#16100F] border border-white/15 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
               />
             </div>
 
             <div>
-              <label className="text-[10px] text-stone-400 uppercase font-semibold block mb-1">Nights:</label>
+              <label className="text-[10px] text-slate-600 uppercase font-semibold block mb-1">Nights:</label>
               <input
                 type="number"
                 min="1"
                 max="30"
                 value={simNights}
                 onChange={(e) => setSimNights(Math.max(1, Number(e.target.value)))}
-                className="w-full bg-[#16100F] border border-white/15 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
               />
             </div>
 
-            <div className="p-2.5 bg-[#16100F] rounded-lg border border-[#C59B27]/30 flex flex-col justify-center">
-              <span className="text-[9px] uppercase tracking-wider text-stone-400 font-bold block">Calculated Meal Add-on</span>
-              <span className="font-serif font-bold text-sm text-white">
-                ${simTotalUsd.toLocaleString()} USD
-              </span>
-              <span className="text-[10px] font-mono text-[#C59B27]">
-                KES {simTotalKes.toLocaleString()}
+            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex flex-col justify-center text-right">
+              <span className="text-[10px] text-slate-500 uppercase font-medium">Estimated Add-on Total</span>
+              <span className="font-serif font-bold text-sm text-slate-900">
+                ${simTotalUsd}
+                <span className="text-xs font-sans text-slate-500 font-normal"> (KES {simTotalKes.toLocaleString()})</span>
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Create or Edit Meal Plan */}
+      {/* Create / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-[#1F1615] rounded-xl border border-[#C59B27]/30 max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            {/* Modal Header */}
-            <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
-              <div>
-                <h3 className="font-serif text-base font-bold text-white">
-                  {editingPlan ? `Edit Meal Plan — ${editingPlan.shortName}` : 'Create New Meal Plan'}
-                </h3>
-                <p className="text-[11px] text-stone-400">
-                  {editingPlan ? 'Update rates, image, and inclusions' : 'Add a new meal plan tier to the booking engine'}
-                </p>
-              </div>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="font-serif text-lg font-bold text-slate-900">
+                {editingPlan ? 'Edit Meal Plan' : 'Create New Meal Plan'}
+              </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                    Plan Name <span className="text-red-400">*</span>
+            <form onSubmit={handleSave} className="space-y-4 pt-4">
+              {/* Name & Short Code */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Plan Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Stay & Dine — Half Board Deal"
+                    placeholder="e.g. Half Board (Breakfast &amp; Dinner)"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                    Short Code <span className="text-red-400">*</span>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Short Code <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -510,19 +506,19 @@ export default function AdminMealPlansPage() {
                     maxLength={6}
                     value={formShortName}
                     onChange={(e) => setFormShortName(e.target.value.toUpperCase())}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs font-mono font-bold focus:outline-none focus:border-[#C59B27] uppercase"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono font-bold focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124] uppercase"
                   />
                 </div>
               </div>
 
               {/* Pricing (USD & KES) */}
-              <div className="grid grid-cols-2 gap-3 p-3 bg-[#16100F] rounded-lg border border-white/10">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-stone-300 block mb-1">
-                    Rate USD / Person / Night <span className="text-red-400">*</span>
+                  <label className="text-[10px] uppercase font-bold text-slate-600 block mb-1">
+                    Rate USD / Person / Night <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-stone-500 font-mono">$</span>
+                    <span className="absolute left-3 top-2 text-slate-400 font-mono text-xs">$</span>
                     <input
                       type="number"
                       min="0"
@@ -532,22 +528,21 @@ export default function AdminMealPlansPage() {
                       onChange={(e) => {
                         const val = e.target.value === '' ? '' : Number(e.target.value);
                         setFormUsd(val);
-                        // Auto-calculate rough KES if KES is 0 or unedited (exchange ~130)
                         if (typeof val === 'number') {
                           setFormKes(Math.round(val * 130));
                         }
                       }}
-                      className="w-full bg-black/40 border border-white/15 rounded-lg pl-7 pr-3 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#C59B27]"
+                      className="w-full bg-white border border-slate-300 rounded-lg pl-7 pr-3 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-stone-300 block mb-1">
-                    Rate KES / Person / Night <span className="text-red-400">*</span>
+                  <label className="text-[10px] uppercase font-bold text-slate-600 block mb-1">
+                    Rate KES / Person / Night <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-stone-500 font-mono text-[10px]">KES</span>
+                    <span className="absolute left-3 top-2 text-slate-400 font-mono text-[10px]">KES</span>
                     <input
                       type="number"
                       min="0"
@@ -555,7 +550,7 @@ export default function AdminMealPlansPage() {
                       required
                       value={formKes}
                       onChange={(e) => setFormKes(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-black/40 border border-white/15 rounded-lg pl-11 pr-3 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#C59B27]"
+                      className="w-full bg-white border border-slate-300 rounded-lg pl-11 pr-3 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
                   </div>
                 </div>
@@ -563,7 +558,7 @@ export default function AdminMealPlansPage() {
 
               {/* Image Input & Dropzone */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
                   Cover Image URL
                 </label>
                 <div className="space-y-2">
@@ -572,10 +567,10 @@ export default function AdminMealPlansPage() {
                     placeholder="https://media.tamarind.co.ke/tvl-website-assets/..."
                     value={formImage}
                     onChange={(e) => setFormImage(e.target.value)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                   />
-                  <div className="p-2 bg-black/30 rounded-lg border border-dashed border-white/10">
-                    <span className="text-[10px] text-stone-400 block mb-1">Or drag &amp; drop an image file:</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                    <span className="text-[11px] text-slate-500 font-medium block mb-1.5">Or upload an image file:</span>
                     <MediaDropzone
                       onUploadComplete={(url) => setFormImage(url)}
                       maxFiles={1}
@@ -587,20 +582,20 @@ export default function AdminMealPlansPage() {
 
               {/* Description */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">Description</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Description</label>
                 <textarea
                   rows={2}
                   placeholder="Explain what is included in this boarding package..."
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                 />
               </div>
 
               {/* Highlights list */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                  Included Inclusions / Highlights
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Inclusions / Highlights
                 </label>
                 <div className="space-y-2">
                   <div className="flex gap-2">
@@ -615,12 +610,12 @@ export default function AdminMealPlansPage() {
                           handleAddHighlight();
                         }
                       }}
-                      className="flex-1 bg-[#16100F] border border-white/15 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                      className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
                     <button
                       type="button"
                       onClick={handleAddHighlight}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer border border-slate-200"
                     >
                       Add
                     </button>
@@ -629,12 +624,12 @@ export default function AdminMealPlansPage() {
                   {formHighlights.length > 0 && (
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {formHighlights.map((hl, i) => (
-                        <div key={i} className="flex items-center justify-between p-1.5 bg-black/40 rounded border border-white/10 text-xs text-stone-300">
+                        <div key={i} className="flex items-center justify-between p-1.5 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700">
                           <span className="truncate">{hl}</span>
                           <button
                             type="button"
                             onClick={() => handleRemoveHighlight(i)}
-                            className="text-stone-400 hover:text-red-400 p-0.5"
+                            className="text-slate-400 hover:text-rose-600 p-0.5"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -646,45 +641,45 @@ export default function AdminMealPlansPage() {
               </div>
 
               {/* Status and Sort Order */}
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formIsActive}
                     onChange={(e) => setFormIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#821124] focus:ring-0 bg-stone-900 border-white/20"
+                    className="w-4 h-4 rounded text-[#821124] focus:ring-0 border-slate-300"
                   />
-                  <span className="text-xs text-stone-300 font-medium">Active (Visible in Booking Flow)</span>
+                  <span className="text-xs text-slate-700 font-medium">Active (Visible in Booking Flow)</span>
                 </label>
 
                 <div className="flex items-center gap-2 justify-end">
-                  <span className="text-[11px] text-stone-400">Sort Order:</span>
+                  <span className="text-xs text-slate-500">Sort Order:</span>
                   <input
                     type="number"
                     min="1"
                     value={formSortOrder}
                     onChange={(e) => setFormSortOrder(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-16 bg-[#16100F] border border-white/15 rounded px-2 py-1 text-white text-xs text-center"
+                    className="w-16 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 text-xs text-center"
                   />
                 </div>
               </div>
 
               {/* Submit / Cancel Buttons */}
-              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-2">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-stone-300 text-xs font-semibold cursor-pointer"
+                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   id="btn-save-meal-plan"
                 >
-                  {saving ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[#C59B27]" />}
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-white" />}
                   <span>{editingPlan ? 'Save Changes' : 'Create Plan'}</span>
                 </button>
               </div>

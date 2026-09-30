@@ -299,3 +299,30 @@ export const globalSettings = pgTable("global_settings", {
   key: text("key").primaryKey(),
   value: jsonb("value").notNull(),
 });
+
+// ============================================================
+// VIP TRANSFERS & FLEET DISPATCH
+// ============================================================
+
+export const transfers = pgTable("transfers", {
+  id: text("id").primaryKey(),
+  bookingId: text("booking_id"),
+  bookingReference: text("booking_reference"),
+  guestName: text("guest_name").notNull(),
+  guestPhone: text("guest_phone"),
+  guestEmail: text("guest_email"),
+  pickupLocation: text("pickup_location").notNull(),
+  dropoffLocation: text("dropoff_location").notNull(),
+  pickupDateTime: text("pickup_date_time").notNull(),
+  flightOrTrainNumber: text("flight_or_train_number"),
+  vehicleType: text("vehicle_type").notNull().default("Executive Private Sedan"),
+  passengers: integer("passengers").default(1),
+  driverName: text("driver_name"),
+  driverPhone: text("driver_phone"),
+  status: text("status").notNull().default("scheduled"),
+  costKes: doublePrecision("cost_kes").default(0),
+  costUsd: doublePrecision("cost_usd").default(0),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+

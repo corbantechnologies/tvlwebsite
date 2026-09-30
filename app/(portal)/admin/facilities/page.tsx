@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Compass, Waves, Users, Dumbbell, Coffee, Sparkles, Plus, 
   Edit3, Trash2, Check, X, RotateCw, Image as ImageIcon, 
-  CheckCircle2, AlertTriangle, Clock, ShieldCheck 
+  CheckCircle2, AlertTriangle, Clock, ShieldCheck, Loader2 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
@@ -47,6 +47,8 @@ export default function AdminFacilitiesPage() {
   const [formDetails, setFormDetails] = useState<string[]>([]);
   const [newDetail, setNewDetail] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const loadFacilities = async () => {
     setLoading(true);
@@ -107,8 +109,8 @@ export default function AdminFacilitiesPage() {
     setNewDetail('');
   };
 
-  const handleRemoveDetail = (idx: number) => {
-    setFormDetails(prev => prev.filter((_, i) => i !== idx));
+  const handleRemoveDetail = (index: number) => {
+    setFormDetails(prev => prev.filter((_, i) => i !== index));
   };
 
   const persistFacilities = async (updatedList: Facility[]) => {
@@ -168,6 +170,7 @@ export default function AdminFacilitiesPage() {
   const handleDelete = async (facility: Facility) => {
     if (!confirm(`Are you sure you want to delete "${facility.name}"?`)) return;
 
+    setDeletingId(facility.id);
     try {
       const updated = facilities.filter(f => f.id !== facility.id);
       await persistFacilities(updated);
@@ -175,10 +178,13 @@ export default function AdminFacilitiesPage() {
       toast.success(`Deleted "${facility.name}"`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete facility');
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const handleToggleStatus = async (facility: Facility) => {
+    setTogglingId(facility.id);
     const nextStatus = facility.status === 'operational' ? 'maintenance' : 'operational';
     try {
       const updated = facilities.map(f => 
@@ -189,21 +195,23 @@ export default function AdminFacilitiesPage() {
       toast.success(`Status changed to ${nextStatus}`);
     } catch {
       toast.error('Failed to change status');
+    } finally {
+      setTogglingId(null);
     }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#C59B27]/20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs text-[#C59B27] font-semibold uppercase tracking-wider mb-1">
+          <div className="inline-flex items-center gap-1.5 text-xs text-[#821124] font-bold uppercase tracking-wider mb-1">
             <Compass className="w-3.5 h-3.5" /> Resort Infrastructure
           </div>
-          <h1 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <h1 className="font-serif text-2xl font-bold text-slate-900 tracking-tight">
             Facilities &amp; Recreation Management
           </h1>
-          <p className="text-xs text-stone-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Manage resident pools, conference venues, gym amenities, and operational availability.
           </p>
         </div>
@@ -212,7 +220,7 @@ export default function AdminFacilitiesPage() {
           <button
             onClick={loadFacilities}
             disabled={loading}
-            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-stone-300 border border-white/10 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
           >
             <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Refresh</span>
@@ -222,7 +230,7 @@ export default function AdminFacilitiesPage() {
             className="px-3.5 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             id="btn-add-facility"
           >
-            <Plus className="w-4 h-4 text-[#C59B27]" />
+            <Plus className="w-4 h-4 text-white" />
             <span>Add Facility</span>
           </button>
         </div>
@@ -230,212 +238,241 @@ export default function AdminFacilitiesPage() {
 
       {/* Facilities Grid or Empty State */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-stone-400 flex items-center justify-center gap-2">
-          <RotateCw className="w-4 h-4 animate-spin text-[#C59B27]" />
+        <div className="p-12 text-center text-xs text-slate-500 flex items-center justify-center gap-2 bg-white rounded-xl border border-slate-200 shadow-xs">
+          <RotateCw className="w-4 h-4 animate-spin text-[#821124]" />
           <span>Loading facilities...</span>
         </div>
       ) : facilities.length === 0 ? (
-        <div className="p-12 text-center bg-[#1F1615] rounded-xl border border-dashed border-[#C59B27]/30 max-w-xl mx-auto space-y-3">
-          <div className="w-10 h-10 rounded-full bg-[#821124]/20 text-[#821124] flex items-center justify-center mx-auto">
-            <Compass className="w-5 h-5 text-[#C59B27]" />
+        <div className="p-12 text-center bg-white rounded-xl border border-dashed border-slate-300 max-w-xl mx-auto space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-slate-100 text-[#821124] flex items-center justify-center mx-auto">
+            <Compass className="w-6 h-6" />
           </div>
-          <h3 className="font-serif text-lg font-bold text-white">No Facilities Created Yet</h3>
-          <p className="text-xs text-stone-400 leading-relaxed">
+          <h3 className="font-serif text-lg font-bold text-slate-900">No Facilities Created Yet</h3>
+          <p className="text-xs text-slate-500 leading-relaxed">
             There are no facilities stored in the database. Add your resort amenities (e.g. Resident Pools, Conference Center, Fitness Room) to control what is showcased to visitors.
           </p>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
-            <Plus className="w-4 h-4 text-[#C59B27]" />
-            <span>Add Facility</span>
+            <Plus className="w-4 h-4" />
+            <span>Add First Facility</span>
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {facilities.map((f) => (
-            <div
-              key={f.id}
-              className="bg-[#1F1615] rounded-xl border border-[#C59B27]/25 shadow-md overflow-hidden flex flex-col justify-between transition-all hover:border-[#C59B27]/50"
-              id={`facility-card-${f.id}`}
-            >
-              {/* Image banner */}
-              <div className="relative aspect-[16/9] w-full bg-stone-900 overflow-hidden border-b border-white/10">
-                {f.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={f.image}
-                    alt={f.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-600 gap-1">
-                    <ImageIcon className="w-8 h-8 opacity-40 text-[#C59B27]" />
-                    <span className="text-[10px] text-stone-500 uppercase tracking-widest font-mono">No Image</span>
-                  </div>
-                )}
+          {facilities.map((f) => {
+            const isDeleting = deletingId === f.id;
+            const isToggling = togglingId === f.id;
 
-                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
-                    f.status === 'operational'
-                      ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30'
-                      : f.status === 'maintenance'
-                      ? 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
-                      : 'bg-rose-950/80 text-rose-300 border border-rose-500/30'
-                  }`}>
-                    {f.status}
-                  </span>
-
-                  {f.isResidentOnly && (
-                    <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[10px] font-mono text-[#C59B27] border border-[#C59B27]/30">
-                      Resident Only
-                    </span>
+            return (
+              <div
+                key={f.id}
+                className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col justify-between transition-all hover:shadow-md"
+                id={`facility-card-${f.id}`}
+              >
+                {/* Image banner */}
+                <div className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden border-b border-slate-200">
+                  {f.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={f.image}
+                      alt={f.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1">
+                      <ImageIcon className="w-8 h-8 opacity-40 text-slate-400" />
+                      <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">No Image</span>
+                    </div>
                   )}
-                </div>
 
-                {f.operatingHours && (
-                  <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded bg-black/85 backdrop-blur-md text-[10px] text-stone-300 border border-white/10 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-[#C59B27]" />
-                    <span>{f.operatingHours}</span>
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                      f.status === 'operational'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : f.status === 'maintenance'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
+                      {f.status}
+                    </span>
+
+                    {f.isResidentOnly && (
+                      <span className="px-2 py-0.5 rounded bg-white/90 backdrop-blur-md text-[10px] font-mono text-slate-900 border border-slate-200">
+                        Resident Only
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Content */}
-              <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-2">
-                  <h3 className="font-serif text-base font-bold text-white tracking-tight">
-                    {f.name}
-                  </h3>
-                  <p className="text-xs text-stone-400 font-light leading-relaxed line-clamp-2">
-                    {f.description}
-                  </p>
-
-                  {/* Details bullets */}
-                  {f.details && f.details.length > 0 && (
-                    <div className="pt-2 space-y-1">
-                      {f.details.slice(0, 3).map((d, i) => (
-                        <div key={i} className="flex items-start gap-1.5 text-xs text-stone-300">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#C59B27] shrink-0 mt-0.5" />
-                          <span className="line-clamp-1">{d}</span>
-                        </div>
-                      ))}
+                  {f.operatingHours && (
+                    <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded bg-white/95 backdrop-blur-md text-[10px] text-slate-700 border border-slate-200 flex items-center gap-1 shadow-xs">
+                      <Clock className="w-3 h-3 text-[#821124]" />
+                      <span>{f.operatingHours}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Actions */}
-                <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => handleToggleStatus(f)}
-                    className={`text-[11px] font-medium px-2 py-1 rounded transition-colors cursor-pointer ${
-                      f.status === 'operational'
-                        ? 'text-amber-400 hover:bg-amber-950/40'
-                        : 'text-emerald-400 hover:bg-emerald-950/40'
-                    }`}
-                  >
-                    {f.status === 'operational' ? 'Set Maintenance' : 'Set Operational'}
-                  </button>
+                {/* Content */}
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-serif text-base font-bold text-slate-900 tracking-tight">
+                      {f.name}
+                    </h3>
+                    <p className="text-xs text-slate-600 font-normal leading-relaxed line-clamp-2">
+                      {f.description}
+                    </p>
 
-                  <div className="flex items-center gap-1.5">
+                    {/* Details bullets */}
+                    {f.details && f.details.length > 0 && (
+                      <div className="pt-2 space-y-1">
+                        {f.details.slice(0, 3).map((d, i) => (
+                          <div key={i} className="flex items-start gap-1.5 text-xs text-slate-700">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                            <span className="line-clamp-1">{d}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                     <button
-                      onClick={() => openEditModal(f)}
-                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-stone-200 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                      id={`btn-edit-facility-${f.id}`}
+                      onClick={() => handleToggleStatus(f)}
+                      disabled={isToggling}
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center gap-1 ${
+                        f.status === 'operational'
+                          ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                          : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                      }`}
                     >
-                      <Edit3 className="w-3 h-3 text-[#C59B27]" />
-                      <span>Edit</span>
+                      {isToggling ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      <span>{f.status === 'operational' ? 'Set Maintenance' : 'Set Operational'}</span>
                     </button>
-                    <button
-                      onClick={() => handleDelete(f)}
-                      className="p-1 rounded text-stone-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                      title="Delete facility"
-                      id={`btn-delete-facility-${f.id}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => openEditModal(f)}
+                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                        id={`btn-edit-facility-${f.id}`}
+                      >
+                        <Edit3 className="w-3 h-3 text-slate-500" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(f)}
+                        disabled={isDeleting}
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Delete facility"
+                        id={`btn-delete-facility-${f.id}`}
+                      >
+                        {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Modal: Create or Edit Facility */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-[#1F1615] rounded-xl border border-[#C59B27]/30 max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="font-serif text-base font-bold text-white">
+                <h3 className="font-serif text-base font-bold text-slate-900">
                   {editingFacility ? `Edit Facility — ${editingFacility.name}` : 'Add Resort Facility'}
                 </h3>
-                <p className="text-[11px] text-stone-400">
-                  {editingFacility ? 'Update details, hours, and status' : 'Showcase a new resident amenity on the public website'}
+                <p className="text-xs text-slate-500">
+                  Configure venue details, operational status, and resident privileges
                 </p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                  Facility Name <span className="text-red-400">*</span>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Facility Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Resident Oceanfront Swimming Pools"
+                  placeholder="e.g. Harbor-front Infinity Pool"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-stone-300 block mb-1">Operating Hours</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 6:30 AM – 7:00 PM Daily"
-                    value={formHours}
-                    onChange={(e) => setFormHours(e.target.value)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
-                  />
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Facility Icon Type
+                  </label>
+                  <select
+                    value={formIcon}
+                    onChange={(e) => setFormIcon(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
+                  >
+                    {ICON_OPTIONS.map(opt => (
+                      <option key={opt.id} value={opt.id}>{opt.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-stone-300 block mb-1">Status</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Operational Status
+                  </label>
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as any)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-2.5 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
                   >
-                    <option value="operational">Operational</option>
+                    <option value="operational">Operational (Open)</option>
                     <option value="maintenance">Under Maintenance</option>
-                    <option value="closed">Closed</option>
+                    <option value="closed">Temporarily Closed</option>
                   </select>
                 </div>
               </div>
 
-              {/* Image Input & Dropzone */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">Photo URL</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Operating Hours
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 6:00 AM – 7:00 PM Daily"
+                  value={formHours}
+                  onChange={(e) => setFormHours(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Image URL &amp; Dropzone
+                </label>
                 <div className="space-y-2">
                   <input
                     type="url"
                     placeholder="https://media.tamarind.co.ke/tvl-website-assets/..."
                     value={formImage}
                     onChange={(e) => setFormImage(e.target.value)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                   />
-                  <div className="p-2 bg-black/30 rounded-lg border border-dashed border-white/10">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                    <span className="text-[11px] text-slate-500 font-medium block mb-1.5">Or upload an image file:</span>
                     <MediaDropzone
                       onUploadComplete={(url) => setFormImage(url)}
                       maxFiles={1}
@@ -445,28 +482,27 @@ export default function AdminFacilitiesPage() {
                 </div>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">Description</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Description</label>
                 <textarea
                   rows={2}
-                  placeholder="Describe the facility ambiance, guidelines, or resident privileges..."
+                  placeholder="Provide an overview of the amenity..."
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                 />
               </div>
 
-              {/* Bullet Details */}
+              {/* Bullet highlights */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                  Features &amp; Highlights (List)
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Bullet Details / Highlights
                 </label>
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="e.g. Complimentary sun loungers & towel service"
+                      placeholder="e.g. High-lumens AV projector with wireless audio"
                       value={newDetail}
                       onChange={(e) => setNewDetail(e.target.value)}
                       onKeyDown={(e) => {
@@ -475,12 +511,12 @@ export default function AdminFacilitiesPage() {
                           handleAddDetail();
                         }
                       }}
-                      className="flex-1 bg-[#16100F] border border-white/15 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                      className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
                     <button
                       type="button"
                       onClick={handleAddDetail}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer border border-slate-200"
                     >
                       Add
                     </button>
@@ -489,12 +525,12 @@ export default function AdminFacilitiesPage() {
                   {formDetails.length > 0 && (
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {formDetails.map((d, i) => (
-                        <div key={i} className="flex items-center justify-between p-1.5 bg-black/40 rounded border border-white/10 text-xs text-stone-300">
+                        <div key={i} className="flex items-center justify-between p-1.5 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700">
                           <span className="truncate">{d}</span>
                           <button
                             type="button"
                             onClick={() => handleRemoveDetail(i)}
-                            className="text-stone-400 hover:text-red-400 p-0.5"
+                            className="text-slate-400 hover:text-rose-600 p-0.5"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -505,37 +541,38 @@ export default function AdminFacilitiesPage() {
                 </div>
               </div>
 
-              {/* Resident Only checkbox */}
-              <div className="pt-2 border-t border-white/10">
+              {/* Resident Only toggle */}
+              <div className="pt-2 border-t border-slate-100">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formResidentOnly}
                     onChange={(e) => setFormResidentOnly(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#821124] focus:ring-0 bg-stone-900 border-white/20"
+                    className="w-4 h-4 rounded text-[#821124] focus:ring-0 border-slate-300"
                   />
-                  <span className="text-xs text-stone-300 font-medium">
-                    Strictly Reserved for Staying Residents (Display badge on website)
+                  <span className="text-xs text-slate-700 font-medium">
+                    Strictly for Tamarind Village Staying Residents Only
                   </span>
                 </label>
               </div>
 
-              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-2">
+              {/* Submit / Cancel Buttons */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-stone-300 text-xs font-semibold cursor-pointer"
+                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   id="btn-save-facility"
                 >
-                  {saving ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[#C59B27]" />}
-                  <span>{editingFacility ? 'Save Changes' : 'Create Facility'}</span>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-white" />}
+                  <span>{editingFacility ? 'Save Changes' : 'Add Facility'}</span>
                 </button>
               </div>
             </form>

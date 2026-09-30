@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, Plus, Edit3, Trash2, Check, X, RotateCw, 
   DollarSign, Tag, Car, Gift, Wine, Compass, Eye, EyeOff,
-  Image as ImageIcon, Filter, CheckCircle2
+  Image as ImageIcon, Filter, CheckCircle2, Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
@@ -58,6 +58,7 @@ export default function AdminExtrasPage() {
   const [sortOrder, setSortOrder] = useState<number | ''>(1);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const loadExtras = async () => {
     setLoading(true);
@@ -178,6 +179,7 @@ export default function AdminExtrasPage() {
   };
 
   const handleToggleActive = async (ext: Extra) => {
+    setTogglingId(ext.id);
     try {
       const res = await fetch(`/api/extras/${ext.id}`, {
         method: 'PATCH',
@@ -190,6 +192,8 @@ export default function AdminExtrasPage() {
       }
     } catch {
       toast.error('Failed to change status');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -201,15 +205,15 @@ export default function AdminExtrasPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#C59B27]/20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs text-[#C59B27] font-semibold uppercase tracking-wider mb-1">
+          <div className="inline-flex items-center gap-1.5 text-xs text-[#821124] font-bold uppercase tracking-wider mb-1">
             <Sparkles className="w-3.5 h-3.5" /> Guest Enhancements Engine
           </div>
-          <h1 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <h1 className="font-serif text-2xl font-bold text-slate-900 tracking-tight">
             Extras &amp; Optional Add-ons
           </h1>
-          <p className="text-xs text-stone-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Create and manage optional guest upgrades (transfers, wine, honeymoons, excursions) presented during online booking.
           </p>
         </div>
@@ -218,7 +222,7 @@ export default function AdminExtrasPage() {
           <button
             onClick={loadExtras}
             disabled={loading}
-            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-stone-300 border border-white/10 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
           >
             <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Refresh</span>
@@ -228,7 +232,7 @@ export default function AdminExtrasPage() {
             className="px-3.5 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             id="btn-add-extra"
           >
-            <Plus className="w-4 h-4 text-[#C59B27]" />
+            <Plus className="w-4 h-4 text-white" />
             <span>Create Extra</span>
           </button>
         </div>
@@ -249,13 +253,13 @@ export default function AdminExtrasPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                 categoryFilter === cat.id
                   ? 'bg-[#821124] text-white shadow-xs font-semibold'
-                  : 'bg-[#1F1615] text-stone-300 border border-white/10 hover:bg-white/5'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
               }`}
             >
-              {Icon && <Icon className="w-3.5 h-3.5 text-[#C59B27]" />}
+              {Icon && <Icon className="w-3.5 h-3.5" />}
               <span>{cat.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                categoryFilter === cat.id ? 'bg-black/30 text-white' : 'bg-white/10 text-stone-400'
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                categoryFilter === cat.id ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-600'
               }`}>
                 {count}
               </span>
@@ -266,26 +270,26 @@ export default function AdminExtrasPage() {
 
       {/* Extras Grid or Clean Empty State */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-stone-400 flex items-center justify-center gap-2">
-          <RotateCw className="w-4 h-4 animate-spin text-[#C59B27]" />
+        <div className="p-12 text-center text-xs text-slate-500 flex items-center justify-center gap-2 bg-white rounded-xl border border-slate-200 shadow-xs">
+          <RotateCw className="w-4 h-4 animate-spin text-[#821124]" />
           <span>Loading extras from database...</span>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="p-12 text-center bg-[#1F1615] rounded-xl border border-dashed border-[#C59B27]/30 max-w-xl mx-auto space-y-3">
-          <div className="w-10 h-10 rounded-full bg-[#821124]/20 text-[#821124] flex items-center justify-center mx-auto">
-            <Sparkles className="w-5 h-5 text-[#C59B27]" />
+        <div className="p-12 text-center bg-white rounded-xl border border-dashed border-slate-300 max-w-xl mx-auto space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-slate-100 text-[#821124] flex items-center justify-center mx-auto">
+            <Sparkles className="w-6 h-6" />
           </div>
-          <h3 className="font-serif text-lg font-bold text-white">No Extras Created Yet</h3>
-          <p className="text-xs text-stone-400 leading-relaxed">
+          <h3 className="font-serif text-lg font-bold text-slate-900">No Extras Configured</h3>
+          <p className="text-xs text-slate-500 leading-relaxed">
             {categoryFilter !== 'all' 
               ? `There are no extras in the "${CATEGORIES.find(c => c.id === categoryFilter)?.label}" category.`
               : 'The extras catalog is empty. Click below to add your first custom add-on (e.g. VIP Airport Transfer, Champagne, or Honeymoon Setup).'}
           </p>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
-            <Plus className="w-4 h-4 text-[#C59B27]" />
+            <Plus className="w-4 h-4" />
             <span>Create First Extra</span>
           </button>
         </div>
@@ -293,19 +297,20 @@ export default function AdminExtrasPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(ext => {
             const isDeleting = deletingId === ext.id;
+            const isToggling = togglingId === ext.id;
 
             return (
               <div
                 key={ext.id}
-                className={`bg-[#1F1615] rounded-xl border transition-all flex flex-col justify-between overflow-hidden shadow-md ${
+                className={`bg-white rounded-xl border transition-all flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md ${
                   ext.isActive 
-                    ? 'border-[#C59B27]/25 hover:border-[#C59B27]/50' 
-                    : 'border-white/10 opacity-75'
+                    ? 'border-slate-200' 
+                    : 'border-slate-200 opacity-60'
                 }`}
                 id={`extra-card-${ext.id}`}
               >
                 {/* Image */}
-                <div className="relative aspect-[16/9] w-full bg-stone-900 overflow-hidden border-b border-white/10">
+                <div className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden border-b border-slate-200">
                   {ext.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -314,31 +319,31 @@ export default function AdminExtrasPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-stone-600 gap-1">
-                      <ImageIcon className="w-8 h-8 opacity-40 text-[#C59B27]" />
-                      <span className="text-[10px] text-stone-500 uppercase tracking-widest font-mono">No Image</span>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1">
+                      <ImageIcon className="w-8 h-8 opacity-40 text-slate-400" />
+                      <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">No Image</span>
                     </div>
                   )}
 
                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[10px] uppercase font-semibold text-[#C59B27] border border-[#C59B27]/40 shadow-xs">
+                    <span className="px-2 py-0.5 rounded bg-white/90 backdrop-blur-md text-[10px] uppercase font-semibold text-slate-900 border border-slate-200 shadow-xs">
                       {ext.category}
                     </span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
                       ext.isActive 
-                        ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30' 
-                        : 'bg-stone-800 text-stone-400'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : 'bg-slate-100 text-slate-500 border border-slate-200'
                     }`}>
                       {ext.isActive ? 'Active' : 'Paused'}
                     </span>
                   </div>
 
-                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded bg-black/85 backdrop-blur-md text-right border border-white/10 shadow-sm">
-                    <span className="font-serif font-bold text-sm text-white block">
+                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded bg-white/95 backdrop-blur-md text-right border border-slate-200 shadow-xs">
+                    <span className="font-serif font-bold text-sm text-slate-900 block">
                       ${ext.priceUsd}
-                      <span className="text-[10px] font-sans text-stone-400 font-normal"> / {PRICING_UNITS[ext.pricingUnit]?.split(' ')[1] || ext.pricingUnit}</span>
+                      <span className="text-[10px] font-sans text-slate-500 font-normal"> / {PRICING_UNITS[ext.pricingUnit]?.split(' ')[1] || ext.pricingUnit}</span>
                     </span>
-                    <span className="text-[10px] font-mono text-[#C59B27] block">
+                    <span className="text-[10px] font-mono font-medium text-[#821124] block">
                       KES {ext.priceKes.toLocaleString()}
                     </span>
                   </div>
@@ -347,47 +352,49 @@ export default function AdminExtrasPage() {
                 {/* Details */}
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div>
-                    <h3 className="font-serif text-sm font-bold text-white tracking-tight">
+                    <h3 className="font-serif text-sm font-bold text-slate-900 tracking-tight">
                       {ext.name}
                     </h3>
-                    <p className="text-xs text-stone-400 font-light leading-relaxed line-clamp-2 mt-1">
-                      {ext.description}
+                    <p className="text-xs text-slate-600 font-normal leading-relaxed line-clamp-2 mt-1">
+                      {ext.description || 'Optional guest amenity available upon request.'}
                     </p>
-                    <span className="text-[10px] font-mono text-stone-500 block mt-2">
+                    <span className="text-[11px] font-mono text-slate-500 block mt-2">
                       Pricing: {PRICING_UNITS[ext.pricingUnit] || ext.pricingUnit}
                     </span>
                   </div>
 
                   {/* Action buttons */}
-                  <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                     <button
                       onClick={() => handleToggleActive(ext)}
-                      className={`text-[11px] font-medium px-2 py-1 rounded transition-colors cursor-pointer ${
+                      disabled={isToggling}
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center gap-1 ${
                         ext.isActive 
-                          ? 'text-stone-400 hover:text-white' 
-                          : 'text-emerald-400 hover:bg-emerald-950/40'
+                          ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' 
+                          : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
                       }`}
                     >
-                      {ext.isActive ? 'Pause' : 'Activate'}
+                      {isToggling ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      <span>{ext.isActive ? 'Pause' : 'Activate'}</span>
                     </button>
 
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => openEditModal(ext)}
-                        className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-stone-200 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
                         id={`btn-edit-extra-${ext.id}`}
                       >
-                        <Edit3 className="w-3 h-3 text-[#C59B27]" />
+                        <Edit3 className="w-3 h-3 text-slate-500" />
                         <span>Edit</span>
                       </button>
                       <button
                         onClick={() => handleDelete(ext)}
                         disabled={isDeleting}
-                        className="p-1 rounded text-stone-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
                         title="Delete extra"
                         id={`btn-delete-extra-${ext.id}`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" /> : <Trash2 className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -400,29 +407,29 @@ export default function AdminExtrasPage() {
 
       {/* Modal: Create or Edit Extra */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-[#1F1615] rounded-xl border border-[#C59B27]/30 max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="font-serif text-base font-bold text-white">
+                <h3 className="font-serif text-base font-bold text-slate-900">
                   {editingExtra ? `Edit Extra — ${editingExtra.name}` : 'Create New Extra'}
                 </h3>
-                <p className="text-[11px] text-stone-400">
+                <p className="text-xs text-slate-500">
                   {editingExtra ? 'Modify price, unit, or description' : 'Add a new selectable upgrade for guests during booking'}
                 </p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                  Extra / Upgrade Name <span className="text-red-400">*</span>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Extra / Upgrade Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -430,53 +437,52 @@ export default function AdminExtrasPage() {
                   placeholder="e.g. VIP Airport Chauffeur Transfer (Alphard)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                    Category <span className="text-red-400">*</span>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Category <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-2.5 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
                   >
                     <option value="transfer">Airport &amp; SGR Transfer</option>
                     <option value="amenity">Room Setup / Amenity</option>
                     <option value="fnb">Food &amp; Beverage</option>
                     <option value="experience">Dining / Dhow Experience</option>
-                    <option value="excursion">Excursion / Tour</option>
+                    <option value="excursion">Excursions &amp; Tours</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                    Pricing Unit <span className="text-red-400">*</span>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Pricing Unit <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={pricingUnit}
                     onChange={(e) => setPricingUnit(e.target.value as any)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-2.5 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
                   >
                     <option value="per_booking">Per Booking (Flat Fee)</option>
                     <option value="per_person">Per Person</option>
                     <option value="per_night">Per Night</option>
-                    <option value="per_item">Per Item / Bottle</option>
+                    <option value="per_item">Per Item / Request</option>
                   </select>
                 </div>
               </div>
 
-              {/* Pricing (USD & KES) */}
-              <div className="grid grid-cols-2 gap-3 p-3 bg-[#16100F] rounded-lg border border-white/10">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-stone-300 block mb-1">
-                    Price USD ($) <span className="text-red-400">*</span>
+                  <label className="text-[10px] uppercase font-bold text-slate-600 block mb-1">
+                    Price USD <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-stone-500 font-mono">$</span>
+                    <span className="absolute left-3 top-2 text-slate-400 font-mono text-xs">$</span>
                     <input
                       type="number"
                       min="0"
@@ -490,17 +496,17 @@ export default function AdminExtrasPage() {
                           setPriceKes(Math.round(val * 130));
                         }
                       }}
-                      className="w-full bg-black/40 border border-white/15 rounded-lg pl-7 pr-3 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#C59B27]"
+                      className="w-full bg-white border border-slate-300 rounded-lg pl-7 pr-3 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-stone-300 block mb-1">
-                    Price KES (KES) <span className="text-red-400">*</span>
+                  <label className="text-[10px] uppercase font-bold text-slate-600 block mb-1">
+                    Price KES <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-stone-500 font-mono text-[10px]">KES</span>
+                    <span className="absolute left-3 top-2 text-slate-400 font-mono text-[10px]">KES</span>
                     <input
                       type="number"
                       min="0"
@@ -508,16 +514,15 @@ export default function AdminExtrasPage() {
                       required
                       value={priceKes}
                       onChange={(e) => setPriceKes(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-black/40 border border-white/15 rounded-lg pl-11 pr-3 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#C59B27]"
+                      className="w-full bg-white border border-slate-300 rounded-lg pl-11 pr-3 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Image */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">
-                  Photo / Thumbnail URL
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Cover Image URL
                 </label>
                 <div className="space-y-2">
                   <input
@@ -525,9 +530,10 @@ export default function AdminExtrasPage() {
                     placeholder="https://media.tamarind.co.ke/tvl-website-assets/..."
                     value={image}
                     onChange={(e) => setImage(e.target.value)}
-                    className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                   />
-                  <div className="p-2 bg-black/30 rounded-lg border border-dashed border-white/10">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                    <span className="text-[11px] text-slate-500 font-medium block mb-1.5">Or upload an image file:</span>
                     <MediaDropzone
                       onUploadComplete={(url) => setImage(url)}
                       maxFiles={1}
@@ -537,56 +543,55 @@ export default function AdminExtrasPage() {
                 </div>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="text-[11px] font-semibold text-stone-300 block mb-1">Description</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Description</label>
                 <textarea
                   rows={2}
-                  placeholder="Detail what is provided, passenger limits, vehicle models, or vintage details..."
+                  placeholder="Explain what the guest receives with this upgrade..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-[#16100F] border border-white/15 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#C59B27]"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#821124] focus:ring-0 bg-stone-900 border-white/20"
+                    className="w-4 h-4 rounded text-[#821124] focus:ring-0 border-slate-300"
                   />
-                  <span className="text-xs text-stone-300 font-medium">Active (Visible in Booking Flow)</span>
+                  <span className="text-xs text-slate-700 font-medium">Active (Visible in Booking Flow)</span>
                 </label>
 
                 <div className="flex items-center gap-2 justify-end">
-                  <span className="text-[11px] text-stone-400">Sort Order:</span>
+                  <span className="text-xs text-slate-500">Sort Order:</span>
                   <input
                     type="number"
                     min="1"
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-16 bg-[#16100F] border border-white/15 rounded px-2 py-1 text-white text-xs text-center"
+                    className="w-16 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 text-xs text-center"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-2">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-stone-300 text-xs font-semibold cursor-pointer"
+                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-1.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   id="btn-save-extra"
                 >
-                  {submitting ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[#C59B27]" />}
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-white" />}
                   <span>{editingExtra ? 'Save Changes' : 'Create Extra'}</span>
                 </button>
               </div>

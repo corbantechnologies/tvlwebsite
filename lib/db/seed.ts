@@ -265,6 +265,28 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       key TEXT PRIMARY KEY,
       value JSONB NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS transfers (
+      id TEXT PRIMARY KEY,
+      booking_id TEXT,
+      booking_reference TEXT,
+      guest_name TEXT NOT NULL,
+      guest_phone TEXT,
+      guest_email TEXT,
+      pickup_location TEXT NOT NULL,
+      dropoff_location TEXT NOT NULL,
+      pickup_date_time TEXT NOT NULL,
+      flight_or_train_number TEXT,
+      vehicle_type TEXT NOT NULL DEFAULT 'Executive Private Sedan',
+      passengers INTEGER DEFAULT 1,
+      driver_name TEXT,
+      driver_phone TEXT,
+      status TEXT NOT NULL DEFAULT 'scheduled',
+      cost_kes DOUBLE PRECISION DEFAULT 0,
+      cost_usd DOUBLE PRECISION DEFAULT 0,
+      notes TEXT,
+      created_at TEXT NOT NULL
+    );
   `);
 }
 
