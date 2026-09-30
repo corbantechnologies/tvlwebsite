@@ -87,8 +87,9 @@ export default function AdminPortalLayout({
       items: [
         { label: 'Apartments & Suites', href: '/admin/apartments', icon: Building2 },
         { label: 'Dining & Dhow', href: '/admin/dining', icon: UtensilsCrossed },
-        { label: 'Village & Dhow Events', href: '/admin/events', icon: Sparkles, highlight: true },
-        { label: 'Curated Packages', href: '/admin/packages', icon: Tag, highlight: true },
+        { label: 'Events & Experiences', href: '/admin/events', icon: Sparkles, highlight: true },
+        { label: 'Meal Plans', href: '/admin/packages', icon: Tag, highlight: true },
+        { label: 'Extras & Add-ons', href: '/admin/extras', icon: Sparkles },
         { label: 'VIP Transfers', href: '/admin/transfers', icon: Car },
         { label: 'Resort Facilities', href: '/admin/facilities', icon: Compass },
       ],

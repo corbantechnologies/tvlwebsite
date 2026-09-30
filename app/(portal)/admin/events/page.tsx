@@ -1,30 +1,116 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Calendar, Clock, MapPin, Ticket, Plus, Trash2, Edit, Save, X, RotateCw, ExternalLink } from 'lucide-react';
+import { 
+  Sparkles, Calendar, Clock, MapPin, Ticket, Plus, Trash2, Edit3, 
+  Save, X, RotateCw, ExternalLink, ShieldAlert, CheckCircle2, Lock 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
-import { ResortEvent } from '@/types';
-import { DEFAULT_EVENTS } from '@/lib/data';
+
+interface AdminEvent {
+  id: string;
+  title: string;
+  slug?: string;
+  description: string;
+  brand: 'tamarind_village' | 'tamarind_restaurant' | 'dawa_terrace' | 'tamarind_dhow' | 'golden_key' | string;
+  venue: string;
+  city: string;
+  category?: string;
+  startDate: string;
+  endDate?: string | null;
+  timeText: string;
+  priceKes?: number;
+  priceUsd?: number;
+  image?: string;
+  posterUrl?: string;
+  maxCapacity?: number;
+  paymentEnabled?: boolean;
+  externalTicketUrl?: string | null;
+  isFeatured?: boolean;
+  isActive?: boolean;
+}
+
+const BRANDS = [
+  { id: 'all', label: 'All Brands' },
+  { id: 'tamarind_village', label: 'Tamarind Village', defaultVenue: 'Tamarind Village Clifftop' },
+  { id: 'tamarind_restaurant', label: 'Tamarind Mombasa Restaurant', defaultVenue: 'Tamarind Restaurant Mombasa' },
+  { id: 'dawa_terrace', label: 'Dawa Terrace', defaultVenue: 'Dawa Terrace Lounge' },
+  { id: 'tamarind_dhow', label: 'Tamarind Dhow', defaultVenue: 'Tamarind Dhow (Nawalikoni / Babulkher)' },
+  { id: 'golden_key', label: 'Golden Key Casino', defaultVenue: 'Golden Key Casino Mombasa' },
+];
+
+const BRAND_DISPLAY: Record<string, string> = {
+  tamarind_village: 'Tamarind Village',
+  tamarind_restaurant: 'Tamarind Mombasa Restaurant',
+  dawa_terrace: 'Dawa Terrace',
+  tamarind_dhow: 'Tamarind Dhow',
+  golden_key: 'Golden Key Casino',
+};
+
+const DEFAULT_EVENTS: AdminEvent[] = [
+  {
+    id: 'evt_dhow_sunset',
+    title: 'Candlelit Swahili Sunset Dinner Cruise',
+    slug: 'candlelit-swahili-sunset-dinner-cruise',
+    description: 'Sail through the historic Mombasa Old Harbour past Fort Jesus aboard our authentic Swahili sailing dhow with live music and fresh seafood.',
+    brand: 'tamarind_dhow',
+    venue: 'Tamarind Dhow (Nawalikoni)',
+    city: 'Mombasa',
+    category: 'dhow_cruise',
+    startDate: '2026-10-15',
+    timeText: '18:00 – 22:30',
+    priceKes: 8500,
+    priceUsd: 65,
+    maxCapacity: 65,
+    image: 'https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg',
+    paymentEnabled: false,
+    isActive: true,
+  },
+  {
+    id: 'evt_seafood_gala',
+    title: 'Clifftop Seafood & Wine Extravaganza',
+    slug: 'clifftop-seafood-wine-extravaganza',
+    description: 'An extraordinary five-course oceanfront culinary banquet paired with fine Cape wines on the cliffs of Tudor Creek.',
+    brand: 'tamarind_restaurant',
+    venue: 'Tamarind Mombasa Restaurant',
+    city: 'Mombasa',
+    category: 'dining_gala',
+    startDate: '2026-10-24',
+    timeText: '19:00 – 23:00',
+    priceKes: 9500,
+    priceUsd: 75,
+    maxCapacity: 90,
+    image: 'https://media.tamarind.co.ke/tvl-website-assets/seafood_gala.jpg',
+    paymentEnabled: false,
+    isActive: true,
+  },
+];
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<ResortEvent[]>(DEFAULT_EVENTS);
+  const [events, setEvents] = useState<AdminEvent[]>([]);
   const [loading, setLoading] = useState(false);
+  const [brandFilter, setBrandFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<any | null>(null);
+  const [editingEvent, setEditingEvent] = useState<AdminEvent | null>(null);
 
-  // New Event Form State
-  const [newEvent, setNewEvent] = useState({
-    title: '',
-    description: '',
-    venue: 'Tamarind Dhow',
-    eventDate: '2026-10-10',
-    eventTime: '18:30 - 22:30',
-    ticketPriceKes: 8500,
-    ticketPriceUsd: 65,
-    capacity: 65,
-    posterUrl: 'https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg',
-  });
+  // Form state
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [brand, setBrand] = useState('tamarind_village');
+  const [venue, setVenue] = useState('Tamarind Village Clifftop');
+  const [city, setCity] = useState('Mombasa');
+  const [category, setCategory] = useState('dining_gala');
+  const [startDate, setStartDate] = useState('2026-11-01');
+  const [endDate, setEndDate] = useState('');
+  const [timeText, setTimeText] = useState('18:30 – 22:30');
+  const [priceKes, setPriceKes] = useState<number | ''>(8500);
+  const [priceUsd, setPriceUsd] = useState<number | ''>(65);
+  const [maxCapacity, setMaxCapacity] = useState(65);
+  const [image, setImage] = useState('https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg');
+  const [paymentEnabled, setPaymentEnabled] = useState(false);
+  const [externalTicketUrl, setExternalTicketUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const loadEvents = async () => {
     setLoading(true);
@@ -33,6 +119,8 @@ export default function AdminEventsPage() {
       const data = await res.json();
       if (data.events && data.events.length > 0) {
         setEvents(data.events);
+      } else {
+        setEvents([]);
       }
     } catch {
       console.warn('Using local default events');
@@ -45,83 +133,180 @@ export default function AdminEventsPage() {
     loadEvents();
   }, []);
 
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEvent.title || !newEvent.eventDate) {
-      toast.error('Please specify an event title and date.');
-      return;
-    }
+  const openAddModal = () => {
+    setTitle('');
+    setDescription('');
+    setBrand('tamarind_village');
+    setVenue('Tamarind Village Clifftop');
+    setCity('Mombasa');
+    setCategory('dining_gala');
+    setStartDate(new Date().toISOString().split('T')[0]);
+    setEndDate('');
+    setTimeText('18:30 – 22:30');
+    setPriceKes(8500);
+    setPriceUsd(65);
+    setMaxCapacity(80);
+    setImage('https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg');
+    setPaymentEnabled(false);
+    setExternalTicketUrl('');
+    setShowAddModal(true);
+  };
 
-    try {
-      const res = await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEvent),
-      });
+  const openEditModal = (evt: AdminEvent) => {
+    setEditingEvent(evt);
+    setTitle(evt.title);
+    setDescription(evt.description);
+    setBrand(evt.brand || 'tamarind_village');
+    setVenue(evt.venue || '');
+    setCity(evt.city || 'Mombasa');
+    setCategory(evt.category || 'dining_gala');
+    setStartDate(evt.startDate);
+    setEndDate(evt.endDate || '');
+    setTimeText(evt.timeText || '18:30 – 22:30');
+    setPriceKes(evt.priceKes ?? 0);
+    setPriceUsd(evt.priceUsd ?? 0);
+    setMaxCapacity(evt.maxCapacity ?? 80);
+    setImage(evt.image || evt.posterUrl || '');
+    setPaymentEnabled(evt.paymentEnabled === true);
+    setExternalTicketUrl(evt.externalTicketUrl || '');
+  };
 
-      if (res.ok) {
-        toast.success('New event published to village & dhow calendar!');
-        setShowAddModal(false);
-        loadEvents();
-      } else {
-        toast.error('Failed to create event.');
-      }
-    } catch {
-      toast.error('Network error creating event.');
+  const handleBrandChange = (newBrand: string) => {
+    setBrand(newBrand);
+    const match = BRANDS.find((b) => b.id === newBrand);
+    if (match && match.defaultVenue) {
+      setVenue(match.defaultVenue);
     }
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !startDate) {
+      toast.error('Title and start date are required');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          slug,
+          description: description.trim(),
+          brand,
+          venue,
+          city,
+          category,
+          startDate,
+          endDate: endDate || null,
+          timeText,
+          priceKes: Number(priceKes || 0),
+          priceUsd: Number(priceUsd || 0),
+          maxCapacity: Number(maxCapacity || 80),
+          image,
+          posterUrl: image,
+          paymentEnabled,
+          externalTicketUrl: externalTicketUrl.trim() || null,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success('Event published to Tamarind calendar!');
+        setShowAddModal(false);
+        loadEvents();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Failed to create event');
+      }
+    } catch {
+      toast.error('Network error creating event');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent) return;
-
+    setSubmitting(true);
     try {
       const res = await fetch(`/api/events/${editingEvent.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingEvent),
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          brand,
+          venue,
+          city,
+          category,
+          startDate,
+          endDate: endDate || null,
+          timeText,
+          priceKes: Number(priceKes || 0),
+          priceUsd: Number(priceUsd || 0),
+          maxCapacity: Number(maxCapacity || 80),
+          image,
+          posterUrl: image,
+          paymentEnabled,
+          externalTicketUrl: externalTicketUrl.trim() || null,
+        }),
       });
 
       if (res.ok) {
-        toast.success('Event updated successfully!');
+        toast.success('Event details updated!');
         setEditingEvent(null);
         loadEvents();
       } else {
-        toast.error('Failed to update event.');
+        const d = await res.json();
+        toast.error(d.error || 'Failed to update event');
       }
     } catch {
-      toast.error('Network error updating event.');
+      toast.error('Network error updating event');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this event from the calendar?')) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove "${name}" from the calendar?`)) return;
     try {
       const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success('Event removed.');
+        toast.success('Event removed');
         loadEvents();
       } else {
-        toast.error('Failed to delete event.');
+        toast.error('Failed to remove event');
       }
     } catch {
-      toast.error('Network error deleting event.');
+      toast.error('Network error deleting event');
     }
   };
 
+  const filteredEvents = events.filter((e) => {
+    if (brandFilter === 'all') return true;
+    return e.brand === brandFilter;
+  });
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs text-[#C59B27] font-semibold uppercase tracking-wider mb-1">
-            <Sparkles className="w-3.5 h-3.5" /> Village, Restaurant &amp; Dhow Happenings
+            <Sparkles className="w-3.5 h-3.5" /> Tamarind Mombasa Events Hub
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white">
-            Incoming Events Management
+            Events &amp; Culinary Experiences
           </h1>
           <p className="text-xs text-white/60">
-            Publish, edit, and organize special theme nights, live jazz dhow cruises, and clifftop culinary showcases.
+            Publish and manage happenings across Tamarind Village, Tamarind Restaurant, Dawa Terrace, Tamarind Dhow, and Golden Key Casino.
           </p>
         </div>
 
@@ -136,308 +321,383 @@ export default function AdminEventsPage() {
           </button>
 
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={openAddModal}
             className="px-5 py-2.5 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Incoming Event</span>
+            <span>Create New Event</span>
           </button>
         </div>
       </div>
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((evt) => (
-          <div
-            key={evt.id}
-            className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 overflow-hidden shadow-xl flex flex-col justify-between"
+      {/* Brand Filter Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {BRANDS.map((b) => (
+          <button
+            key={b.id}
+            onClick={() => setBrandFilter(b.id)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              brandFilter === b.id
+                ? 'bg-[#821124] text-white shadow-md'
+                : 'bg-[#1F1615] text-white/70 hover:text-white border border-white/10'
+            }`}
           >
-            <div>
-              {/* Event Poster Header */}
-              <div className="relative h-44 w-full bg-black/40">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={evt.posterUrl || evt.image || 'https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg'}
-                  alt={evt.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1F1615] via-transparent to-transparent" />
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-[#821124] text-white text-[10px] font-bold uppercase tracking-wider shadow">
-                  {evt.venue}
-                </div>
-              </div>
-
-              <div className="p-5 space-y-3">
-                <div className="flex items-center gap-3 text-xs text-white/60">
-                  <span className="flex items-center gap-1 font-semibold text-[#C59B27]">
-                    <Calendar className="w-3.5 h-3.5" /> {evt.eventDate || evt.startDate}
-                  </span>
-                  {(evt.eventTime || evt.timeText) && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" /> {evt.eventTime || evt.timeText}
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="font-serif text-lg font-bold text-white">
-                  {evt.title}
-                </h3>
-
-                <p className="text-xs text-white/70 line-clamp-3">
-                  {evt.description}
-                </p>
-
-                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
-                  <span className="text-white/60">
-                    Capacity: <strong className="text-white">{evt.capacity || evt.maxCapacity || 60}</strong>
-                  </span>
-                  <span className="font-bold text-[#C59B27]">
-                    {evt.ticketPriceKes ? `KES ${evt.ticketPriceKes.toLocaleString()}` : `$${evt.priceUsd || 50}`}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-black/20 border-t border-white/10 flex items-center justify-end gap-2">
-              <button
-                onClick={() => setEditingEvent({ ...evt })}
-                className="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
-              >
-                <Edit className="w-3 h-3" />
-                <span>Edit</span>
-              </button>
-
-              <button
-                onClick={() => handleDelete(evt.id)}
-                className="p-1.5 text-white/50 hover:text-red-400 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-                title="Remove Event"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            {b.label}
+          </button>
         ))}
       </div>
 
-      {/* Add Event Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#1F1615] rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-[#C59B27]/40 shadow-2xl relative text-[#FAF6F0] space-y-4 my-8">
-            <button
-              onClick={() => setShowAddModal(false)}
-              className="absolute top-4 right-4 text-white/60 hover:text-white"
+      {/* Events Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredEvents.map((evt) => {
+          const brandName = BRAND_DISPLAY[evt.brand] || evt.brand || 'Tamarind Village';
+
+          return (
+            <div
+              key={evt.id}
+              className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/25 overflow-hidden shadow-xl flex flex-col justify-between hover:border-[#C59B27]/50 transition-all duration-300"
             >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h2 className="font-serif text-2xl font-bold text-white">Create Incoming Event</h2>
-
-            <form onSubmit={handleCreateEvent} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Title *</label>
+                {/* Event Poster Header */}
+                <div className="relative h-44 w-full bg-black/40 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={evt.image || evt.posterUrl || 'https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg'}
+                    alt={evt.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1F1615] via-transparent to-transparent" />
+
+                  {/* Brand Tag Top Left */}
+                  <div className="absolute top-3 left-3">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/70 backdrop-blur-md text-[#C59B27] border border-[#C59B27]/40 shadow-sm">
+                      {brandName}
+                    </span>
+                  </div>
+
+                  {/* Payment Capability Badge Top Right */}
+                  <div className="absolute top-3 right-3">
+                    {evt.paymentEnabled ? (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-sm">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> Payments Active
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-neutral-900/80 text-neutral-300 border border-neutral-600/40 flex items-center gap-1 shadow-sm">
+                        <Lock className="w-2.5 h-2.5 text-[#C59B27]" /> Inquiries Only
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  <div>
+                    <h3 className="font-serif text-lg font-bold text-white leading-snug">
+                      {evt.title}
+                    </h3>
+                    <p className="text-xs text-white/60 mt-1 line-clamp-2 leading-relaxed">
+                      {evt.description}
+                    </p>
+                  </div>
+
+                  {/* Key metadata grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Calendar className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
+                      <span className="truncate">{evt.startDate}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Clock className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
+                      <span className="truncate">{evt.timeText || 'Evening'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 truncate col-span-2">
+                      <MapPin className="w-3.5 h-3.5 text-[#C59B27] shrink-0" />
+                      <span className="truncate text-white/80">{evt.venue} · {evt.city || 'Mombasa'}</span>
+                    </div>
+                  </div>
+
+                  {/* Ticket Price Box */}
+                  <div className="bg-black/30 rounded-xl p-3 border border-white/5 flex items-baseline justify-between">
+                    <div>
+                      <span className="text-xs text-white/40 uppercase font-bold block">Ticket Admission</span>
+                      <span className="text-base font-serif font-bold text-[#C59B27]">
+                        KES {Number(evt.priceKes || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-right text-xs font-mono text-white/60">
+                      ${evt.priceUsd || 0} USD
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-5 pt-0 flex items-center gap-2 border-t border-white/5 mt-2">
+                <button
+                  onClick={() => openEditModal(evt)}
+                  className="flex-1 py-2 rounded-xl bg-white/10 hover:bg-[#821124] text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Event</span>
+                </button>
+                <button
+                  onClick={() => handleDelete(evt.id, evt.title)}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-red-950/60 text-white/50 hover:text-red-400 border border-white/10 transition-colors cursor-pointer"
+                  title="Remove event"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modal (Add / Edit) */}
+      {(showAddModal || editingEvent) && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1F1615] border border-[#C59B27]/40 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h2 className="text-lg font-serif font-bold text-white">
+                {editingEvent ? `Edit Event: ${editingEvent.title}` : 'Publish New Tamarind Event'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingEvent(null);
+                }}
+                className="p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={editingEvent ? handleUpdate : handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  Event Title
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Swahili Coast Full Moon Dhow Cruise"
-                  value={newEvent.title}
-                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs text-white"
+                  placeholder="e.g. Swahili Jazz Dhow Dinner Cruise"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Venue</label>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    Brand / Unit
+                  </label>
                   <select
-                    value={newEvent.venue}
-                    onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    value={brand}
+                    onChange={(e) => handleBrandChange(e.target.value)}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
                   >
-                    <option value="Tamarind Dhow">Tamarind Dhow</option>
-                    <option value="Tamarind Restaurant">Tamarind Restaurant</option>
-                    <option value="Clifftop Harbour Lawn">Clifftop Harbour Lawn</option>
-                    <option value="Poolside Terrace">Poolside Terrace</option>
+                    <option value="tamarind_village">Tamarind Village</option>
+                    <option value="tamarind_restaurant">Tamarind Mombasa Restaurant</option>
+                    <option value="dawa_terrace">Dawa Terrace</option>
+                    <option value="tamarind_dhow">Tamarind Dhow</option>
+                    <option value="golden_key">Golden Key Casino</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Date</label>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    City Location
+                  </label>
+                  <select
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  >
+                    <option value="Mombasa">Mombasa</option>
+                    <option value="Nairobi">Nairobi</option>
+                    <option value="Nationwide">Nationwide</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    Venue Description
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={venue}
+                    onChange={(e) => setVenue(e.target.value)}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    Event Time
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 18:30 – 22:30"
+                    value={timeText}
+                    onChange={(e) => setTimeText(e.target.value)}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    Event Date
+                  </label>
                   <input
                     type="date"
                     required
-                    value={newEvent.eventDate}
-                    onChange={(e) => setNewEvent({ ...newEvent, eventDate: e.target.value })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Price (KES)</label>
-                  <input
-                    type="number"
-                    value={newEvent.ticketPriceKes}
-                    onChange={(e) => setNewEvent({ ...newEvent, ticketPriceKes: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Price (USD)</label>
-                  <input
-                    type="number"
-                    value={newEvent.ticketPriceUsd}
-                    onChange={(e) => setNewEvent({ ...newEvent, ticketPriceUsd: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-white/70 mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-xs text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Event Poster Image (Media Library MAM)</label>
-                <MediaDropzone
-                  folder="events"
-                  currentUrl={newEvent.posterUrl}
-                  onUploadComplete={(url) => setNewEvent({ ...newEvent, posterUrl: url })}
-                />
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-white/20 text-white/70 text-xs font-bold uppercase"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#821124] text-white text-xs font-bold uppercase tracking-wider"
-                >
-                  Publish Event
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Event Modal */}
-      {editingEvent && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#1F1615] rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-[#C59B27]/40 shadow-2xl relative text-[#FAF6F0] space-y-4 my-8">
-            <button
-              onClick={() => setEditingEvent(null)}
-              className="absolute top-4 right-4 text-white/60 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h2 className="font-serif text-2xl font-bold text-white">Edit Event Details</h2>
-
-            <form onSubmit={handleEditSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
-              <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={editingEvent.title}
-                  onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Venue</label>
-                  <select
-                    value={editingEvent.venue}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, venue: e.target.value })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
-                  >
-                    <option value="Tamarind Dhow">Tamarind Dhow</option>
-                    <option value="Tamarind Restaurant">Tamarind Restaurant</option>
-                    <option value="Clifftop Harbour Lawn">Clifftop Harbour Lawn</option>
-                    <option value="Poolside Terrace">Poolside Terrace</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Date</label>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    End Date (if multi-day festival)
+                  </label>
                   <input
                     type="date"
-                    value={editingEvent.eventDate || editingEvent.startDate || ''}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, eventDate: e.target.value, startDate: e.target.value })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Price (KES)</label>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    Price (KES)
+                  </label>
                   <input
                     type="number"
-                    value={editingEvent.ticketPriceKes ?? editingEvent.priceKes ?? 0}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, ticketPriceKes: parseInt(e.target.value) || 0, priceKes: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    min={0}
+                    value={priceKes}
+                    onChange={(e) => setPriceKes(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#C59B27]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/70 mb-1">Price (USD)</label>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    Price (USD)
+                  </label>
                   <input
                     type="number"
-                    value={editingEvent.ticketPriceUsd ?? editingEvent.priceUsd ?? 0}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, ticketPriceUsd: parseInt(e.target.value) || 0, priceUsd: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-white"
+                    min={0}
+                    value={priceUsd}
+                    onChange={(e) => setPriceUsd(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#C59B27]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                    Max Capacity
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={maxCapacity}
+                    onChange={(e) => setMaxCapacity(Math.max(1, Number(e.target.value)))}
+                    className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#C59B27]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-white/70 mb-1">Description</label>
+                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  Description
+                </label>
                 <textarea
                   rows={3}
-                  value={editingEvent.description}
-                  onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-xs text-white"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-[#C59B27] mb-1">Event Poster Image (Media Library MAM)</label>
-                <MediaDropzone
-                  folder="events"
-                  currentUrl={editingEvent.posterUrl || editingEvent.image}
-                  onUploadComplete={(url) => setEditingEvent({ ...editingEvent, posterUrl: url, image: url })}
+                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  Poster Image URL
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://media.tamarind.co.ke/tvl-website-assets/..."
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-white/10">
+              {/* Payment capability switch with management note */}
+              <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-white block">Online Booking &amp; Payment Gateway</span>
+                    <span className="text-[11px] text-white/50 block">
+                      Enables direct Paystack card &amp; M-Pesa checkouts for this event.
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={paymentEnabled}
+                      onChange={(e) => setPaymentEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#821124]"></div>
+                  </label>
+                </div>
+                {!paymentEnabled && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-[#C59B27] bg-[#C59B27]/10 p-2 rounded-lg">
+                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                    <span>Payment capability awaiting management approval. Public site will route guests to the inquiry form.</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#C59B27] mb-1">
+                  External Ticketing Link (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://ticketsasa.com/events/..."
+                  value={externalTicketUrl}
+                  onChange={(e) => setExternalTicketUrl(e.target.value)}
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#C59B27]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
                 <button
                   type="button"
-                  onClick={() => setEditingEvent(null)}
-                  className="px-5 py-2.5 rounded-xl border border-white/20 text-white/70 text-xs font-bold uppercase"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingEvent(null);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-bold hover:bg-white/5"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
-                  Save Changes
+                  {submitting ? 'Saving...' : editingEvent ? 'Save Changes' : 'Publish Event'}
                 </button>
               </div>
             </form>

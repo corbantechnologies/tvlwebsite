@@ -18,21 +18,21 @@ export default function AvailabilityPage() {
   }, []);
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-serif font-bold text-white tracking-wide">
-            Apartment Availability & Inventory
+            Apartment Availability, Rates &amp; Closures
           </h1>
           <p className="text-xs text-[#C59B27] mt-1">
-            Manage unit inventory counts, maintenance blocks, and manual reservation closures
+            Monthly swimlane calendar, seasonal period pricing, maintenance blocks, and unit capacity
           </p>
         </div>
       </div>
 
       <AvailabilityManager
         apartments={apartments}
-        currentUserName="Staff"
+        currentUserName="Reservations Staff"
       />
     </div>
   );

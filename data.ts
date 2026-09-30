@@ -123,7 +123,7 @@ export const APARTMENTS: ApartmentType[] = [
 export const PACKAGES: PackageType[] = [
   {
     id: "ro",
-    name: "Room Only (Self-Catering)",
+    name: "Flexible Rate - Room Only",
     description: "Enjoy full flexibility during your stay with our room-only self-catering option. Savor the independence of cooking in your granite-top kitchen or dining à la carte.",
     priceMarkupPercentage: 0,
     pricePerPersonPerDay: 0,
@@ -148,10 +148,10 @@ export const PACKAGES: PackageType[] = [
   },
   {
     id: "hb",
-    name: "Coastal Half Board",
+    name: "Stay & Dine - Half Board Deal with Seafood",
     description: "Savor a remarkable culinary journey. This package includes our gourmet breakfast daily, plus your choice of a magnificent 3-course lunch OR dinner.",
     priceMarkupPercentage: 15,
-    pricePerPersonPerDay: 50,
+    pricePerPersonPerDay: 41,
     highlights: [
       "Includes daily gourmet breakfast",
       "Choice of fine lunch or dinner from the à la carte menu at the Tamarind Restaurant",
@@ -253,47 +253,7 @@ export const FACILITIES: FacilityType[] = [
 // MINIO ASSETS: INCOMING EVENTS & RESORT PACKAGES
 // ============================================================================
 
-export const DEFAULT_EVENTS = [
-  {
-    id: "evt-dhow-sunset",
-    title: "Tamarind Dhow Sunset Dinner Cruise",
-    venue: "Tamarind Dhow",
-    eventDate: "2026-10-05",
-    eventTime: "18:00 - 22:30",
-    ticketPriceKes: 8500,
-    ticketPriceUsd: 65,
-    capacity: 70,
-    posterUrl: "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--2.jpg",
-    description: "Sailing along Tudor Creek under starlit skies with fresh lobster grill, chilled Dawa cocktails, and live acoustic coastal melodies.",
-    isActive: true,
-  },
-  {
-    id: "evt-seafood-gala",
-    title: "Clifftop Seafood Tasting Gala",
-    venue: "Tamarind Restaurant",
-    eventDate: "2026-10-12",
-    eventTime: "19:00 - 23:00",
-    ticketPriceKes: 9500,
-    ticketPriceUsd: 75,
-    capacity: 80,
-    posterUrl: "https://media.tamarind.co.ke/tvl-website-assets/t1.jpg",
-    description: "Exclusive multi-course clifftop tasting featuring Mangrove Crab, Lobster Thermidor, and fine wine pairings overlooking the Old Harbour.",
-    isActive: true,
-  },
-  {
-    id: "evt-swahili-night",
-    title: "Swahili Cultural Evening & Poolside BBQ",
-    venue: "Village Clifftop & Pool",
-    eventDate: "2026-10-18",
-    eventTime: "18:30 - 22:00",
-    ticketPriceKes: 6500,
-    ticketPriceUsd: 50,
-    capacity: 100,
-    posterUrl: "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--14.jpg",
-    description: "Authentic coastal Swahili barbecue feast, live Taarab musicians, and spice-infused coconut delicacies under palm trees.",
-    isActive: true,
-  }
-];
+export const DEFAULT_EVENTS: any[] = [];
 
 export const DEFAULT_RESORT_PACKAGES = [
   {

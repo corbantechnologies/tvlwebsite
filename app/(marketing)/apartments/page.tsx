@@ -143,14 +143,26 @@ export default function ApartmentsIndexPage() {
                         </p>
                       </div>
 
-                      <Link
-                        href={`/apartments/${slug}`}
-                        className="px-5 py-2.5 border border-brand-dark text-brand-dark hover:bg-stone-50 rounded-none text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer text-center inline-flex items-center gap-1"
-                        id={`btn-view-${apt.id}`}
-                      >
-                        <span>Details</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/apartments/${slug}`}
+                          className="px-3 py-2 border border-stone-300 text-stone-700 hover:bg-stone-50 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer text-center inline-flex items-center gap-1"
+                          id={`btn-view-${apt.id}`}
+                        >
+                          Details
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setSelectedApartmentId(apt.id);
+                            setIsBookingOpen(true);
+                          }}
+                          className="px-4 py-2 bg-brand-dark hover:bg-brand-teal text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer text-center inline-flex items-center gap-1"
+                          id={`btn-book-${apt.id}`}
+                        >
+                          <span>Book</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

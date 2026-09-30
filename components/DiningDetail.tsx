@@ -74,6 +74,7 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
   const [isDiningSubmitting, setIsDiningSubmitting] = useState(false);
   const [diningSubmitError, setDiningSubmitError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [confirmedToken, setConfirmedToken] = useState("");
 
   // Additional data based on dining ID
   const getDiningSpecials = (id: string) => {
@@ -203,7 +204,8 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          type: "dining",
+          type: "restaurant",
+          venue: dining.id === "dawa-terrace" ? "dawa_terrace" : dining.id === "tamarind-dhow" ? "dhow" : (dining.id === "golden-key" || dining.id === "golden-key-casino") ? "golden_key" : "restaurant",
           payload: {
             name: guestName,
             email: guestEmail,

@@ -10,6 +10,7 @@ import DiningDetail from "@/components/DiningDetail";
 import BookingModal from "@/components/BookingModal";
 import TransferModal from "@/components/TransferModal";
 import EventsAndChartersSection from "@/components/EventsAndChartersSection";
+import EventsHighlight from "@/components/marketing/EventsHighlight";
 
 import DirectPerksBanner from "@/components/DirectPerksBanner";
 import ReviewsSection from "@/components/ReviewsSection";
@@ -46,6 +47,7 @@ export default function App() {
   // Dynamic server-synced datasets and pricing rules
   const [apartments, setApartments] = useState<any[]>(APARTMENTS);
   const [diningOptions, setDiningOptions] = useState<any[]>(DINING);
+  const [liveEvents, setLiveEvents] = useState<any[]>([]);
   const [pricingRules, setPricingRules] = useState({
     markupMultiplier: 1.0,
     taxRate: 8,
@@ -101,6 +103,12 @@ export default function App() {
         if (dRes.ok) {
           const d = await dRes.json();
           if (d.dining) setDiningOptions(d.dining);
+        }
+
+        const eRes = await fetch("/api/events");
+        if (eRes.ok) {
+          const d = await eRes.json();
+          if (d.events && d.events.length > 0) setLiveEvents(d.events);
         }
 
         const sRes = await fetch("/api/settings");
@@ -1076,6 +1084,14 @@ export default function App() {
                   </div>
                 </div>
               </section>
+
+              {/* 5B. UPCOMING EVENTS & EXPERIENCES HIGHLIGHT */}
+              {liveEvents && liveEvents.length > 0 ? (
+                <EventsHighlight
+                  events={liveEvents}
+                  onBookEvent={() => router.push('/events')}
+                />
+              ) : null}
 
               {/* 6. RESORT FACILITIES & SERVICES */}
               <section className="py-20 bg-brand-sand border-y border-stone-200 scroll-mt-12" id="facilities-section">

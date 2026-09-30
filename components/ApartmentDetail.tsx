@@ -56,6 +56,7 @@ export default function ApartmentDetail({
   const [isInquirySubmitting, setIsInquirySubmitting] = useState(false);
   const [inquiryError, setInquiryError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [confirmedToken, setConfirmedToken] = useState("");
   const [promocode, setPromocode] = useState("");
   const [bookingMode, setBookingMode] = useState<"live" | "inquiry">("live");
 

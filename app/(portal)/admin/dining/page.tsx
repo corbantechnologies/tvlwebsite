@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Utensils, Ship, Clock, Users, Sparkles, Plus, Trash2, Edit, Save, X, RotateCw, ExternalLink } from 'lucide-react';
+import { Utensils, Ship, Clock, Users, Sparkles, Plus, Trash2, Edit, Save, X, RotateCw, ExternalLink, Mail, Shield, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
 import { DINING } from '@/lib/data';
@@ -140,6 +140,81 @@ export default function AdminDiningPage() {
             <Plus className="w-4 h-4" />
             <span>Add Venue</span>
           </button>
+        </div>
+      </div>
+
+      {/* Venue Inquiry Email Routing Panel */}
+      <div className="bg-[#1F1615] rounded-2xl border border-[#C59B27]/30 p-6 shadow-xl space-y-4">
+        <div className="flex items-center gap-2">
+          <Mail className="w-4 h-4 text-[#C59B27]" />
+          <h2 className="font-serif text-base font-bold text-white">
+            Dedicated Venue Inquiry Dispatch &amp; Routing
+          </h2>
+        </div>
+        <p className="text-xs text-white/60 leading-relaxed">
+          Guest inquiries submitted across the public platform are automatically routed to the venue’s dedicated reservation desk for prompt response:
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+            <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
+              Tamarind Mombasa Restaurant
+            </span>
+            <div className="text-xs font-mono text-white/90 truncate">
+              reservations.mombasa@tamarind.co.ke
+            </div>
+            <span className="text-[10px] text-white/40 block">Inquiries only</span>
+          </div>
+
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+            <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
+              The Dawa Terrace Lounge
+            </span>
+            <div className="text-xs font-mono text-white/90 truncate">
+              dawa@tamarind.co.ke
+            </div>
+            <span className="text-[10px] text-white/40 block">Inquiries only</span>
+          </div>
+
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+            <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
+              Tamarind Dhow (Mombasa)
+            </span>
+            <div className="text-xs font-mono text-white/90 truncate">
+              reservations.dhow@tamarind.co.ke
+            </div>
+            <span className="text-[10px] text-white/40 block">Inquiries &amp; Private Charters</span>
+          </div>
+
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+            <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
+              Golden Key Casino
+            </span>
+            <div className="text-xs font-mono text-white/90 truncate">
+              goldenkey@tamarind.co.ke
+            </div>
+            <span className="text-[10px] text-white/40 block">VIP &amp; Event Inquiries</span>
+          </div>
+
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+            <span className="text-[10px] text-[#C59B27] uppercase font-bold tracking-wider block">
+              Tamarind Village Apartments
+            </span>
+            <div className="text-xs font-mono text-white/90 truncate">
+              reservations.village@tamarind.co.ke
+            </div>
+            <span className="text-[10px] text-emerald-400 font-bold block">Online Booking &amp; Inquiries</span>
+          </div>
+
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/5 space-y-1">
+            <span className="text-[10px] text-white/50 uppercase font-bold tracking-wider block">
+              Harbour Restaurant &amp; Pools
+            </span>
+            <div className="text-xs font-semibold text-white/70">
+              Residents Only
+            </div>
+            <span className="text-[10px] text-white/40 block">Private amenity for staying guests</span>
+          </div>
         </div>
       </div>
 
