@@ -12,7 +12,6 @@ import GuestBookingTrackerModal from '@/components/GuestBookingTrackerModal';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MobileBookingBar from '@/components/MobileBookingBar';
-import { useLiveRates } from '@/utils/profitroom';
 import { Home } from 'lucide-react';
 
 interface ApartmentPageProps {
@@ -36,9 +35,6 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
   const apartment: ApartmentType =
     APARTMENTS.find((a) => a.id.toLowerCase() === rawSlug || a.id.toLowerCase() === normalizedId) ||
     APARTMENTS[0];
-
-  const { getLivePrice } = useLiveRates();
-  const { price: livePrice, isLive } = getLivePrice(apartment.id, apartment.pricePerNight);
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -134,8 +130,8 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
       {/* Mobile Sticky Booking Bar */}
       <MobileBookingBar
         onOpenBooking={() => setIsBookingOpen(true)}
-        startingPrice={livePrice}
-        isLive={isLive}
+        startingPrice={apartment.pricePerNight}
+        isLive={false}
       />
     </div>
   );

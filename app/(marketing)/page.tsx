@@ -19,7 +19,6 @@ import GuestBookingTrackerModal from "@/components/GuestBookingTrackerModal";
 import OptimizedImage from "@/components/OptimizedImage";
 import { getOptimizedImageUrl } from "@/utils/media";
 import { loadTransferVehicles, loadEventPackages, saveTransferVehicles, saveEventPackages } from "@/utils/extrasStore";
-import { useLiveRates } from "@/utils/profitroom";
 import { StaffUser } from "@/types";
 import { loadStaffUsers, saveStaffUsers, getCurrentStaffUser, setCurrentStaffUser } from "@/utils/staffStore";
 import { APARTMENTS, PACKAGES, DINING, FACILITIES } from "@/data";
@@ -34,7 +33,6 @@ import { motion, AnimatePresence } from "motion/react";
 
 export default function App() {
   const router = useRouter();
-  const { getLivePrice, getLivePackagePrice } = useLiveRates();
   const [activeView, setActiveView] = useState<"home" | "detail" | "dining">("home");
   const [selectedApartmentId, setSelectedApartmentId] = useState<string>("1-bedroom");
   const [selectedDiningId, setSelectedDiningId] = useState<string>("tamarind-restaurant");
@@ -43,6 +41,27 @@ export default function App() {
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [trackingToken, setTrackingToken] = useState("");
   const [preSelectedPkg, setPreSelectedPkg] = useState<string>("ro");
+  const [dbMealPlans, setDbMealPlans] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/meal-plans?active=true')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && Array.isArray(d.mealPlans) && d.mealPlans.length > 0) {
+          setDbMealPlans(d.mealPlans);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayMealPlans = dbMealPlans.length > 0 ? dbMealPlans : PACKAGES.map(p => ({
+    id: p.id,
+    name: p.name,
+    shortName: p.id.toUpperCase(),
+    description: p.description,
+    pricePerPersonPerDayUsd: p.pricePerPersonPerDay,
+    highlights: p.highlights,
+  }));
 
   // Dynamic server-synced datasets and pricing rules
   const [apartments, setApartments] = useState<any[]>(APARTMENTS);
@@ -171,37 +190,19 @@ export default function App() {
     pricePerNight: Math.round(apt.pricePerNight * (pricingRules?.markupMultiplier || 1.0))
   }));
 
-  // Live starting price for mobile booking bar (dynamic from Profitroom)
+  // Starting price for mobile booking bar (dynamic from apartment inventory)
   const { mobileStartingPrice, isMobilePriceLive } = useMemo(() => {
-    // If viewing a specific apartment detail, show that apartment's live rate
     if (activeView === "detail" && selectedApartmentId) {
       const activeApt = processedApartments.find(a => a.id === selectedApartmentId) || processedApartments[0];
       if (activeApt) {
-        const { price, isLive } = getLivePrice(activeApt.id, activeApt.pricePerNight);
-        return { mobileStartingPrice: price, isMobilePriceLive: isLive };
+        return { mobileStartingPrice: activeApt.pricePerNight, isMobilePriceLive: false };
       }
     }
-
-    // On home view or other views, find the minimum live rate across all available apartments
-    let lowestPrice = Infinity;
-    let anyLive = false;
-
-    processedApartments.forEach(apt => {
-      const { price, isLive } = getLivePrice(apt.id, apt.pricePerNight);
-      if (price < lowestPrice) {
-        lowestPrice = price;
-      }
-      if (isLive) {
-        anyLive = true;
-      }
-    });
-
-    if (lowestPrice === Infinity) {
-      lowestPrice = processedApartments[0]?.pricePerNight || 160;
-    }
-
-    return { mobileStartingPrice: lowestPrice, isMobilePriceLive: anyLive };
-  }, [activeView, selectedApartmentId, processedApartments, getLivePrice]);
+    const lowest = processedApartments.length > 0
+      ? Math.min(...processedApartments.map(a => a.pricePerNight))
+      : 160;
+    return { mobileStartingPrice: lowest, isMobilePriceLive: false };
+  }, [activeView, selectedApartmentId, processedApartments]);
 
   // Dynamic dining options with fallback to static DINING
   const displayDining = diningOptions && diningOptions.length > 0 ? diningOptions : DINING;
@@ -810,7 +811,8 @@ export default function App() {
                   {/* Apartments Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center justify-center">
                     {processedApartments.map((apt, index) => {
-                      const { price: livePrice, isLive } = getLivePrice(apt.id, apt.pricePerNight);
+                      const livePrice = apt.pricePerNight;
+                      const isLive = false;
                       return (
                         <div
                           key={apt.id}
@@ -922,19 +924,20 @@ export default function App() {
 
                   {/* Packages Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto justify-items-center justify-center">
-                    {PACKAGES.map((pkg, index) => {
-                      const { rate: liveRate, isLive, name: liveName } = getLivePackagePrice(pkg.id, pkg.pricePerPersonPerDay);
-
-                      // Assign elegant icons based on package type
+                    {displayMealPlans.map((pkg: any, index: number) => {
                       const getPackageIcon = (id: string) => {
                         switch (id) {
-                          case "ro": return <Sparkles className="w-5 h-5" />;
-                          case "bb": return <Coffee className="w-5 h-5" />;
-                          case "hb": return <Utensils className="w-5 h-5" />;
-                          case "hbp": return <Ship className="w-5 h-5" />;
+                          case "ro":
+                          case "room-only": return <Sparkles className="w-5 h-5" />;
+                          case "bb":
+                          case "bed-breakfast": return <Coffee className="w-5 h-5" />;
+                          case "hb":
+                          case "half-board": return <Utensils className="w-5 h-5" />;
                           default: return <Utensils className="w-5 h-5" />;
                         }
                       };
+
+                      const isPopular = pkg.id === "half-board" || pkg.id === "hb";
 
                       return (
                         <div
@@ -943,9 +946,9 @@ export default function App() {
                             }`}
                           id={`package-card-${pkg.id}`}
                         >
-                          {pkg.id === "hbp" && (
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-teal text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-none border border-brand-teal/40 shadow-sm whitespace-nowrap">
-                              Highly Recommended
+                          {isPopular && (
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#821124] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-none border border-[#821124]/40 shadow-sm whitespace-nowrap">
+                              Signature Seafood Experience
                             </div>
                           )}
 
@@ -955,7 +958,7 @@ export default function App() {
                                 {getPackageIcon(pkg.id)}
                               </div>
                               <h3 className="font-serif text-base sm:text-lg font-bold text-white group-hover:text-brand-teal transition-colors">
-                                {liveName || pkg.name}
+                                {pkg.name}
                               </h3>
                             </div>
 
@@ -965,7 +968,7 @@ export default function App() {
 
                             <div className="space-y-3 mb-8">
                               <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">What's Included:</span>
-                              {pkg.highlights.map((highlight, idx) => (
+                              {(pkg.highlights || []).map((highlight: string, idx: number) => (
                                 <div key={idx} className="flex gap-2.5 items-start text-xs text-stone-300">
                                   <CheckCircle2 className="w-4 h-4 text-brand-teal flex-shrink-0 mt-0.5" />
                                   <span className="font-light leading-snug">{highlight}</span>
@@ -976,26 +979,21 @@ export default function App() {
 
                           <div className="pt-6 border-t border-stone-800/80 flex flex-col gap-4">
                             <div className="w-full">
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className="text-[9px] text-stone-500 uppercase font-bold block">
-                                  {isLive ? "Live Upgrade Cost" : "Upgrade Cost"}
-                                </span>
-                                {isLive && (
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 text-[7px] font-bold text-white bg-emerald-600 rounded-none uppercase tracking-wider">
-                                    ● Live
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-lg font-serif font-bold text-white">${liveRate}</span>
+                              <span className="text-[9px] text-stone-500 uppercase font-bold block mb-0.5">
+                                Boarding Rate
+                              </span>
+                              <span className="text-lg font-serif font-bold text-white">
+                                ${pkg.pricePerPersonPerDayUsd || 0}
+                              </span>
                               <span className="text-[10px] text-stone-400 font-light block">/ Adult / Day</span>
                             </div>
 
                             <button
                               onClick={() => handleOpenBookingWithParams("1-bedroom", pkg.id)}
-                              className="w-full py-3 bg-brand-teal hover:bg-brand-teal-dark text-white font-bold rounded-none text-xs uppercase tracking-widest transition-colors cursor-pointer text-center"
+                              className="w-full py-3 bg-[#821124] hover:bg-[#680e1c] text-white font-bold rounded-none text-xs uppercase tracking-widest transition-colors cursor-pointer text-center"
                               id={`btn-pkg-select-${pkg.id}`}
                             >
-                              Inquire Package
+                              Select Package
                             </button>
                           </div>
                         </div>

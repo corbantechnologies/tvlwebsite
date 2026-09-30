@@ -23,6 +23,19 @@ export async function GET(
       return NextResponse.json({ error: "Paystack not configured" }, { status: 503 });
     }
 
+    const db = getDb();
+
+    // Check if this booking was already verified and recorded
+    const existing = await db.select().from(bookings).where(eq(bookings.bookingReference, reference)).limit(1);
+    if (existing.length > 0) {
+      return NextResponse.json({
+        success: true,
+        booking: existing[0],
+        guestToken: existing[0].guestToken,
+        alreadyVerified: true,
+      });
+    }
+
     // Verify with Paystack
     const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
@@ -38,7 +51,6 @@ export async function GET(
 
     const txn = data.data;
     const meta = txn.metadata || {};
-    const db = getDb();
 
     // Amount in major unit (Paystack returns in smallest unit)
     const totalAmount = txn.amount / 100;

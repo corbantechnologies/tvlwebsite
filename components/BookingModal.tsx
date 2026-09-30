@@ -85,8 +85,8 @@ export default function BookingModal({
   const [mealPlanId, setMealPlanId] = useState(initialPackageId || "room-only");
   const [mealPlans, setMealPlans] = useState<MealPlanItem[]>(DEFAULT_MEAL_PLANS);
 
-  // Booking mode
-  const [bookingMode, setBookingMode] = useState<"paystack" | "inquiry" | "profitroom">("paystack");
+  // Booking mode: Direct Paystack or Inquiry (Pay on Arrival / Custom)
+  const [bookingMode, setBookingMode] = useState<"paystack" | "inquiry">("paystack");
 
   // Dates & Guests
   const [checkIn, setCheckIn] = useState("");
@@ -362,14 +362,6 @@ export default function BookingModal({
     }
   };
 
-  const handleProfitroomDirect = () => {
-    if (!checkIn || !checkOut) {
-      toast.error("Please select check-in and check-out dates first.");
-      return;
-    }
-    const fallbackUrl = `https://upperbooking.com/en/booking/start/tamarindvillage?checkin=${checkIn}&checkout=${checkOut}&occupancy=${adults + children}${promocode ? `&promocode=${encodeURIComponent(promocode)}` : ""}`;
-    window.open(fallbackUrl, "_blank", "noopener,noreferrer");
-  };
 
   const handleClose = () => {
     setConfirmedData(null);
@@ -746,13 +738,10 @@ export default function BookingModal({
 
               {/* Action Buttons */}
               <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={handleProfitroomDirect}
-                  className="text-xs text-[#C59B27] hover:underline"
-                >
-                  Prefer UpperBooking / Profitroom?
-                </button>
+                <div className="flex items-center gap-1.5 text-[11px] text-white/50">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#C59B27]" />
+                  <span>Best Rate Guaranteed Directly with Tamarind</span>
+                </div>
 
                 <div className="flex items-center gap-3">
                   <button

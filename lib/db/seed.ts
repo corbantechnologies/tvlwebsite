@@ -8,6 +8,7 @@ import {
   apartmentInventory,
   diningOptions,
   globalSettings,
+  mealPlans,
 } from "./schema";
 
 // Seeding guard — only run once per process lifecycle
@@ -101,6 +102,7 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       description TEXT NOT NULL,
       price_per_person_per_day_usd DOUBLE PRECISION NOT NULL DEFAULT 0,
       price_per_person_per_day_kes DOUBLE PRECISION NOT NULL DEFAULT 0,
+      image TEXT,
       highlights JSONB NOT NULL DEFAULT '[]',
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
       sort_order INTEGER NOT NULL DEFAULT 0,
@@ -311,6 +313,7 @@ async function seedRequiredDefaults(db: ReturnType<typeof getDb>): Promise<void>
   await seedApartments(db);
   await seedDining(db);
   await seedFacilities(db);
+  await seedMealPlans(db);
 }
 
 // ---------------------------------------------------------------
@@ -621,3 +624,75 @@ async function seedFacilities(db: ReturnType<typeof getDb>): Promise<void> {
 
   console.log("[Seed] Facilities seeded into global_settings (Pools & Conferences).");
 }
+
+// ---------------------------------------------------------------
+// 7. Official Boarding Packages (Meal Plans)
+// ---------------------------------------------------------------
+async function seedMealPlans(db: ReturnType<typeof getDb>): Promise<void> {
+  const existing = await db.select().from(mealPlans).limit(1);
+  if (existing.length > 0) return;
+
+  const standardPlans = [
+    {
+      id: "room-only",
+      name: "Flexible Rate — Room Only",
+      shortName: "RO",
+      description: "Accommodation only. Complete flexibility to cook in your granite-top Swahili kitchen or explore Mombasa's finest dining à la carte.",
+      pricePerPersonPerDayUsd: 0,
+      pricePerPersonPerDayKes: 0,
+      image: "https://media.tamarind.co.ke/tvl-website-assets/r12.jpg",
+      highlights: [
+        "Self-catering granite Swahili kitchen access with premium appliances",
+        "Complimentary welcome arrival cocktail",
+        "Full resident access to Harbour Restaurant & 2 Clifftop Pools",
+        "Daily housekeeping, evening turndown service & Wi-Fi",
+      ],
+      isActive: true,
+      sortOrder: 1,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "bed-breakfast",
+      name: "Bed & Breakfast Experience",
+      shortName: "BB",
+      description: "Start each day of your coastal stay with a fresh ocean breeze and our celebrated clifftop breakfast served poolside at Harbour Restaurant.",
+      pricePerPersonPerDayUsd: 21,
+      pricePerPersonPerDayKes: 2750,
+      image: "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--11.jpg",
+      highlights: [
+        "Daily clifftop harbour breakfast served poolside overlooking Tudor Creek",
+        "Freshly squeezed Mombasa tropical juices & seasonal fruits",
+        "Eggs cooked to order, Swahili mahamri pastries, and local pancakes",
+        "Freshly brewed premium Kenyan coffee or spiced coastal tea",
+      ],
+      isActive: true,
+      sortOrder: 2,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "half-board",
+      name: "Stay & Dine — Half Board Deal with Seafood",
+      shortName: "HB",
+      description: "The ultimate Tamarind experience. Gourmet breakfast each morning, plus your choice of a magnificent 3-course lunch or dinner at the cliffside Tamarind Restaurant.",
+      pricePerPersonPerDayUsd: 41,
+      pricePerPersonPerDayKes: 5350,
+      image: "https://media.tamarind.co.ke/tvl-website-assets/mr6.jpg",
+      highlights: [
+        "Daily clifftop harbour breakfast at Harbour Restaurant",
+        "Choice of 3-course lunch or dinner from the à la carte menu at Tamarind Mombasa",
+        "Priority creekside table placement for staying residents",
+        "East Africa's premier fresh seafood specialties & Swahili coconut curries",
+      ],
+      isActive: true,
+      sortOrder: 3,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const plan of standardPlans) {
+    await db.insert(mealPlans).values(plan as any).onConflictDoNothing();
+  }
+
+  console.log("[Seed] Official Boarding Packages seeded (RO: $0, BB: $21, HB: $41).");
+}
+
