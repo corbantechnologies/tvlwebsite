@@ -3,7 +3,6 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { APARTMENTS } from '@/data';
 import { ApartmentType } from '@/types';
 import ApartmentDetail from '@/components/ApartmentDetail';
 import BookingModal from '@/components/BookingModal';
@@ -12,7 +11,7 @@ import GuestBookingTrackerModal from '@/components/GuestBookingTrackerModal';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MobileBookingBar from '@/components/MobileBookingBar';
-import { Home, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Home, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
 
 interface ApartmentPageProps {
   params: Promise<{ slug: string }>;
@@ -32,9 +31,7 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
     .replace('two-bedroom', '2-bedroom')
     .replace('three-bedroom', '3-bedroom');
 
-  const [apartmentsList, setApartmentsList] = useState<ApartmentType[]>(
-    APARTMENTS.filter(a => a.isActive !== false)
-  );
+  const [apartmentsList, setApartmentsList] = useState<ApartmentType[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -56,6 +53,14 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [preSelectedPkg, setPreSelectedPkg] = useState('ro');
+  const [bookingPrefill, setBookingPrefill] = useState<{
+    apartmentId: string;
+    packageId?: string;
+    checkIn?: string;
+    checkOut?: string;
+    guests?: number;
+    promocode?: string;
+  } | null>(null);
 
   const handleSelectApartment = (id: string) => {
     const slug = id
@@ -65,13 +70,42 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
     router.push(`/apartments/${slug}`);
   };
 
-  const handleBookNow = (aptId: string, pkgId: string) => {
-    setPreSelectedPkg(pkgId);
+  const handleBookNow = (data: any, pkgId?: string) => {
+    if (typeof data === 'string') {
+      setBookingPrefill({
+        apartmentId: data,
+        packageId: pkgId || 'room-only'
+      });
+      setPreSelectedPkg(pkgId || 'ro');
+    } else {
+      setBookingPrefill(data);
+      setPreSelectedPkg(data.packageId || 'ro');
+    }
     setIsBookingOpen(true);
   };
 
+  // Loading state while fetching from database
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-brand-sand font-sans text-brand-dark flex flex-col w-full">
+        <Navbar
+          onNavigate={(sectionId) => router.push(`/#${sectionId}`)}
+          onOpenBooking={() => setIsBookingOpen(true)}
+          onOpenTransferModal={() => setIsTransferOpen(true)}
+          onOpenTracking={() => setIsTrackingOpen(true)}
+          activeView="detail"
+          onGoHome={() => router.push('/')}
+        />
+        <main className="flex-1 flex flex-col items-center justify-center p-6 pt-32 space-y-3">
+          <Loader2 className="w-8 h-8 text-[#821124] animate-spin" />
+          <p className="text-xs uppercase tracking-widest font-bold text-stone-500">Loading Residence...</p>
+        </main>
+      </div>
+    );
+  }
+
   // If apartment is inactive or does not exist
-  if (loaded && !apartment) {
+  if (!apartment) {
     return (
       <div className="min-h-screen bg-brand-sand font-sans text-brand-dark flex flex-col w-full">
         <Navbar
@@ -114,8 +148,7 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
     );
   }
 
-  // Fallback while loading initial state
-  const currentApartment = apartment || apartmentsList[0] || APARTMENTS[0];
+  const currentApartment = apartment;
 
   return (
     <div className="min-h-screen bg-brand-sand font-sans text-brand-dark selection:bg-brand-teal selection:text-white flex flex-col w-full max-w-full overflow-x-hidden">
@@ -168,9 +201,16 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
       {/* Booking Modal */}
       <BookingModal
         isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        initialApartmentId={currentApartment.id}
-        initialPackageId={preSelectedPkg}
+        onClose={() => {
+          setIsBookingOpen(false);
+          setBookingPrefill(null);
+        }}
+        initialApartmentId={bookingPrefill?.apartmentId || currentApartment.id}
+        initialPackageId={bookingPrefill?.packageId || preSelectedPkg}
+        initialCheckIn={bookingPrefill?.checkIn}
+        initialCheckOut={bookingPrefill?.checkOut}
+        initialAdults={bookingPrefill?.guests}
+        initialPromocode={bookingPrefill?.promocode}
         apartmentsList={apartmentsList}
       />
 

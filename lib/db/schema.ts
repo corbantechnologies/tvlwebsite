@@ -344,3 +344,24 @@ export const bookingConditions = pgTable("booking_conditions", {
   updatedAt: text("updated_at"),
 });
 
+// ============================================================
+// VOUCHERS & PROMO CODES (CRUD)
+// ============================================================
+
+export const vouchers = pgTable("vouchers", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(), // e.g. "TAMARIND2026", "VIPGUEST"
+  description: text("description"),
+  discountType: text("discount_type").notNull().default("percentage"), // "percentage" | "fixed_usd" | "fixed_kes"
+  discountValue: doublePrecision("discount_value").notNull(), // e.g. 10 (%) or 50 ($)
+  minSpendUsd: doublePrecision("min_spend_usd").default(0),
+  maxDiscountUsd: doublePrecision("max_discount_usd"), // optional cap for percentage discounts
+  validFrom: text("valid_from"), // YYYY-MM-DD
+  validUntil: text("valid_until"), // YYYY-MM-DD
+  usageLimit: integer("usage_limit"), // null = unlimited
+  usedCount: integer("used_count").default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at"),
+});
+

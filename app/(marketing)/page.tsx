@@ -41,6 +41,7 @@ export default function App() {
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [trackingToken, setTrackingToken] = useState("");
   const [preSelectedPkg, setPreSelectedPkg] = useState<string>("ro");
+  const [bookingPrefill, setBookingPrefill] = useState<any>(null);
   const [dbMealPlans, setDbMealPlans] = useState<any[]>([]);
 
   useEffect(() => {
@@ -64,7 +65,8 @@ export default function App() {
   }));
 
   // Dynamic server-synced datasets and pricing rules
-  const [apartments, setApartments] = useState<any[]>(APARTMENTS);
+  const [apartments, setApartments] = useState<any[]>([]);
+  const [apartmentsLoaded, setApartmentsLoaded] = useState(false);
   const [diningOptions, setDiningOptions] = useState<any[]>(DINING);
   const [liveEvents, setLiveEvents] = useState<any[]>([]);
   const [pricingRules, setPricingRules] = useState({
@@ -116,6 +118,7 @@ export default function App() {
         if (aRes.ok) {
           const d = await aRes.json();
           if (d.apartments) setApartments(d.apartments);
+          setApartmentsLoaded(true);
         }
 
         const dRes = await fetch("/api/dining");
@@ -184,8 +187,8 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Processed apartments with live markupMultiplier applied (defensive fallback to APARTMENTS if empty, filtering active only)
-  const processedApartments = (apartments && apartments.length > 0 ? apartments : APARTMENTS)
+  // Processed apartments with live markupMultiplier applied (from database only, filtering active only)
+  const processedApartments = (apartments || [])
     .filter(apt => apt.isActive !== false)
     .map(apt => ({
       ...apt,
@@ -812,7 +815,22 @@ export default function App() {
 
                   {/* Apartments Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center justify-center">
-                    {processedApartments.map((apt, index) => {
+                    {!apartmentsLoaded ? (
+                      [1, 2, 3].map((n) => (
+                        <div key={n} className="bg-white border border-stone-200 rounded-none overflow-hidden shadow-xs animate-pulse w-full max-w-sm flex flex-col h-96">
+                          <div className="aspect-[16/10] bg-stone-200" />
+                          <div className="p-6 space-y-4 flex-1">
+                            <div className="h-5 bg-stone-200 w-3/4 rounded-none" />
+                            <div className="h-3 bg-stone-200 w-full rounded-none" />
+                            <div className="h-3 bg-stone-200 w-5/6 rounded-none" />
+                            <div className="pt-6 border-t border-stone-200 flex justify-between items-center">
+                              <div className="h-6 bg-stone-200 w-24 rounded-none" />
+                              <div className="h-8 bg-stone-200 w-20 rounded-none" />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : processedApartments.map((apt, index) => {
                       const livePrice = apt.pricePerNight;
                       const isLive = false;
                       return (
@@ -1502,9 +1520,16 @@ export default function App() {
                 }}
                 onSelectApartment={handleSelectApartment}
                 allApartments={processedApartments}
-                onBookNow={(aptId, pkgId) => {
-                  setSelectedApartmentId(aptId);
-                  setPreSelectedPkg(pkgId);
+                onBookNow={(aptData, pkgId) => {
+                  if (typeof aptData === 'string') {
+                    setSelectedApartmentId(aptData);
+                    setPreSelectedPkg(pkgId || 'ro');
+                    setBookingPrefill({ apartmentId: aptData, packageId: pkgId });
+                  } else {
+                    setSelectedApartmentId(aptData.apartmentId);
+                    setPreSelectedPkg(aptData.packageId || 'ro');
+                    setBookingPrefill(aptData);
+                  }
                   setIsBookingOpen(true);
                 }}
               />
@@ -1516,9 +1541,16 @@ export default function App() {
       {/* Global Booking Inquiry Modal */}
       <BookingModal
         isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        initialApartmentId={selectedApartmentId}
-        initialPackageId={preSelectedPkg}
+        onClose={() => {
+          setIsBookingOpen(false);
+          setBookingPrefill(null);
+        }}
+        initialApartmentId={bookingPrefill?.apartmentId || selectedApartmentId}
+        initialPackageId={bookingPrefill?.packageId || preSelectedPkg}
+        initialCheckIn={bookingPrefill?.checkIn}
+        initialCheckOut={bookingPrefill?.checkOut}
+        initialAdults={bookingPrefill?.guests}
+        initialPromocode={bookingPrefill?.promocode}
         apartmentsList={processedApartments}
       />
 

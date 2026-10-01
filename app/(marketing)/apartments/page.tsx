@@ -3,20 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { APARTMENTS } from '@/data';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BookingModal from '@/components/BookingModal';
 import TransferModal from '@/components/TransferModal';
 import GuestBookingTrackerModal from '@/components/GuestBookingTrackerModal';
 import OptimizedImage from '@/components/OptimizedImage';
-import { useLiveRates } from '@/utils/profitroom';
 import { ShieldCheck, Maximize2, Users, CheckCircle2, ArrowRight, Home } from 'lucide-react';
 
 export default function ApartmentsIndexPage() {
   const router = useRouter();
-  const { getLivePrice } = useLiveRates();
-  const [apartmentsList, setApartmentsList] = useState<any[]>(APARTMENTS.filter(a => a.isActive !== false));
+  const [apartmentsList, setApartmentsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
@@ -30,7 +28,8 @@ export default function ApartmentsIndexPage() {
           setApartmentsList(d.apartments.filter((a: any) => a.isActive !== false));
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   // Slug converter e.g. "1-bedroom" -> "one-bedroom"
@@ -79,8 +78,23 @@ export default function ApartmentsIndexPage() {
 
           {/* Apartments Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center justify-center">
-            {apartmentsList.map((apt, index) => {
-              const { price: livePrice, isLive } = getLivePrice(apt.id, apt.pricePerNight);
+            {loading ? (
+              [1, 2, 3].map((n) => (
+                <div key={n} className="bg-white border border-stone-200 rounded-none overflow-hidden shadow-xs animate-pulse w-full max-w-sm flex flex-col h-96">
+                  <div className="aspect-[16/10] bg-stone-200" />
+                  <div className="p-6 space-y-4 flex-1">
+                    <div className="h-5 bg-stone-200 w-3/4 rounded-none" />
+                    <div className="h-3 bg-stone-200 w-full rounded-none" />
+                    <div className="h-3 bg-stone-200 w-5/6 rounded-none" />
+                    <div className="pt-6 border-t border-stone-200 flex justify-between items-center">
+                      <div className="h-6 bg-stone-200 w-24 rounded-none" />
+                      <div className="h-8 bg-stone-200 w-20 rounded-none" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : apartmentsList.map((apt, index) => {
+              const livePrice = apt.pricePerNight;
               const slug = getSlug(apt.id);
 
               return (
@@ -142,13 +156,8 @@ export default function ApartmentsIndexPage() {
                       <div>
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">
-                            {isLive ? 'Live Rate' : 'Base Rate'}
+                            Rate
                           </span>
-                          {isLive && (
-                            <span className="inline-flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-bold text-white bg-emerald-600 rounded-none uppercase tracking-wider">
-                              ● Live
-                            </span>
-                          )}
                         </div>
                         <p className="text-xl font-serif text-brand-dark font-extrabold">
                           ${livePrice} <span className="text-xs font-sans text-stone-500 font-light">/ night</span>

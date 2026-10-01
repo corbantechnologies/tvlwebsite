@@ -214,7 +214,7 @@ export default function AdminPricingPage() {
             Global Rate Multipliers &amp; Currency Peg
           </h3>
           <p className="text-xs text-slate-500">
-            Base multipliers applied dynamically across UpperBooking live PMS proxy and direct checkouts.
+            Base multipliers applied dynamically across direct reservations and online checkouts.
           </p>
         </div>
 

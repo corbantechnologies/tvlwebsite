@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
-import { useLiveRates } from '@/utils/profitroom';
 
 export default function AdminApartmentsPage() {
   const [apartments, setApartments] = useState<any[]>([]);
@@ -22,9 +21,6 @@ export default function AdminApartmentsPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [newGalleryUrl, setNewGalleryUrl] = useState('');
   const [editGalleryUrl, setEditGalleryUrl] = useState('');
-
-  // Profitroom UpperBooking Live Rates
-  const { liveRooms, getLivePrice } = useLiveRates();
 
   const loadApartments = async () => {
     setLoading(true);
@@ -191,15 +187,6 @@ export default function AdminApartmentsPage() {
     }
   };
 
-  // Map apartment to known Profitroom UpperBooking IDs
-  const getProfitroomId = (aptId: string) => {
-    const clean = aptId.toLowerCase();
-    if (clean.includes('1') || clean.includes('one')) return '427573';
-    if (clean.includes('2') || clean.includes('two')) return '427575';
-    if (clean.includes('3') || clean.includes('three')) return '427577';
-    return '427573';
-  };
-
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 px-2 sm:px-4">
       {/* Header */}
@@ -212,7 +199,7 @@ export default function AdminApartmentsPage() {
             Apartment Inventory &amp; Live Rates
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Database-backed serviced residences, specifications, imagery, and Profitroom UpperBooking PMS synchronization.
+            Database-backed serviced residences, specifications, imagery, and Direct Booking PMS management.
           </p>
         </div>
 
@@ -234,29 +221,6 @@ export default function AdminApartmentsPage() {
             <Plus className="w-4 h-4 text-white" />
             <span>Add New Suite</span>
           </button>
-        </div>
-      </div>
-
-      {/* Live Profitroom Sync Banner */}
-      <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-          <div>
-            <span className="font-bold text-slate-900 block">
-              Profitroom UpperBooking Live XML Feed Active
-            </span>
-            <span className="text-slate-600 text-[11px]">
-              Direct PMS Proxy: wis.upperbooking.com/tamarindvillage/Rooms.xml ({liveRooms.length} room types streaming)
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 font-mono text-[11px] text-emerald-800">
-          {liveRooms.map(r => (
-            <span key={r.id} className="bg-white/80 px-2 py-0.5 rounded border border-emerald-300 font-semibold shadow-2xs">
-              {r.name.split(' ')[0]}: ${r.minPrice}
-            </span>
-          ))}
         </div>
       </div>
 
@@ -286,8 +250,6 @@ export default function AdminApartmentsPage() {
       ) : (
         <div className="space-y-5">
           {apartments.map((apt) => {
-            const { price: livePrice, isLive } = getLivePrice(apt.id, apt.pricePerNight || 200);
-            const prId = apt.profitroomRoomId || getProfitroomId(apt.id);
             const isDeleting = deletingId === apt.id;
 
             return (
@@ -310,13 +272,6 @@ export default function AdminApartmentsPage() {
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-xs text-slate-900 text-[10px] font-mono border border-slate-200">
                         {apt.id}
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-md bg-white/95 border border-emerald-300 text-emerald-800 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-xs shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        PMS ID: {prId}
                       </span>
                     </div>
                   </div>
@@ -349,10 +304,10 @@ export default function AdminApartmentsPage() {
 
                         <div className="text-right shrink-0">
                           <span className="text-[10px] uppercase font-bold text-slate-500 block">
-                            {isLive ? 'Live Profitroom' : 'Base Rate'}
+                            Nightly Rate
                           </span>
                           <div className="text-xl font-serif font-bold text-slate-900">
-                            ${isLive ? livePrice : apt.pricePerNight}
+                            ${apt.pricePerNight}
                             <span className="text-xs text-slate-500 font-sans font-normal"> / night</span>
                           </div>
                         </div>
@@ -608,16 +563,6 @@ export default function AdminApartmentsPage() {
                       setNewApt({ ...newApt, pricePerNightKes: val === '' ? '' : Number(val) });
                     }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-emerald-700 mb-1">Profitroom Room ID</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 427573"
-                    value={newApt.profitroomRoomId}
-                    onChange={(e) => setNewApt({ ...newApt, profitroomRoomId: e.target.value })}
-                    className="w-full bg-white border border-emerald-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
                   />
                 </div>
               </div>
@@ -925,16 +870,6 @@ export default function AdminApartmentsPage() {
                       setEditingApt({ ...editingApt, pricePerNightKes: val === '' ? '' : Number(val) });
                     }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-emerald-700 mb-1">Profitroom Room ID</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 427573"
-                    value={editingApt.profitroomRoomId || getProfitroomId(editingApt.id)}
-                    onChange={(e) => setEditingApt({ ...editingApt, profitroomRoomId: e.target.value })}
-                    className="w-full bg-white border border-emerald-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
                   />
                 </div>
               </div>

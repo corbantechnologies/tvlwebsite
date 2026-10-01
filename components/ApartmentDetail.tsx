@@ -16,7 +16,7 @@ interface ApartmentDetailProps {
   onBack: () => void;
   onSelectApartment: (id: string) => void;
   allApartments: ApartmentType[];
-  onBookNow: (apartmentId: string, packageId: string) => void;
+  onBookNow: (data: any, packageId?: string) => void;
 }
 
 export default function ApartmentDetail({ 
@@ -67,7 +67,15 @@ export default function ApartmentDetail({
       toast.error("Please select both Check-In and Check-Out dates first.");
       return;
     }
-    onBookNow(apartment.id, selectedPackage);
+    const normalizedPkg = selectedPackage === "ro" ? "room-only" : selectedPackage === "bb" ? "bed-breakfast" : selectedPackage === "hb" ? "half-board" : selectedPackage;
+    onBookNow({
+      apartmentId: apartment.id,
+      packageId: normalizedPkg,
+      checkIn,
+      checkOut,
+      guests: guestCount,
+      promocode
+    });
   };
 
   // Amenity icon mapping helper
@@ -97,14 +105,12 @@ export default function ApartmentDetail({
     const packagePrice = packageRate * guestCount * nights;
     
     const subtotal = basePrice + packagePrice;
-    const serviceFee = Math.round(subtotal * 0.08); // 8% resort service fee / tax
-    const total = subtotal + serviceFee;
+    const total = subtotal;
     
     return {
       nights,
       basePrice,
       packagePrice,
-      serviceFee,
       total
     };
   };
@@ -477,9 +483,6 @@ export default function ApartmentDetail({
                     <div className="flex justify-between text-stone-600">
                       <span className="flex items-center gap-1">
                         Apartment Base ({cost.nights} nights x ${livePrice})
-                        {isPriceLive && (
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" title="Live rate from Profitroom"></span>
-                        )}
                       </span>
                       <span className="font-semibold text-stone-800">${cost.basePrice}</span>
                     </div>
@@ -488,10 +491,6 @@ export default function ApartmentDetail({
                         {PACKAGES.find(p => p.id === selectedPackage)?.name} upgrade ({guestCount} guests x ${livePackageRate}/day)
                       </span>
                       <span className="font-semibold text-stone-800">${cost.packagePrice}</span>
-                    </div>
-                    <div className="flex justify-between text-stone-600">
-                      <span>Resort taxes & service fees (8%)</span>
-                      <span className="font-semibold text-stone-800">${cost.serviceFee}</span>
                     </div>
                     <div className="border-t border-stone-300 pt-2 flex justify-between text-sm font-serif font-bold text-brand-dark">
                       <span>Estimated Total</span>
@@ -560,7 +559,7 @@ export default function ApartmentDetail({
                   <div className="p-4 bg-[#821124]/5 border border-[#821124]/20 text-left space-y-2.5">
                     <h4 className="text-[10px] font-bold text-[#821124] uppercase tracking-wider flex items-center gap-1.5">
                       <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      Direct Online Booking (Paystack)
+                      Direct Online Booking
                     </h4>
                     <p className="text-[11px] text-stone-600 font-light leading-snug">
                       Instant reservation confirmation with secure card or M-Pesa payment and zero booking fees.

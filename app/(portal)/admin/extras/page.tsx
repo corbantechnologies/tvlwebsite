@@ -486,7 +486,7 @@ export default function AdminExtrasPage() {
                     <input
                       type="number"
                       min="0"
-                      step="1"
+                      step="any"
                       required
                       value={priceUsd ?? ''}
                       onChange={(e) => {
@@ -510,7 +510,7 @@ export default function AdminExtrasPage() {
                     <input
                       type="number"
                       min="0"
-                      step="50"
+                      step="any"
                       required
                       value={priceKes ?? ''}
                       onChange={(e) => setPriceKes(e.target.value === '' ? '' : Number(e.target.value))}

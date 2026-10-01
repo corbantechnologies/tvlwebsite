@@ -11,6 +11,7 @@ import {
   CreditCard, 
   Utensils, 
   Printer, 
+  Download,
   ArrowRight, 
   ShieldCheck, 
   Phone, 
@@ -231,7 +232,7 @@ function BookingConfirmedContent() {
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                      Amount Paid (Paystack)
+                      Amount Paid
                     </span>
                     <span className="font-serif text-lg font-bold text-slate-900">
                       {booking.currency} {booking.totalAmount.toLocaleString()}
@@ -366,15 +367,26 @@ function BookingConfirmedContent() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200 print:hidden">
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-2 cursor-pointer"
-                  id="btn-print-voucher"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print Voucher</span>
-                </button>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-5 py-2.5 rounded-xl bg-[#821124] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#680e1c] transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                    id="btn-download-voucher"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Voucher (PDF)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-1.5 cursor-pointer"
+                    id="btn-print-voucher"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print</span>
+                  </button>
+                </div>
 
                 <Link
                   href="/"

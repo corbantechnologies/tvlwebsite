@@ -522,7 +522,7 @@ export default function AdminMealPlansPage() {
                     <input
                       type="number"
                       min="0"
-                      step="1"
+                      step="any"
                       required
                       value={formUsd ?? ''}
                       onChange={(e) => {
@@ -546,7 +546,7 @@ export default function AdminMealPlansPage() {
                     <input
                       type="number"
                       min="0"
-                      step="50"
+                      step="any"
                       required
                       value={formKes ?? ''}
                       onChange={(e) => setFormKes(e.target.value === '' ? '' : Number(e.target.value))}
