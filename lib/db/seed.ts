@@ -721,7 +721,7 @@ async function seedMealPlans(db: ReturnType<typeof getDb>): Promise<void> {
     {
       id: "half-board-seafood",
       name: "Stay & Dine — Half Board Deal with Seafood",
-      shortName: "HB",
+      shortName: "HBS",
       description: "The ultimate Tamarind experience. Gourmet breakfast each morning, plus your choice of a magnificent lunch or dinner at the cliffside Tamarind Restaurant.",
       pricePerPersonPerDayUsd: 41,
       pricePerPersonPerDayKes: 5350,

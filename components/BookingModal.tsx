@@ -59,33 +59,6 @@ interface MealPlanItem {
   pricePerPersonPerDayKes: number;
 }
 
-const DEFAULT_MEAL_PLANS: MealPlanItem[] = [
-  {
-    id: "room-only",
-    name: "Flexible Rate — Room Only",
-    shortName: "RO",
-    description: "Accommodation only. Complete flexibility to dine and cook at your pace.",
-    pricePerPersonPerDayUsd: 0,
-    pricePerPersonPerDayKes: 0,
-  },
-  {
-    id: "bed-breakfast",
-    name: "Bed & Breakfast Experience",
-    shortName: "BB",
-    description: "Celebrated clifftop harbour breakfast daily overlooking Tudor Creek.",
-    pricePerPersonPerDayUsd: 21,
-    pricePerPersonPerDayKes: 2730,
-  },
-  {
-    id: "half-board",
-    name: "Stay & Dine — Half Board with Seafood",
-    shortName: "HB",
-    description: "Daily gourmet breakfast + nightly dinner at Tamarind Mombasa's iconic seafood restaurant.",
-    pricePerPersonPerDayUsd: 41,
-    pricePerPersonPerDayKes: 5330,
-  },
-];
-
 const normalizeMealPlanId = (id?: string) => {
   if (!id) return "room-only";
   if (id === "ro") return "room-only";
@@ -128,7 +101,7 @@ export default function BookingModal({
 
   // Meal plan
   const [mealPlanId, setMealPlanId] = useState(normalizeMealPlanId(initialPackageId));
-  const [mealPlans, setMealPlans] = useState<MealPlanItem[]>(DEFAULT_MEAL_PLANS);
+  const [mealPlans, setMealPlans] = useState<MealPlanItem[]>([]);
   const selectedMealPlan = mealPlans.find(m => m.id === mealPlanId) || mealPlans[0];
 
   // Dates & Guests
@@ -198,12 +171,15 @@ export default function BookingModal({
       }
       setIsEditingStay(false);
 
-      // Fetch dynamic meal plans
-      fetch('/api/boarding-packages')
+      // Fetch dynamic meal plans directly from database records
+      fetch('/api/meal-plans?active=true')
         .then(r => r.json())
         .then(d => {
-          if (d.packages && d.packages.length > 0) {
-            setMealPlans(d.packages.filter((p: any) => p.isActive));
+          if (d.success && Array.isArray(d.mealPlans) && d.mealPlans.length > 0) {
+            setMealPlans(d.mealPlans);
+            if (!initialPackageId) {
+              setMealPlanId(d.mealPlans[0].id);
+            }
           }
         })
         .catch(() => {});
@@ -725,37 +701,43 @@ export default function BookingModal({
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          {mealPlans.map((mp) => {
-                            const isSelected = mealPlanId === mp.id;
-                            return (
-                              <div
-                                key={mp.id}
-                                onClick={() => setMealPlanId(mp.id)}
-                                className={`p-3.5 rounded-none border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
-                                  isSelected
-                                    ? 'bg-[#821124]/5 border-[#821124] ring-1 ring-[#821124]'
-                                    : 'bg-white border-stone-200 hover:border-stone-300'
-                                }`}
-                              >
-                                <div>
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-100 font-bold text-stone-700">
-                                      {mp.shortName}
-                                    </span>
-                                    <span className="text-xs font-bold text-[#821124]">
-                                      {mp.pricePerPersonPerDayUsd === 0 ? "Included" : `+$${mp.pricePerPersonPerDayUsd}/p`}
-                                    </span>
+                          {mealPlans.length === 0 ? (
+                            <div className="sm:col-span-3 py-4 text-center text-xs text-stone-500 bg-stone-50 border border-stone-200">
+                              Loading boarding packages...
+                            </div>
+                          ) : (
+                            mealPlans.map((mp) => {
+                              const isSelected = mealPlanId === mp.id;
+                              return (
+                                <div
+                                  key={mp.id}
+                                  onClick={() => setMealPlanId(mp.id)}
+                                  className={`p-3.5 rounded-none border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
+                                    isSelected
+                                      ? 'bg-[#821124]/5 border-[#821124] ring-1 ring-[#821124]'
+                                      : 'bg-white border-stone-200 hover:border-stone-300'
+                                  }`}
+                                >
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-100 font-bold text-stone-700">
+                                        {mp.shortName}
+                                      </span>
+                                      <span className="text-xs font-bold text-[#821124]">
+                                        {mp.pricePerPersonPerDayUsd === 0 ? "Included ($0)" : `+$${mp.pricePerPersonPerDayUsd}/guest/day`}
+                                      </span>
+                                    </div>
+                                    <h4 className="font-serif font-bold text-xs text-stone-900 mb-1 leading-snug">
+                                      {mp.name}
+                                    </h4>
+                                    <p className="text-[10px] text-stone-500 leading-tight">
+                                      {mp.description}
+                                    </p>
                                   </div>
-                                  <h4 className="font-serif font-bold text-xs text-stone-900 mb-1 leading-snug">
-                                    {mp.name}
-                                  </h4>
-                                  <p className="text-[10px] text-stone-500 leading-tight">
-                                    {mp.description}
-                                  </p>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1079,7 +1061,7 @@ export default function BookingModal({
                         {breakdown.mealPlanTotalUsd > 0 && (
                           <div className="flex justify-between">
                             <span className="truncate pr-2">
-                              {breakdown.mealPlanName} ({breakdown.totalGuests} guests)
+                              {breakdown.mealPlanName} ({breakdown.totalGuests} guests × {breakdown.nights} nights @ ${breakdown.mealPlanRateUsd}/day)
                             </span>
                             <span className="font-semibold text-stone-900 font-mono shrink-0">
                               +${breakdown.mealPlanTotalUsd}

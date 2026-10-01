@@ -11,6 +11,7 @@ interface MealPlan {
   description: string;
   pricePerPersonPerDayUsd: number;
   pricePerPersonPerDayKes: number;
+  image?: string | null;
   highlights: string[];
 }
 
@@ -22,6 +23,7 @@ const DEFAULT_MEAL_PLANS: MealPlan[] = [
     description: 'Accommodation only. Complete flexibility to explore Mombasa’s finest dining at your own leisure.',
     pricePerPersonPerDayUsd: 0,
     pricePerPersonPerDayKes: 0,
+    image: 'https://media.tamarind.co.ke/tvl-website-assets/r12.jpg',
     highlights: [
       'Self-catering granite Swahili kitchen access',
       'Complimentary welcome arrival cocktail',
@@ -36,6 +38,7 @@ const DEFAULT_MEAL_PLANS: MealPlan[] = [
     description: 'Start every morning with our celebrated clifftop harbour breakfast overlooking the tranquil Indian Ocean.',
     pricePerPersonPerDayUsd: 21,
     pricePerPersonPerDayKes: 2730,
+    image: 'https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--11.jpg',
     highlights: [
       'Daily clifftop harbour breakfast at Harbour Restaurant',
       'Fresh tropical coastal juices & Swahili pastries',
@@ -50,6 +53,7 @@ const DEFAULT_MEAL_PLANS: MealPlan[] = [
     description: 'The ultimate Tamarind experience. Breakfast each morning, plus nightly dinner at Tamarind Mombasa’s legendary seafood restaurant.',
     pricePerPersonPerDayUsd: 41,
     pricePerPersonPerDayKes: 5330,
+    image: 'https://media.tamarind.co.ke/tvl-website-assets/mr6.jpg',
     highlights: [
       'Daily clifftop harbour breakfast',
       'Nightly dinner at Tamarind Mombasa Restaurant',
@@ -98,32 +102,49 @@ export default function PackagesPage() {
           </p>
         </div>
 
-        {/* 3 Core Plans Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Core Plans Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
           {plans.map((plan) => {
-            const isFeatured = plan.id === 'half-board';
+            const isFeatured = plan.id === 'half-board' || plan.id === 'half-board-seafood';
 
             return (
               <div
                 key={plan.id}
-                className={`rounded-3xl overflow-hidden border transition-all duration-300 flex flex-col justify-between ${
+                className={`rounded-3xl overflow-hidden border transition-all duration-300 flex flex-col justify-between group ${
                   isFeatured
                     ? 'border-[#821124] shadow-2xl ring-2 ring-[#821124]/30 bg-white relative'
                     : 'border-[#C59B27]/30 shadow-lg hover:shadow-xl bg-white'
                 }`}
               >
                 {isFeatured && (
-                  <div className="bg-[#821124] text-white text-[10px] font-bold uppercase tracking-widest py-1.5 text-center">
-                    Most Popular · Signature Seafood Experience
+                  <div className="bg-[#821124] text-white text-[10px] font-bold uppercase tracking-widest py-1.5 text-center relative z-10">
+                    Signature Dining Experience
                   </div>
                 )}
 
-                <div className="p-8 sm:p-10 space-y-6">
-                  {/* Badge & Title */}
-                  <div className="space-y-2">
-                    <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-[#FAF6F0] text-[#821124] border border-[#C59B27]/30">
+                {/* Package Image Header */}
+                {plan.image && (
+                  <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-slate-100">
+                    <img
+                      src={plan.image}
+                      alt={plan.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <span className="absolute bottom-3 left-4 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-white border border-white/20">
                       {plan.shortName} Plan
                     </span>
+                  </div>
+                )}
+
+                <div className="p-8 sm:p-10 space-y-6 flex-1 flex flex-col justify-between">
+                  {/* Badge & Title */}
+                  <div className="space-y-2">
+                    {!plan.image && (
+                      <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-[#FAF6F0] text-[#821124] border border-[#C59B27]/30">
+                        {plan.shortName} Plan
+                      </span>
+                    )}
                     <h2 className="font-serif text-2xl font-bold text-[#1F1615]">
                       {plan.name}
                     </h2>
@@ -133,23 +154,37 @@ export default function PackagesPage() {
                   </div>
 
                   {/* Pricing Box */}
-                  <div className="bg-[#FAF6F0] rounded-2xl p-5 border border-[#C59B27]/25 space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-[#1F1615]/50 tracking-wider block">
-                      Boarding Rate
-                    </span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-serif text-3xl font-bold text-[#821124]">
-                        {plan.pricePerPersonPerDayUsd === 0 ? 'Included' : `$${plan.pricePerPersonPerDayUsd}`}
+                  <div className="bg-[#FAF6F0] rounded-2xl p-5 border border-[#C59B27]/25 space-y-2">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#1F1615]/50 tracking-wider block">
+                        Package Add-On Rate (Per Guest / Day)
                       </span>
-                      {plan.pricePerPersonPerDayUsd > 0 && (
-                        <span className="text-xs text-[#1F1615]/60 font-medium">USD / guest / day</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-serif text-3xl font-bold text-[#821124]">
+                          {plan.pricePerPersonPerDayUsd === 0 ? 'Included ($0)' : `$${plan.pricePerPersonPerDayUsd}`}
+                        </span>
+                        {plan.pricePerPersonPerDayUsd > 0 && (
+                          <span className="text-xs text-[#1F1615]/60 font-medium">USD / guest / day</span>
+                        )}
+                      </div>
+                      {plan.pricePerPersonPerDayKes > 0 && (
+                        <span className="text-xs font-mono text-[#C59B27] font-semibold block">
+                          ≈ KES {plan.pricePerPersonPerDayKes.toLocaleString()} / guest / day
+                        </span>
                       )}
                     </div>
-                    {plan.pricePerPersonPerDayKes > 0 && (
-                      <span className="text-xs font-mono text-[#C59B27] font-semibold block">
-                        ≈ KES {plan.pricePerPersonPerDayKes.toLocaleString()} / guest / day
+
+                    {/* Calculation Example */}
+                    <div className="p-3 bg-white/90 rounded-xl border border-[#C59B27]/20 text-[11px] text-[#1F1615]/80 space-y-0.5">
+                      <span className="text-[9px] uppercase font-bold text-[#821124] tracking-wider block">
+                        Calculation Example:
                       </span>
-                    )}
+                      {plan.pricePerPersonPerDayUsd === 0 ? (
+                        <span>Standard inclusion with all suites · $0 dining add-on</span>
+                      ) : (
+                        <span>2 Guests × 3 Nights = <strong>+${plan.pricePerPersonPerDayUsd * 2 * 3} USD</strong> added to suite stay</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Inclusions List */}
