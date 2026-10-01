@@ -6,8 +6,21 @@ import { eq } from "drizzle-orm";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const decodedId = decodeURIComponent(id || '').trim();
     const db = getDb();
-    const [apt] = await db.select().from(apartments).where(eq(apartments.id, id)).limit(1);
+    let [apt] = await db.select().from(apartments).where(eq(apartments.id, decodedId)).limit(1);
+    if (!apt) {
+      const all = await db.select().from(apartments);
+      const lower = decodedId.toLowerCase();
+      apt = all.find((a) => {
+        const aId = (a.id || '').toLowerCase();
+        if (aId === lower || aId.replace(/\s+/g, '-') === lower) return true;
+        if (lower.includes('1') || lower.includes('one')) return aId.includes('1') || aId.includes('one') || a.bedrooms === 1;
+        if (lower.includes('2') || lower.includes('two')) return aId.includes('2') || aId.includes('two') || a.bedrooms === 2;
+        if (lower.includes('3') || lower.includes('three')) return aId.includes('3') || aId.includes('three') || a.bedrooms === 3;
+        return false;
+      }) as any;
+    }
     if (!apt) {
       return NextResponse.json({ error: "Suite not found" }, { status: 404 });
     }

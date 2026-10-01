@@ -20,16 +20,7 @@ interface ApartmentPageProps {
 export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
-  const rawSlug = resolvedParams.slug.toLowerCase();
-
-  // Normalize slug variations:
-  // "one-bedroom" <-> "1-bedroom"
-  // "two-bedroom" <-> "2-bedroom"
-  // "three-bedroom" <-> "3-bedroom"
-  const normalizedId = rawSlug
-    .replace('one-bedroom', '1-bedroom')
-    .replace('two-bedroom', '2-bedroom')
-    .replace('three-bedroom', '3-bedroom');
+  const rawSlug = decodeURIComponent(resolvedParams.slug || '').toLowerCase().trim();
 
   const [apartmentsList, setApartmentsList] = useState<ApartmentType[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -46,8 +37,34 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
       .finally(() => setLoaded(true));
   }, []);
 
-  const apartment: ApartmentType | undefined =
-    apartmentsList.find((a) => a.id.toLowerCase() === rawSlug || a.id.toLowerCase() === normalizedId);
+  // Robust apartment matching supporting:
+  // - "two-bedroom Apartment" / "two-bedroom%20Apartment"
+  // - "two-bedroom" / "2-bedroom"
+  // - "1-bedroom" / "one-bedroom"
+  // - "3-bedroom" / "three-bedroom"
+  // - Any custom ID or Name
+  const apartment: ApartmentType | undefined = apartmentsList.find((a) => {
+    const aId = (a.id || '').toLowerCase().trim();
+    const aName = (a.name || '').toLowerCase().trim();
+    const cleanSlug = rawSlug.replace(/[^a-z0-9]/g, '');
+    const cleanId = aId.replace(/[^a-z0-9]/g, '');
+    const cleanName = aName.replace(/[^a-z0-9]/g, '');
+
+    // 1. Direct or sanitized match
+    if (aId === rawSlug || aName === rawSlug) return true;
+    if (cleanId === cleanSlug || cleanName === cleanSlug) return true;
+
+    // 2. Keyword/Bedroom count match
+    const hasOne = rawSlug.includes('1') || rawSlug.includes('one');
+    const hasTwo = rawSlug.includes('2') || rawSlug.includes('two');
+    const hasThree = rawSlug.includes('3') || rawSlug.includes('three');
+
+    if (hasOne && (aId.includes('1') || aId.includes('one') || a.bedrooms === 1)) return true;
+    if (hasTwo && (aId.includes('2') || aId.includes('two') || a.bedrooms === 2)) return true;
+    if (hasThree && (aId.includes('3') || aId.includes('three') || a.bedrooms === 3)) return true;
+
+    return false;
+  });
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -63,10 +80,12 @@ export default function DedicatedApartmentPage({ params }: ApartmentPageProps) {
   } | null>(null);
 
   const handleSelectApartment = (id: string) => {
-    const slug = id
-      .replace('1-bedroom', 'one-bedroom')
-      .replace('2-bedroom', 'two-bedroom')
-      .replace('3-bedroom', 'three-bedroom');
+    const lower = (id || '').toLowerCase();
+    let slug = 'one-bedroom';
+    if (lower.includes('2') || lower.includes('two')) slug = 'two-bedroom';
+    else if (lower.includes('3') || lower.includes('three')) slug = 'three-bedroom';
+    else if (lower.includes('1') || lower.includes('one')) slug = 'one-bedroom';
+    else slug = lower.replace(/\s+/g, '-');
     router.push(`/apartments/${slug}`);
   };
 

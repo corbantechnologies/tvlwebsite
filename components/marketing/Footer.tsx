@@ -59,7 +59,13 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
     if (onSelectApartment) {
       onSelectApartment(id);
     } else {
-      window.location.href = `/apartments/${id}`;
+      const lower = (id || '').toLowerCase();
+      let slug = 'one-bedroom';
+      if (lower.includes('2') || lower.includes('two')) slug = 'two-bedroom';
+      else if (lower.includes('3') || lower.includes('three')) slug = 'three-bedroom';
+      else if (lower.includes('1') || lower.includes('one')) slug = 'one-bedroom';
+      else slug = lower.replace(/\s+/g, '-');
+      window.location.href = `/apartments/${slug}`;
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

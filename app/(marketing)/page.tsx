@@ -516,10 +516,11 @@ export default function App() {
   };
 
   const getApartmentSlug = (id: string) => {
-    return id
-      .replace("1-bedroom", "one-bedroom")
-      .replace("2-bedroom", "two-bedroom")
-      .replace("3-bedroom", "three-bedroom");
+    const lower = (id || '').toLowerCase();
+    if (lower.includes('2') || lower.includes('two')) return 'two-bedroom';
+    if (lower.includes('3') || lower.includes('three')) return 'three-bedroom';
+    if (lower.includes('1') || lower.includes('one')) return 'one-bedroom';
+    return lower.replace(/\s+/g, '-');
   };
 
   const handleSelectApartment = (id: string) => {

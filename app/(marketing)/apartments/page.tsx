@@ -32,12 +32,13 @@ export default function ApartmentsIndexPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Slug converter e.g. "1-bedroom" -> "one-bedroom"
+  // Slug converter e.g. "1-bedroom Apartment" -> "one-bedroom"
   const getSlug = (id: string) => {
-    return id
-      .replace('1-bedroom', 'one-bedroom')
-      .replace('2-bedroom', 'two-bedroom')
-      .replace('3-bedroom', 'three-bedroom');
+    const lower = (id || '').toLowerCase();
+    if (lower.includes('2') || lower.includes('two')) return 'two-bedroom';
+    if (lower.includes('3') || lower.includes('three')) return 'three-bedroom';
+    if (lower.includes('1') || lower.includes('one')) return 'one-bedroom';
+    return lower.replace(/\s+/g, '-');
   };
 
   return (
