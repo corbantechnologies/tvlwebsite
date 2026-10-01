@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { MapPin, Phone, Mail, Clock, Ship, Compass, Award, MessageSquare, Key } from "lucide-react";
 
 interface FooterProps {
-  onNavigate: (sectionId: string) => void;
-  onSelectApartment: (id: string) => void;
-  onGoHome: () => void;
+  onNavigate?: (sectionId: string) => void;
+  onSelectApartment?: (id: string) => void;
+  onGoHome?: () => void;
   onSelectDining?: (id: string) => void;
   onOpenStaffPinModal?: () => void;
   onOpenTracking?: () => void;
@@ -38,8 +39,28 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
     checkNextPath();
   }, []);
 
+  const navigateTo = (sectionId: string) => {
+    if (onNavigate) {
+      onNavigate(sectionId);
+    } else {
+      window.location.href = `/#${sectionId}`;
+    }
+  };
+
+  const goHome = () => {
+    if (onGoHome) {
+      onGoHome();
+    } else {
+      window.location.href = '/';
+    }
+  };
+
   const handleSuiteClick = (id: string) => {
-    onSelectApartment(id);
+    if (onSelectApartment) {
+      onSelectApartment(id);
+    } else {
+      window.location.href = `/apartments/${id}`;
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -48,7 +69,7 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
       onSelectDining(id);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      onNavigate("dining-section");
+      navigateTo("dining-section");
     }
   };
 
@@ -97,7 +118,7 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
         {/* Brand details */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={onGoHome}>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={goHome}>
             {logoSrc ? (
               <img 
                 src={logoSrc} 
@@ -167,12 +188,12 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
               <span className="text-[10px] uppercase font-bold text-brand-gold block">Boarding upgrades</span>
             </li>
             <li>
-              <button onClick={() => onNavigate("packages-section")} className="hover:text-brand-teal transition-colors cursor-pointer">
+              <button onClick={() => navigateTo("packages-section")} className="hover:text-brand-teal transition-colors cursor-pointer">
                 Bed & Breakfast (B&B)
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate("packages-section")} className="hover:text-brand-teal transition-colors cursor-pointer">
+              <button onClick={() => navigateTo("packages-section")} className="hover:text-brand-teal transition-colors cursor-pointer">
                 Coastal Half Board & Premium
               </button>
             </li>
@@ -204,17 +225,17 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
               <span className="text-[10px] uppercase font-bold text-brand-gold block">Resort Services & Experiences</span>
             </li>
             <li>
-              <button onClick={() => onNavigate("transfers-section")} className="hover:text-brand-teal transition-colors cursor-pointer text-left">
+              <button onClick={() => navigateTo("transfers-section")} className="hover:text-brand-teal transition-colors cursor-pointer text-left">
                 Airport & SGR Private Transfers
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate("events-charters-section")} className="hover:text-brand-teal transition-colors cursor-pointer text-left">
+              <button onClick={() => navigateTo("events-charters-section")} className="hover:text-brand-teal transition-colors cursor-pointer text-left">
                 Weddings, Events & Dhow Charters
               </button>
             </li>
             <li>
-              <button onClick={() => onNavigate("facilities-section")} className="hover:text-brand-teal transition-colors cursor-pointer text-left">
+              <button onClick={() => navigateTo("facilities-section")} className="hover:text-brand-teal transition-colors cursor-pointer text-left">
                 Resident Swimming Pools (In-House Guests Only)
               </button>
             </li>
@@ -297,6 +318,11 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
             <p className="text-[10px] text-stone-600 mt-1">
               Primary Focus: Accommodation and serviced apartments of Tamarind Group.
             </p>
+            <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap text-stone-400 mt-2 text-[11px]">
+              <Link href="/track" className="hover:text-brand-gold underline underline-offset-4 transition-colors">
+                Guest Management Portal
+              </Link>
+            </div>
           </div>
           <div className="text-center md:text-right space-y-1">
             <p>Booking engine operated on secure affiliate services.</p>

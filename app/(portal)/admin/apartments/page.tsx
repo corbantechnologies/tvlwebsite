@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, Sparkles, Plus, Trash2, Edit, Save, X, 
   RotateCw, ShieldCheck, Check, Layers, Users, Maximize2, 
-  DollarSign, CheckCircle2, AlertCircle, ExternalLink, Loader2
+  DollarSign, CheckCircle2, AlertCircle, ExternalLink, Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
@@ -18,6 +19,8 @@ export default function AdminApartmentsPage() {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [newGalleryUrl, setNewGalleryUrl] = useState('');
+  const [editGalleryUrl, setEditGalleryUrl] = useState('');
 
   // Profitroom UpperBooking Live Rates
   const { liveRooms, getLivePrice } = useLiveRates();
@@ -42,7 +45,7 @@ export default function AdminApartmentsPage() {
   }, []);
 
   // Form state for creating a new apartment
-  const [newApt, setNewApt] = useState({
+  const [newApt, setNewApt] = useState<any>({
     id: '',
     name: '',
     viewType: 'Ocean View',
@@ -54,6 +57,7 @@ export default function AdminApartmentsPage() {
     maxGuests: 2,
     bedConfig: '1 King Bed',
     image: 'https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--2.jpg',
+    gallery: [] as string[],
     description: '',
     profitroomRoomId: '',
     highlights: ['Panoramic ocean & harbour views', 'Fully equipped chef kitchen', 'Private balcony with daybed'],
@@ -71,11 +75,22 @@ export default function AdminApartmentsPage() {
     setCreating(true);
     const aptId = newApt.id.trim() || newApt.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+    const payload = {
+      ...newApt,
+      id: aptId,
+      pricePerNight: Number(newApt.pricePerNight) || 0,
+      pricePerNightKes: Number(newApt.pricePerNightKes) || 0,
+      bedrooms: Number(newApt.bedrooms) || 1,
+      bathrooms: Number(newApt.bathrooms) || 1,
+      maxGuests: Number(newApt.maxGuests) || 2,
+      gallery: Array.isArray(newApt.gallery) ? newApt.gallery : []
+    };
+
     try {
       const res = await fetch('/api/apartments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newApt, id: aptId })
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
@@ -98,11 +113,21 @@ export default function AdminApartmentsPage() {
     if (!editingApt) return;
 
     setUpdating(true);
+    const payload = {
+      ...editingApt,
+      pricePerNight: Number(editingApt.pricePerNight) || 0,
+      pricePerNightKes: Number(editingApt.pricePerNightKes) || 0,
+      bedrooms: Number(editingApt.bedrooms) || 1,
+      bathrooms: Number(editingApt.bathrooms) || 1,
+      maxGuests: Number(editingApt.maxGuests) || 2,
+      gallery: Array.isArray(editingApt.gallery) ? editingApt.gallery : []
+    };
+
     try {
       const res = await fetch(`/api/apartments/${editingApt.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingApt)
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
@@ -343,7 +368,11 @@ export default function AdminApartmentsPage() {
 
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => setEditingApt(JSON.parse(JSON.stringify(apt)))}
+                          onClick={() => {
+                            const cloned = JSON.parse(JSON.stringify(apt));
+                            cloned.gallery = Array.isArray(cloned.gallery) ? cloned.gallery : [];
+                            setEditingApt(cloned);
+                          }}
                           className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors border border-slate-200"
                         >
                           <Edit className="w-3 h-3 text-slate-500" />
@@ -416,8 +445,11 @@ export default function AdminApartmentsPage() {
                   <input
                     type="number"
                     min="1"
-                    value={newApt.bedrooms}
-                    onChange={(e) => setNewApt({ ...newApt, bedrooms: parseInt(e.target.value) || 1 })}
+                    value={newApt.bedrooms ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewApt({ ...newApt, bedrooms: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
@@ -426,8 +458,12 @@ export default function AdminApartmentsPage() {
                   <input
                     type="number"
                     min="1"
-                    value={newApt.bathrooms}
-                    onChange={(e) => setNewApt({ ...newApt, bathrooms: parseFloat(e.target.value) || 1 })}
+                    step="0.5"
+                    value={newApt.bathrooms ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewApt({ ...newApt, bathrooms: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
@@ -436,8 +472,11 @@ export default function AdminApartmentsPage() {
                   <input
                     type="number"
                     min="1"
-                    value={newApt.maxGuests}
-                    onChange={(e) => setNewApt({ ...newApt, maxGuests: parseInt(e.target.value) || 2 })}
+                    value={newApt.maxGuests ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewApt({ ...newApt, maxGuests: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
@@ -457,8 +496,11 @@ export default function AdminApartmentsPage() {
                   <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Base Price (USD)</label>
                   <input
                     type="number"
-                    value={newApt.pricePerNight}
-                    onChange={(e) => setNewApt({ ...newApt, pricePerNight: parseFloat(e.target.value) || 0 })}
+                    value={newApt.pricePerNight ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewApt({ ...newApt, pricePerNight: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
                   />
                 </div>
@@ -466,8 +508,11 @@ export default function AdminApartmentsPage() {
                   <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Base Price (KES)</label>
                   <input
                     type="number"
-                    value={newApt.pricePerNightKes}
-                    onChange={(e) => setNewApt({ ...newApt, pricePerNightKes: parseFloat(e.target.value) || 0 })}
+                    value={newApt.pricePerNightKes ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewApt({ ...newApt, pricePerNightKes: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
                   />
                 </div>
@@ -508,7 +553,7 @@ export default function AdminApartmentsPage() {
               {/* Media Library Drag and Drop Media Upload */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Main Photo (Media Library MAM Upload / Asset URL)
+                  Main Cover Photo (Featured Image)
                 </label>
                 <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                   <MediaDropzone
@@ -516,6 +561,101 @@ export default function AdminApartmentsPage() {
                     currentUrl={newApt.image}
                     onUploadComplete={(url) => setNewApt({ ...newApt, image: url })}
                   />
+                </div>
+              </div>
+
+              {/* Gallery Photos Section */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-[#821124]" />
+                      <span>Additional Gallery Photos</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Upload multiple images for the suite carousel (bedroom, living room, terrace, bath).
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700">
+                    {(newApt.gallery || []).length} photos
+                  </span>
+                </div>
+
+                {/* Thumbnails Grid */}
+                {(newApt.gallery || []).length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                    {newApt.gallery.map((imgUrl: string, idx: number) => (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-[4/3] bg-white">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={imgUrl} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                          <button
+                            type="button"
+                            title="Set as Main Cover Photo"
+                            onClick={() => {
+                              const oldMain = newApt.image;
+                              const updatedGallery = newApt.gallery.filter((_: any, i: number) => i !== idx);
+                              if (oldMain) updatedGallery.unshift(oldMain);
+                              setNewApt({ ...newApt, image: imgUrl, gallery: updatedGallery });
+                              toast.success('Promoted to main cover image');
+                            }}
+                            className="px-2 py-1 rounded bg-white text-slate-900 text-[10px] font-bold hover:bg-slate-100 cursor-pointer"
+                          >
+                            Cover
+                          </button>
+                          <button
+                            type="button"
+                            title="Remove Photo"
+                            onClick={() => {
+                              const updatedGallery = newApt.gallery.filter((_: any, i: number) => i !== idx);
+                              setNewApt({ ...newApt, gallery: updatedGallery });
+                              toast.success('Removed from gallery');
+                            }}
+                            className="p-1 rounded bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload to Gallery Dropzone */}
+                <div>
+                  <MediaDropzone
+                    folder="apartments/gallery"
+                    label="Upload photo to suite gallery"
+                    onUploadComplete={(url) => {
+                      const existing = Array.isArray(newApt.gallery) ? newApt.gallery : [];
+                      setNewApt({ ...newApt, gallery: [...existing, url] });
+                      toast.success('Photo added to gallery!');
+                    }}
+                  />
+                </div>
+
+                {/* Add by Direct URL */}
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="url"
+                    placeholder="Or paste direct image URL (https://...)"
+                    value={newGalleryUrl}
+                    onChange={(e) => setNewGalleryUrl(e.target.value)}
+                    className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newGalleryUrl.trim()) return;
+                      const existing = Array.isArray(newApt.gallery) ? newApt.gallery : [];
+                      setNewApt({ ...newApt, gallery: [...existing, newGalleryUrl.trim()] });
+                      setNewGalleryUrl('');
+                      toast.success('Photo added to gallery!');
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#821124] text-white text-xs font-semibold shrink-0 hover:bg-[#680e1c] cursor-pointer"
+                  >
+                    + Add to Gallery
+                  </button>
                 </div>
               </div>
 
@@ -587,8 +727,11 @@ export default function AdminApartmentsPage() {
                   <input
                     type="number"
                     min="1"
-                    value={editingApt.bedrooms}
-                    onChange={(e) => setEditingApt({ ...editingApt, bedrooms: parseInt(e.target.value) || 1 })}
+                    value={editingApt.bedrooms ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingApt({ ...editingApt, bedrooms: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
@@ -597,8 +740,12 @@ export default function AdminApartmentsPage() {
                   <input
                     type="number"
                     min="1"
-                    value={editingApt.bathrooms}
-                    onChange={(e) => setEditingApt({ ...editingApt, bathrooms: parseFloat(e.target.value) || 1 })}
+                    step="0.5"
+                    value={editingApt.bathrooms ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingApt({ ...editingApt, bathrooms: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
@@ -607,8 +754,11 @@ export default function AdminApartmentsPage() {
                   <input
                     type="number"
                     min="1"
-                    value={editingApt.maxGuests}
-                    onChange={(e) => setEditingApt({ ...editingApt, maxGuests: parseInt(e.target.value) || 2 })}
+                    value={editingApt.maxGuests ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingApt({ ...editingApt, maxGuests: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
@@ -628,8 +778,11 @@ export default function AdminApartmentsPage() {
                   <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Base Price (USD)</label>
                   <input
                     type="number"
-                    value={editingApt.pricePerNight}
-                    onChange={(e) => setEditingApt({ ...editingApt, pricePerNight: parseFloat(e.target.value) || 0 })}
+                    value={editingApt.pricePerNight ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingApt({ ...editingApt, pricePerNight: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
                   />
                 </div>
@@ -637,8 +790,11 @@ export default function AdminApartmentsPage() {
                   <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Base Price (KES)</label>
                   <input
                     type="number"
-                    value={editingApt.pricePerNightKes || 0}
-                    onChange={(e) => setEditingApt({ ...editingApt, pricePerNightKes: parseFloat(e.target.value) || 0 })}
+                    value={editingApt.pricePerNightKes ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingApt({ ...editingApt, pricePerNightKes: val === '' ? '' : Number(val) });
+                    }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
                   />
                 </div>
@@ -667,7 +823,7 @@ export default function AdminApartmentsPage() {
               {/* Media Library Drag and Drop Media Upload */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Main Photo (Media Library MAM Upload / Asset URL)
+                  Main Cover Photo (Featured Image)
                 </label>
                 <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                   <MediaDropzone
@@ -675,6 +831,101 @@ export default function AdminApartmentsPage() {
                     currentUrl={editingApt.image}
                     onUploadComplete={(url) => setEditingApt({ ...editingApt, image: url })}
                   />
+                </div>
+              </div>
+
+              {/* Gallery Photos Section in Edit Modal */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-[#821124]" />
+                      <span>Additional Gallery Photos</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Upload multiple images for the suite carousel (bedroom, living room, terrace, bath).
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700">
+                    {(editingApt.gallery || []).length} photos
+                  </span>
+                </div>
+
+                {/* Thumbnails Grid */}
+                {(editingApt.gallery || []).length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                    {editingApt.gallery.map((imgUrl: string, idx: number) => (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-[4/3] bg-white">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={imgUrl} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                          <button
+                            type="button"
+                            title="Set as Main Cover Photo"
+                            onClick={() => {
+                              const oldMain = editingApt.image;
+                              const updatedGallery = editingApt.gallery.filter((_: any, i: number) => i !== idx);
+                              if (oldMain) updatedGallery.unshift(oldMain);
+                              setEditingApt({ ...editingApt, image: imgUrl, gallery: updatedGallery });
+                              toast.success('Promoted to main cover image');
+                            }}
+                            className="px-2 py-1 rounded bg-white text-slate-900 text-[10px] font-bold hover:bg-slate-100 cursor-pointer"
+                          >
+                            Cover
+                          </button>
+                          <button
+                            type="button"
+                            title="Remove Photo"
+                            onClick={() => {
+                              const updatedGallery = editingApt.gallery.filter((_: any, i: number) => i !== idx);
+                              setEditingApt({ ...editingApt, gallery: updatedGallery });
+                              toast.success('Removed from gallery');
+                            }}
+                            className="p-1 rounded bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload to Gallery Dropzone */}
+                <div>
+                  <MediaDropzone
+                    folder="apartments/gallery"
+                    label="Upload photo to suite gallery"
+                    onUploadComplete={(url) => {
+                      const existing = Array.isArray(editingApt.gallery) ? editingApt.gallery : [];
+                      setEditingApt({ ...editingApt, gallery: [...existing, url] });
+                      toast.success('Photo added to gallery!');
+                    }}
+                  />
+                </div>
+
+                {/* Add by Direct URL */}
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="url"
+                    placeholder="Or paste direct image URL (https://...)"
+                    value={editGalleryUrl}
+                    onChange={(e) => setEditGalleryUrl(e.target.value)}
+                    className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!editGalleryUrl.trim()) return;
+                      const existing = Array.isArray(editingApt.gallery) ? editingApt.gallery : [];
+                      setEditingApt({ ...editingApt, gallery: [...existing, editGalleryUrl.trim()] });
+                      setEditGalleryUrl('');
+                      toast.success('Photo added to gallery!');
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#821124] text-white text-xs font-semibold shrink-0 hover:bg-[#680e1c] cursor-pointer"
+                  >
+                    + Add to Gallery
+                  </button>
                 </div>
               </div>
 

@@ -49,7 +49,7 @@ export default function AdminTransfersPage() {
   const [pickupDateTime, setPickupDateTime] = useState('');
   const [flightOrTrain, setFlightOrTrain] = useState('');
   const [vehicleType, setVehicleType] = useState('Luxury Alphard VIP');
-  const [passengers, setPassengers] = useState(2);
+  const [passengers, setPassengers] = useState<number | ''>(2);
   const [driverName, setDriverName] = useState('');
   const [driverPhone, setDriverPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -527,8 +527,8 @@ export default function AdminTransfersPage() {
                     type="number"
                     min="1"
                     max="14"
-                    value={passengers}
-                    onChange={(e) => setPassengers(Number(e.target.value))}
+                    value={passengers ?? ''}
+                    onChange={(e) => setPassengers(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>

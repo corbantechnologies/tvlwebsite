@@ -67,7 +67,7 @@ export default function AdminEventsPage() {
   const [timeText, setTimeText] = useState('18:30 – 22:30');
   const [priceKes, setPriceKes] = useState<number | ''>(8500);
   const [priceUsd, setPriceUsd] = useState<number | ''>(65);
-  const [maxCapacity, setMaxCapacity] = useState(65);
+  const [maxCapacity, setMaxCapacity] = useState<number | ''>(65);
   const [image, setImage] = useState('https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg');
   const [paymentEnabled, setPaymentEnabled] = useState(false);
   const [externalTicketUrl, setExternalTicketUrl] = useState('');
@@ -125,9 +125,9 @@ export default function AdminEventsPage() {
     setStartDate(evt.startDate);
     setEndDate(evt.endDate || '');
     setTimeText(evt.timeText || '18:30 – 22:30');
-    setPriceKes(evt.priceKes ?? 0);
-    setPriceUsd(evt.priceUsd ?? 0);
-    setMaxCapacity(evt.maxCapacity ?? 80);
+    setPriceKes(evt.priceKes ?? '');
+    setPriceUsd(evt.priceUsd ?? '');
+    setMaxCapacity(evt.maxCapacity ?? '');
     setImage(evt.image || evt.posterUrl || '');
     setPaymentEnabled(evt.paymentEnabled === true);
     setExternalTicketUrl(evt.externalTicketUrl || '');
@@ -543,8 +543,8 @@ export default function AdminEventsPage() {
                   <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Max Guests</label>
                   <input
                     type="number"
-                    value={maxCapacity}
-                    onChange={(e) => setMaxCapacity(Number(e.target.value))}
+                    value={maxCapacity ?? ''}
+                    onChange={(e) => setMaxCapacity(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-mono"
                   />
                 </div>

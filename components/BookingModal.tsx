@@ -104,6 +104,9 @@ export default function BookingModal({
   const [phone, setPhone] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [promocode, setPromocode] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [showFullTerms, setShowFullTerms] = useState(false);
+  const [conditions, setConditions] = useState<any[]>([]);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,7 +117,7 @@ export default function BookingModal({
   const { getLivePrice } = useLiveRates();
   const { price: livePrice } = getLivePrice(apartmentId, selectedApartment.pricePerNight);
 
-  // Fetch meal plans and extras on open
+  // Fetch meal plans, extras, and booking conditions on open
   useEffect(() => {
     if (isOpen) {
       if (initialApartmentId) {
@@ -142,6 +145,14 @@ export default function BookingModal({
         .then(r => r.json())
         .then(d => {
           if (d.success && d.extras?.length > 0) setAvailableExtras(d.extras);
+        })
+        .catch(() => {});
+
+      // Fetch dynamic booking conditions from database
+      fetch('/api/booking-conditions')
+        .then(r => r.json())
+        .then(d => {
+          if (d.success && d.conditions) setConditions(d.conditions);
         })
         .catch(() => {});
     }
@@ -252,6 +263,10 @@ export default function BookingModal({
     }
     if (!checkIn || !checkOut) {
       toast.error("Please select both check-in and check-out dates.");
+      return;
+    }
+    if (conditions.some((c) => c.isMandatory) && !agreeTerms) {
+      toast.error("Please agree to the booking conditions and policies to proceed.");
       return;
     }
 
@@ -729,6 +744,80 @@ export default function BookingModal({
                   <span className="text-[10px] opacity-70 block">Hold request + portal management link</span>
                 </button>
               </div>
+
+              {/* Dynamic Booking Conditions Block (Loaded from Database CRUD) */}
+              {conditions.length > 0 && (
+                <div className="rounded-xl border border-white/10 bg-black/30 p-4 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        Booking Conditions &amp; Policies
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-white/70">
+                    {conditions.map((c) => (
+                      <div key={c.id} className="flex items-start gap-1.5">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <strong className="text-white">{c.title}</strong>
+                            {c.badge && (
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold">
+                                {c.badge}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-white/70 text-[10px] leading-snug block">{c.summary}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {conditions.some((c) => c.content) && (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowFullTerms(!showFullTerms)}
+                        className="text-[11px] text-[#C59B27] hover:text-white underline transition-colors cursor-pointer"
+                      >
+                        {showFullTerms ? "Hide detailed policy conditions ▲" : "Read full policy details ▼"}
+                      </button>
+
+                      {showFullTerms && (
+                        <div className="mt-2 p-3 rounded-lg bg-black/60 border border-white/10 text-[10px] text-white/75 space-y-2.5 max-h-52 overflow-y-auto scrollbar-thin">
+                          {conditions.map((c, idx) => (
+                            <div key={c.id}>
+                              <p className="font-bold text-white uppercase tracking-wider text-[9px] text-[#C59B27]">
+                                {idx + 1}. {c.title}
+                              </p>
+                              <p className="mt-0.5 whitespace-pre-line">{c.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Consent Checkbox for mandatory policies */}
+                  {conditions.some((c) => c.isMandatory) && (
+                    <label className="flex items-start gap-2.5 pt-2 border-t border-white/10 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded border-white/30 text-[#821124] focus:ring-[#C59B27] bg-black/40 accent-[#821124] cursor-pointer"
+                        id="checkbox-agree-terms"
+                      />
+                      <span className="text-[11px] text-white/90 leading-snug">
+                        I acknowledge and agree to the <span className="text-[#C59B27] font-semibold">Tamarind Village Booking Conditions &amp; Policies</span>.
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
 
               {submitError && (
                 <div className="p-3 bg-red-950/60 border border-red-500/30 text-red-300 text-xs rounded-xl">

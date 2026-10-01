@@ -49,6 +49,18 @@ function BookingConfirmedContent() {
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState<ConfirmedBooking | null>(null);
   const [guestToken, setGuestToken] = useState<string>('');
+  const [conditions, setConditions] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/booking-conditions')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.conditions && data.conditions.length > 0) {
+          setConditions(data.conditions);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const verifyPayment = async () => {
     if (!reference) {
@@ -311,6 +323,43 @@ function BookingConfirmedContent() {
                     <div className="px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-800">
                       Token: {guestToken}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Booking Conditions & Policies (from Database) */}
+              {conditions.length > 0 && (
+                <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                      <div>
+                        <h3 className="font-serif font-bold text-sm text-slate-900">
+                          Stay Policies &amp; Booking Conditions
+                        </h3>
+                        <p className="text-[11px] text-slate-500">
+                          Applicable guidelines and guest terms for your reservation
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    {conditions.map((c) => (
+                      <div key={c.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-slate-900">{c.title}</span>
+                          {c.badge && (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                              {c.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          {c.summary || c.content}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

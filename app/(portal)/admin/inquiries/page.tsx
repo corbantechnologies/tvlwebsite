@@ -25,7 +25,24 @@ export default function InquiriesPage() {
   // Conversion Modal State
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [converting, setConverting] = useState(false);
-  const [convertForm, setConvertForm] = useState({
+  const [convertForm, setConvertForm] = useState<{
+    guestName: string;
+    guestEmail: string;
+    guestPhone: string;
+    apartmentId: string;
+    apartmentName: string;
+    roomAllocated: string;
+    checkIn: string;
+    checkOut: string;
+    adults: number | '';
+    children: number | '';
+    totalAmount: number | '';
+    currency: string;
+    paymentMethod: string;
+    paymentReference: string;
+    paymentStatus: string;
+    notes: string;
+  }>({
     guestName: '',
     guestEmail: '',
     guestPhone: '',
@@ -148,13 +165,16 @@ export default function InquiriesPage() {
         body: JSON.stringify({
           status: 'Booked',
           ...convertForm,
+          adults: Number(convertForm.adults) || 1,
+          children: Number(convertForm.children) || 0,
+          totalAmount: Number(convertForm.totalAmount) || 0,
           payload: {
             ...selectedInquiry.payload,
             roomAllocated: convertForm.roomAllocated,
             paymentReference: convertForm.paymentReference,
             paymentMethod: convertForm.paymentMethod,
             paymentStatus: convertForm.paymentStatus,
-            quotedRateKes: convertForm.totalAmount,
+            quotedRateKes: Number(convertForm.totalAmount) || 0,
             internalNotes: convertForm.notes
           }
         })
@@ -591,8 +611,8 @@ export default function InquiriesPage() {
                     <input
                       type="number"
                       min="1"
-                      value={convertForm.adults}
-                      onChange={(e) => setConvertForm({ ...convertForm, adults: parseInt(e.target.value) || 1 })}
+                      value={convertForm.adults ?? ''}
+                      onChange={(e) => setConvertForm({ ...convertForm, adults: e.target.value === '' ? '' : Number(e.target.value) })}
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 text-center font-bold"
                     />
                   </div>
@@ -601,8 +621,8 @@ export default function InquiriesPage() {
                     <input
                       type="number"
                       min="0"
-                      value={convertForm.children}
-                      onChange={(e) => setConvertForm({ ...convertForm, children: parseInt(e.target.value) || 0 })}
+                      value={convertForm.children ?? ''}
+                      onChange={(e) => setConvertForm({ ...convertForm, children: e.target.value === '' ? '' : Number(e.target.value) })}
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 text-center font-bold"
                     />
                   </div>
@@ -648,8 +668,8 @@ export default function InquiriesPage() {
                     <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Total Agreed Rate</label>
                     <input
                       type="number"
-                      value={convertForm.totalAmount}
-                      onChange={(e) => setConvertForm({ ...convertForm, totalAmount: Number(e.target.value) })}
+                      value={convertForm.totalAmount ?? ''}
+                      onChange={(e) => setConvertForm({ ...convertForm, totalAmount: e.target.value === '' ? '' : Number(e.target.value) })}
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono font-bold"
                     />
                   </div>

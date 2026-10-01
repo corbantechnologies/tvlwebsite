@@ -93,7 +93,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
   const [bookingsList, setBookingsList] = useState<BookingRecord[]>([]);
 
   // Inventory inline edit
-  const [editingInv, setEditingInv] = useState<Record<string, number>>({});
+  const [editingInv, setEditingInv] = useState<Record<string, number | ''>>({});
 
   // Modals
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -124,7 +124,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
   const [rateEnd, setRateEnd] = useState<string>('');
   const [rateUsd, setRateUsd] = useState<number | ''>(320);
   const [rateKes, setRateKes] = useState<number | ''>(42000);
-  const [rateMinNights, setRateMinNights] = useState<number>(1);
+  const [rateMinNights, setRateMinNights] = useState<number | ''>(1);
   const [rateLabel, setRateLabel] = useState<string>('Peak Season Special');
   const [submittingRate, setSubmittingRate] = useState(false);
 
@@ -825,11 +825,11 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     type="number"
                     min={1}
                     max={50}
-                    value={editingInv[apt.id] ?? 5}
+                    value={editingInv[apt.id] ?? ''}
                     onChange={(e) =>
                       setEditingInv({
                         ...editingInv,
-                        [apt.id]: Math.max(1, Number(e.target.value)),
+                        [apt.id]: e.target.value === '' ? '' : Math.max(1, Number(e.target.value)),
                       })
                     }
                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-base font-mono font-bold text-slate-900 focus:outline-none focus:border-[#821124]"
@@ -1216,8 +1216,8 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     type="number"
                     min={1}
                     max={30}
-                    value={rateMinNights}
-                    onChange={(e) => setRateMinNights(Math.max(1, Number(e.target.value)))}
+                    value={rateMinNights ?? ''}
+                    onChange={(e) => setRateMinNights(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-900 focus:outline-none focus:border-[#821124]"
                   />
                 </div>

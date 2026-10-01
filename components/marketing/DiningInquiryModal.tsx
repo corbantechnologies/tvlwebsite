@@ -31,7 +31,7 @@ export default function DiningInquiryModal({
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('19:00');
-  const [guests, setGuests] = useState(2);
+  const [guests, setGuests] = useState<number | ''>(2);
   const [specialRequests, setSpecialRequests] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedToken, setConfirmedToken] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export default function DiningInquiryModal({
             diningName: selectedVenueObj.name,
             date,
             time,
-            guests,
+            guests: Number(guests || 2),
             specialRequests,
           },
         }),
@@ -179,8 +179,8 @@ export default function DiningInquiryModal({
                     type="number"
                     min={1}
                     max={60}
-                    value={guests}
-                    onChange={(e) => setGuests(Math.max(1, Number(e.target.value)))}
+                    value={guests ?? ''}
+                    onChange={(e) => setGuests(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                     className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#C59B27]"
                   />
                 </div>

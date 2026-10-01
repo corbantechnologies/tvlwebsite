@@ -488,7 +488,7 @@ export default function AdminExtrasPage() {
                       min="0"
                       step="1"
                       required
-                      value={priceUsd}
+                      value={priceUsd ?? ''}
                       onChange={(e) => {
                         const val = e.target.value === '' ? '' : Number(e.target.value);
                         setPriceUsd(val);
@@ -512,7 +512,7 @@ export default function AdminExtrasPage() {
                       min="0"
                       step="50"
                       required
-                      value={priceKes}
+                      value={priceKes ?? ''}
                       onChange={(e) => setPriceKes(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-full bg-white border border-slate-300 rounded-lg pl-11 pr-3 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
@@ -570,7 +570,7 @@ export default function AdminExtrasPage() {
                   <input
                     type="number"
                     min="1"
-                    value={sortOrder}
+                    value={sortOrder ?? ''}
                     onChange={(e) => setSortOrder(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-16 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 text-xs text-center"
                   />

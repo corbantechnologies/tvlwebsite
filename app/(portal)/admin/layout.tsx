@@ -8,7 +8,7 @@ import {
   HelpCircle, Settings, ShieldAlert, LogOut, ChevronLeft, 
   ChevronRight, ExternalLink, Menu, X, Bell, Layers,
   Compass, BarChart3, Clock, CheckCircle2, DollarSign,
-  UtensilsCrossed, Hotel, Activity
+  UtensilsCrossed, Hotel, Activity, ShieldCheck
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -95,6 +95,7 @@ export default function AdminPortalLayout({
     {
       title: 'Management & Control',
       items: [
+        { label: 'Booking Conditions', href: '/admin/policies', icon: ShieldCheck, badge: 'Guest' },
         { label: 'Hero & Announcements', href: '/admin/hero', icon: Layers },
         { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3 },
         { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign },

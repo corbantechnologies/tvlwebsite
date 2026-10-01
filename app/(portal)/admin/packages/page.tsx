@@ -45,8 +45,8 @@ export default function AdminMealPlansPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Formula Simulator state
-  const [simGuests, setSimGuests] = useState(2);
-  const [simNights, setSimNights] = useState(3);
+  const [simGuests, setSimGuests] = useState<number | ''>(2);
+  const [simNights, setSimNights] = useState<number | ''>(3);
   const [simSelectedPlanId, setSimSelectedPlanId] = useState<string>('');
 
   const loadPlans = async () => {
@@ -211,8 +211,8 @@ export default function AdminMealPlansPage() {
   const simPlan = plans.find(p => p.id === simSelectedPlanId) || plans[0];
   const simDailyUsd = simPlan ? simPlan.pricePerPersonPerDayUsd : 0;
   const simDailyKes = simPlan ? simPlan.pricePerPersonPerDayKes : 0;
-  const simTotalUsd = simDailyUsd * simGuests * simNights;
-  const simTotalKes = simDailyKes * simGuests * simNights;
+  const simTotalUsd = simDailyUsd * Number(simGuests || 1) * Number(simNights || 1);
+  const simTotalKes = simDailyKes * Number(simGuests || 1) * Number(simNights || 1);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
@@ -434,8 +434,8 @@ export default function AdminMealPlansPage() {
                 type="number"
                 min="1"
                 max="10"
-                value={simGuests}
-                onChange={(e) => setSimGuests(Math.max(1, Number(e.target.value)))}
+                value={simGuests ?? ''}
+                onChange={(e) => setSimGuests(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
               />
             </div>
@@ -446,8 +446,8 @@ export default function AdminMealPlansPage() {
                 type="number"
                 min="1"
                 max="30"
-                value={simNights}
-                onChange={(e) => setSimNights(Math.max(1, Number(e.target.value)))}
+                value={simNights ?? ''}
+                onChange={(e) => setSimNights(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-[#821124]"
               />
             </div>
@@ -524,7 +524,7 @@ export default function AdminMealPlansPage() {
                       min="0"
                       step="1"
                       required
-                      value={formUsd}
+                      value={formUsd ?? ''}
                       onChange={(e) => {
                         const val = e.target.value === '' ? '' : Number(e.target.value);
                         setFormUsd(val);
@@ -548,7 +548,7 @@ export default function AdminMealPlansPage() {
                       min="0"
                       step="50"
                       required
-                      value={formKes}
+                      value={formKes ?? ''}
                       onChange={(e) => setFormKes(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-full bg-white border border-slate-300 rounded-lg pl-11 pr-3 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:border-[#821124] focus:ring-1 focus:ring-[#821124]"
                     />
@@ -657,7 +657,7 @@ export default function AdminMealPlansPage() {
                   <input
                     type="number"
                     min="1"
-                    value={formSortOrder}
+                    value={formSortOrder ?? ''}
                     onChange={(e) => setFormSortOrder(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-16 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 text-xs text-center"
                   />

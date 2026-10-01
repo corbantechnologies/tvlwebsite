@@ -24,13 +24,13 @@ interface PromoCode {
 }
 
 export default function AdminPricingPage() {
-  const [markupMultiplier, setMarkupMultiplier] = useState(1.0);
-  const [taxRate, setTaxRate] = useState(8);
+  const [markupMultiplier, setMarkupMultiplier] = useState<number | string>(1.0);
+  const [taxRate, setTaxRate] = useState<number | string>(8);
   const [seasonalFactor, setSeasonalFactor] = useState('regular');
-  const [exchangeRate, setExchangeRate] = useState(128.5);
-  const [weekendSurcharge, setWeekendSurcharge] = useState(5);
-  const [vatPercent, setVatPercent] = useState(16);
-  const [cateringLevy, setCateringLevy] = useState(2);
+  const [exchangeRate, setExchangeRate] = useState<number | string>(128.5);
+  const [weekendSurcharge, setWeekendSurcharge] = useState<number | string>(5);
+  const [vatPercent, setVatPercent] = useState<number | string>(16);
+  const [cateringLevy, setCateringLevy] = useState<number | string>(2);
 
   const [seasonalPeriods, setSeasonalPeriods] = useState<SeasonalPeriod[]>([]);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
@@ -40,15 +40,15 @@ export default function AdminPricingPage() {
 
   // New promo form
   const [newPromoCode, setNewPromoCode] = useState('');
-  const [newPromoDiscount, setNewPromoDiscount] = useState(10);
+  const [newPromoDiscount, setNewPromoDiscount] = useState<number | string>(10);
   const [newPromoLabel, setNewPromoLabel] = useState('');
 
   // New season period form
   const [newSeasonName, setNewSeasonName] = useState('');
   const [newSeasonStart, setNewSeasonStart] = useState('');
   const [newSeasonEnd, setNewSeasonEnd] = useState('');
-  const [newSeasonMultiplier, setNewSeasonMultiplier] = useState(1.15);
-  const [newSeasonMinNights, setNewSeasonMinNights] = useState(2);
+  const [newSeasonMultiplier, setNewSeasonMultiplier] = useState<number | string>(1.15);
+  const [newSeasonMinNights, setNewSeasonMinNights] = useState<number | string>(2);
 
   const loadPricing = async () => {
     setLoading(true);
@@ -84,13 +84,13 @@ export default function AdminPricingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          markupMultiplier,
-          taxRate,
+          markupMultiplier: Number(markupMultiplier) || 1.0,
+          taxRate: Number(taxRate) || 8,
           seasonalFactor,
-          exchangeRate,
-          weekendSurchargePercent: weekendSurcharge,
-          vatPercent,
-          cateringLevyPercent: cateringLevy,
+          exchangeRate: Number(exchangeRate) || 128.5,
+          weekendSurchargePercent: Number(weekendSurcharge) || 0,
+          vatPercent: Number(vatPercent) || 16,
+          cateringLevyPercent: Number(cateringLevy) || 2,
           seasonalPeriods,
           promoCodes,
         }),
@@ -226,8 +226,8 @@ export default function AdminPricingPage() {
             <input
               type="number"
               step="0.05"
-              value={markupMultiplier}
-              onChange={(e) => setMarkupMultiplier(Number(e.target.value))}
+              value={markupMultiplier ?? ''}
+              onChange={(e) => setMarkupMultiplier(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
             />
             <span className="text-[10px] text-slate-400 mt-1 block">1.0 = Base, 1.15 = +15% yield</span>
@@ -240,8 +240,8 @@ export default function AdminPricingPage() {
             <input
               type="number"
               step="0.5"
-              value={exchangeRate}
-              onChange={(e) => setExchangeRate(Number(e.target.value))}
+              value={exchangeRate ?? ''}
+              onChange={(e) => setExchangeRate(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
             />
             <span className="text-[10px] text-slate-400 mt-1 block">M-Pesa checkout conversion</span>
@@ -254,8 +254,8 @@ export default function AdminPricingPage() {
             <input
               type="number"
               step="1"
-              value={weekendSurcharge}
-              onChange={(e) => setWeekendSurcharge(Number(e.target.value))}
+              value={weekendSurcharge ?? ''}
+              onChange={(e) => setWeekendSurcharge(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
             />
             <span className="text-[10px] text-slate-400 mt-1 block">Friday &amp; Saturday nights</span>
@@ -267,8 +267,8 @@ export default function AdminPricingPage() {
             </label>
             <input
               type="number"
-              value={cateringLevy}
-              onChange={(e) => setCateringLevy(Number(e.target.value))}
+              value={cateringLevy ?? ''}
+              onChange={(e) => setCateringLevy(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
             />
             <span className="text-[10px] text-slate-400 mt-1 block">Statutory Kenya Tourism Board</span>
@@ -420,8 +420,8 @@ export default function AdminPricingPage() {
             min="1"
             max="70"
             placeholder="Discount %"
-            value={newPromoDiscount}
-            onChange={(e) => setNewPromoDiscount(Number(e.target.value))}
+            value={newPromoDiscount ?? ''}
+            onChange={(e) => setNewPromoDiscount(e.target.value === '' ? '' : Number(e.target.value))}
             className="w-28 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900"
           />
           <input

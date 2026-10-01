@@ -17,7 +17,17 @@ export default function AdminDiningPage() {
   const [updating, setUpdating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [newVenue, setNewVenue] = useState({
+  const [newVenue, setNewVenue] = useState<{
+    name: string;
+    cuisine: string;
+    description: string;
+    hours: string;
+    dressCode: string;
+    maxCapacity: number | '';
+    image: string;
+    reservationLinkText: string;
+    highlights: string[];
+  }>({
     name: '',
     cuisine: 'International & Seafood',
     description: '',
@@ -60,7 +70,10 @@ export default function AdminDiningPage() {
       const res = await fetch('/api/dining', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newVenue),
+        body: JSON.stringify({
+          ...newVenue,
+          maxCapacity: Number(newVenue.maxCapacity) || 50,
+        }),
       });
 
       if (res.ok) {
@@ -86,7 +99,10 @@ export default function AdminDiningPage() {
       const res = await fetch(`/api/dining/${editingVenue.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingVenue),
+        body: JSON.stringify({
+          ...editingVenue,
+          maxCapacity: Number(editingVenue.maxCapacity) || 100,
+        }),
       });
 
       if (res.ok) {
@@ -377,8 +393,8 @@ export default function AdminDiningPage() {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Capacity</label>
                   <input
                     type="number"
-                    value={editingVenue.maxCapacity || 100}
-                    onChange={(e) => setEditingVenue({ ...editingVenue, maxCapacity: parseInt(e.target.value) || 100 })}
+                    value={editingVenue.maxCapacity ?? ''}
+                    onChange={(e) => setEditingVenue({ ...editingVenue, maxCapacity: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
@@ -477,8 +493,8 @@ export default function AdminDiningPage() {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Capacity</label>
                   <input
                     type="number"
-                    value={newVenue.maxCapacity}
-                    onChange={(e) => setNewVenue({ ...newVenue, maxCapacity: parseInt(e.target.value) || 50 })}
+                    value={newVenue.maxCapacity ?? ''}
+                    onChange={(e) => setNewVenue({ ...newVenue, maxCapacity: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>

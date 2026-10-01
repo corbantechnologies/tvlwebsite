@@ -326,3 +326,21 @@ export const transfers = pgTable("transfers", {
   createdAt: text("created_at").notNull(),
 });
 
+// ============================================================
+// BOOKING CONDITIONS & CANCELLATION POLICIES (CRUD)
+// ============================================================
+
+export const bookingConditions = pgTable("booking_conditions", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  type: text("type").notNull().default("cancellation"), // "cancellation" | "check_in_out" | "house_rules" | "payment" | "occupancy" | "general"
+  summary: text("summary").notNull(),
+  content: text("content").notNull(),
+  badge: text("badge"), // e.g. "48h Guarantee", "Strictly Non-Smoking", "100% Refund"
+  isMandatory: boolean("is_mandatory").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at"),
+});
+
