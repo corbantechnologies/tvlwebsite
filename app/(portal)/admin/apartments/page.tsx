@@ -19,6 +19,7 @@ export default function AdminApartmentsPage() {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [newGalleryUrl, setNewGalleryUrl] = useState('');
   const [editGalleryUrl, setEditGalleryUrl] = useState('');
 
@@ -28,7 +29,7 @@ export default function AdminApartmentsPage() {
   const loadApartments = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/apartments');
+      const res = await fetch('/api/apartments?all=true');
       const data = await res.json();
       if (data.apartments) {
         setApartments(data.apartments);
@@ -43,6 +44,29 @@ export default function AdminApartmentsPage() {
   useEffect(() => {
     loadApartments();
   }, []);
+
+  // Quick 1-click active/inactive toggle
+  const handleToggleActive = async (apt: any) => {
+    const nextState = apt.isActive === false ? true : false;
+    setTogglingId(apt.id);
+    try {
+      const res = await fetch(`/api/apartments/${apt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: nextState })
+      });
+      if (res.ok) {
+        toast.success(`${apt.name} is now ${nextState ? 'Active (Live on Website)' : 'Inactive / Draft (Hidden from Public)'}`);
+        setApartments(prev => prev.map(a => a.id === apt.id ? { ...a, isActive: nextState } : a));
+      } else {
+        toast.error('Failed to update apartment status');
+      }
+    } catch {
+      toast.error('Network error updating status');
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   // Form state for creating a new apartment
   const [newApt, setNewApt] = useState<any>({
@@ -60,6 +84,7 @@ export default function AdminApartmentsPage() {
     gallery: [] as string[],
     description: '',
     profitroomRoomId: '',
+    isActive: true,
     highlights: ['Panoramic ocean & harbour views', 'Fully equipped chef kitchen', 'Private balcony with daybed'],
     amenities: ['Air Conditioning', 'Free High-Speed Wi-Fi', 'Room Service Dining', 'Daily Housekeeping', 'Smart TV']
   });
@@ -83,7 +108,8 @@ export default function AdminApartmentsPage() {
       bedrooms: Number(newApt.bedrooms) || 1,
       bathrooms: Number(newApt.bathrooms) || 1,
       maxGuests: Number(newApt.maxGuests) || 2,
-      gallery: Array.isArray(newApt.gallery) ? newApt.gallery : []
+      gallery: Array.isArray(newApt.gallery) ? newApt.gallery : [],
+      isActive: newApt.isActive !== false
     };
 
     try {
@@ -120,7 +146,8 @@ export default function AdminApartmentsPage() {
       bedrooms: Number(editingApt.bedrooms) || 1,
       bathrooms: Number(editingApt.bathrooms) || 1,
       maxGuests: Number(editingApt.maxGuests) || 2,
-      gallery: Array.isArray(editingApt.gallery) ? editingApt.gallery : []
+      gallery: Array.isArray(editingApt.gallery) ? editingApt.gallery : [],
+      isActive: editingApt.isActive !== false
     };
 
     try {
@@ -299,9 +326,22 @@ export default function AdminApartmentsPage() {
                     <div>
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h3 className="font-serif text-xl font-bold text-slate-900">
-                            {apt.name}
-                          </h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-serif text-xl font-bold text-slate-900">
+                              {apt.name}
+                            </h3>
+                            {apt.isActive !== false ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Active (Public)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                Inactive / Draft (Hidden)
+                              </span>
+                            )}
+                          </div>
                           <span className="text-xs text-[#821124] font-medium block mt-0.5">
                             Tamarind Luxury Serviced Suite
                           </span>
@@ -368,6 +408,25 @@ export default function AdminApartmentsPage() {
 
                       <div className="flex items-center gap-2">
                         <button
+                          type="button"
+                          onClick={() => handleToggleActive(apt)}
+                          disabled={togglingId === apt.id}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors border ${
+                            apt.isActive !== false
+                              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
+                          }`}
+                          title={apt.isActive !== false ? 'Click to make Inactive (hidden from public)' : 'Click to make Active (visible to public)'}
+                        >
+                          {togglingId === apt.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <span className={`w-2 h-2 rounded-full ${apt.isActive !== false ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          )}
+                          <span>{apt.isActive !== false ? 'Active' : 'Inactive'}</span>
+                        </button>
+
+                        <button
                           onClick={() => {
                             const cloned = JSON.parse(JSON.stringify(apt));
                             cloned.gallery = Array.isArray(cloned.gallery) ? cloned.gallery : [];
@@ -414,6 +473,41 @@ export default function AdminApartmentsPage() {
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-3.5 max-h-[75vh] overflow-y-auto pr-1">
+              {/* Status / Visibility Toggle */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-900 cursor-pointer" htmlFor="create-is-active">
+                      Suite Status (Public Visibility)
+                    </label>
+                    {newApt.isActive !== false ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-300 px-2 py-0.5 rounded-md">
+                        ● Active (Live)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100/70 border border-amber-300 px-2 py-0.5 rounded-md">
+                        ○ Inactive / Test Unit (Hidden)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {newApt.isActive !== false
+                      ? 'Visible to public guests on the website and available in the booking engine.'
+                      : 'Hidden from public visitors. You can safely test booking flows without public guests seeing this apartment.'}
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                  <input
+                    id="create-is-active"
+                    type="checkbox"
+                    checked={newApt.isActive !== false}
+                    onChange={(e) => setNewApt({ ...newApt, isActive: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Suite Name *</label>
@@ -698,6 +792,41 @@ export default function AdminApartmentsPage() {
             </div>
 
             <form onSubmit={handleEditSubmit} className="space-y-3.5 max-h-[75vh] overflow-y-auto pr-1">
+              {/* Status / Visibility Toggle */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-900 cursor-pointer" htmlFor="edit-is-active">
+                      Suite Status (Public Visibility)
+                    </label>
+                    {editingApt.isActive !== false ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-300 px-2 py-0.5 rounded-md">
+                        ● Active (Live)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100/70 border border-amber-300 px-2 py-0.5 rounded-md">
+                        ○ Inactive / Test Unit (Hidden)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {editingApt.isActive !== false
+                      ? 'Visible to public guests on the website and available in the booking engine.'
+                      : 'Hidden from public visitors. You can safely test booking flows without public guests seeing this apartment.'}
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                  <input
+                    id="edit-is-active"
+                    type="checkbox"
+                    checked={editingApt.isActive !== false}
+                    onChange={(e) => setEditingApt({ ...editingApt, isActive: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Suite Name *</label>

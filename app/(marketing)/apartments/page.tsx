@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { APARTMENTS } from '@/data';
@@ -16,10 +16,22 @@ import { ShieldCheck, Maximize2, Users, CheckCircle2, ArrowRight, Home } from 'l
 export default function ApartmentsIndexPage() {
   const router = useRouter();
   const { getLivePrice } = useLiveRates();
+  const [apartmentsList, setApartmentsList] = useState<any[]>(APARTMENTS.filter(a => a.isActive !== false));
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [selectedApartmentId, setSelectedApartmentId] = useState('1-bedroom');
+
+  useEffect(() => {
+    fetch('/api/apartments')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.apartments && d.apartments.length > 0) {
+          setApartmentsList(d.apartments.filter((a: any) => a.isActive !== false));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Slug converter e.g. "1-bedroom" -> "one-bedroom"
   const getSlug = (id: string) => {
@@ -67,7 +79,7 @@ export default function ApartmentsIndexPage() {
 
           {/* Apartments Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center justify-center">
-            {APARTMENTS.map((apt, index) => {
+            {apartmentsList.map((apt, index) => {
               const { price: livePrice, isLive } = getLivePrice(apt.id, apt.pricePerNight);
               const slug = getSlug(apt.id);
 
@@ -185,7 +197,7 @@ export default function ApartmentsIndexPage() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         initialApartmentId={selectedApartmentId}
-        apartmentsList={APARTMENTS}
+        apartmentsList={apartmentsList}
       />
 
       <TransferModal

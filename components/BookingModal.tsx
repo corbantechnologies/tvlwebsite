@@ -75,10 +75,10 @@ export default function BookingModal({
   initialPackageId,
   apartmentsList
 }: BookingModalProps) {
-  const activeApartments = apartmentsList || APARTMENTS;
+  const activeApartments = (apartmentsList || APARTMENTS).filter(a => a.isActive !== false);
 
   // Selected apartment (capacities: 1BR=2, 2BR=4, 3BR=6)
-  const [apartmentId, setApartmentId] = useState(initialApartmentId || "1-bedroom");
+  const [apartmentId, setApartmentId] = useState(initialApartmentId || (activeApartments[0]?.id || "1-bedroom"));
   const selectedApartment = activeApartments.find(a => a.id === apartmentId) || activeApartments[0];
 
   // Meal plan

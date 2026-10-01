@@ -184,11 +184,13 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Processed apartments with live markupMultiplier applied (defensive fallback to APARTMENTS if empty)
-  const processedApartments = (apartments && apartments.length > 0 ? apartments : APARTMENTS).map(apt => ({
-    ...apt,
-    pricePerNight: Math.round(apt.pricePerNight * (pricingRules?.markupMultiplier || 1.0))
-  }));
+  // Processed apartments with live markupMultiplier applied (defensive fallback to APARTMENTS if empty, filtering active only)
+  const processedApartments = (apartments && apartments.length > 0 ? apartments : APARTMENTS)
+    .filter(apt => apt.isActive !== false)
+    .map(apt => ({
+      ...apt,
+      pricePerNight: Math.round(apt.pricePerNight * (pricingRules?.markupMultiplier || 1.0))
+    }));
 
   // Starting price for mobile booking bar (dynamic from apartment inventory)
   const { mobileStartingPrice, isMobilePriceLive } = useMemo(() => {

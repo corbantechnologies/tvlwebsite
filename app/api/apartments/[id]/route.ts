@@ -3,6 +3,20 @@ import { getDb } from "@/lib/db/db";
 import { apartments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const db = getDb();
+    const [apt] = await db.select().from(apartments).where(eq(apartments.id, id)).limit(1);
+    if (!apt) {
+      return NextResponse.json({ error: "Suite not found" }, { status: 404 });
+    }
+    return NextResponse.json({ apartment: apt });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -23,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       highlights: body.highlights || [],
       bedConfig: body.bedConfig || "1 King Bed",
       viewType: body.viewType || "Ocean View",
-      isActive: body.isActive !== false
+      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true
     } as any).where(eq(apartments.id, id));
 
     return NextResponse.json({ success: true, message: "Suite updated" });
@@ -53,7 +67,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.highlights !== undefined) updateData.highlights = body.highlights;
     if (body.bedConfig !== undefined) updateData.bedConfig = body.bedConfig;
     if (body.viewType !== undefined) updateData.viewType = body.viewType;
-    if (body.isActive !== undefined) updateData.isActive = body.isActive;
+    if (body.isActive !== undefined) updateData.isActive = Boolean(body.isActive);
 
     await db.update(apartments).set(updateData as any).where(eq(apartments.id, id));
     return NextResponse.json({ success: true, message: "Suite patched" });

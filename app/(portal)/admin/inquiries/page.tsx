@@ -66,7 +66,7 @@ export default function InquiriesPage() {
     try {
       const [inqRes, aptRes] = await Promise.all([
         fetch('/api/inquiries'),
-        fetch('/api/apartments')
+        fetch('/api/apartments?all=true')
       ]);
       const inqData = await inqRes.json();
       const aptData = await aptRes.json();

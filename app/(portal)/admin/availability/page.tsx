@@ -7,11 +7,14 @@ export default function AvailabilityPage() {
   const [apartments, setApartments] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    fetch("/api/apartments")
+    fetch("/api/apartments?all=true")
       .then((r) => r.json())
       .then((d) => {
         if (d.apartments) {
-          setApartments(d.apartments.map((a: any) => ({ id: a.id, name: a.name })));
+          setApartments(d.apartments.map((a: any) => ({
+            id: a.id,
+            name: a.isActive === false ? `${a.name} (Inactive)` : a.name
+          })));
         }
       })
       .catch(() => {});

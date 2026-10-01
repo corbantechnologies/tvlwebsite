@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { apartments } from "@/lib/db/schema";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { eq } from "drizzle-orm";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     await ensureDatabaseSeeded();
     const db = getDb();
-    const data = await db.select().from(apartments);
+    const { searchParams } = new URL(req.url);
+    const includeAll = searchParams.get("all") === "true" || searchParams.get("admin") === "true";
+
+    let data;
+    if (includeAll) {
+      data = await db.select().from(apartments);
+    } else {
+      data = await db.select().from(apartments).where(eq(apartments.isActive, true));
+    }
     return NextResponse.json({ apartments: data || [] });
   } catch (err: any) {
     console.error("GET /api/apartments database error:", err);
@@ -34,7 +43,7 @@ export async function POST(req: NextRequest) {
       highlights: body.highlights || [],
       bedConfig: body.bedConfig || "1 King Bed",
       viewType: body.viewType || "Ocean View",
-      isActive: body.isActive !== false
+      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true
     };
     await db.insert(apartments).values(newApt as any);
     return NextResponse.json({ success: true, apartment: newApt });
