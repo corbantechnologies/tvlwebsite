@@ -303,15 +303,32 @@ function BookingConfirmedContent() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#821124]">
                         <ShieldCheck className="w-4 h-4 text-[#821124]" />
-                        <span>No-Login Guest Management Link</span>
+                        <span>No-Login Guest Management Portal</span>
                       </div>
-                      <p className="text-xs text-slate-600 leading-relaxed max-w-lg">
-                        You can manage your reservation, submit special requests (honeymoon setups, late check-in), or request changes anytime without a password using your personal guest link:
+                      <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
+                        Manage your reservation, request early check-in or airport transfers, order add-on packages, or modify guest preferences anytime without needing a password.
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
+                  {/* Direct Clickable Link in PDF & Screen */}
+                  <div className="p-3.5 rounded-xl bg-white border border-[#C59B27]/30 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      <span>Clickable Guest Access Link</span>
+                      <span className="text-[#821124] font-semibold lowercase">tap/click below in PDF to open</span>
+                    </div>
+                    <a
+                      href={`${typeof window !== 'undefined' ? window.location.origin : 'https://tamarindvillage.co.ke'}/track?token=${encodeURIComponent(guestToken)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs font-bold text-[#821124] underline hover:text-[#680e1c] break-all block"
+                      id="link-pdf-guest-hub"
+                    >
+                      {`${typeof window !== 'undefined' ? window.location.origin : 'https://tamarindvillage.co.ke'}/track?token=${guestToken}`}
+                    </a>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 print:hidden">
                     <Link
                       href={`/track?token=${encodeURIComponent(guestToken)}`}
                       className="px-6 py-3 rounded-xl bg-[#821124] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#680e1c] transition-all shadow-md flex items-center gap-2"

@@ -289,6 +289,37 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       notes TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS booking_conditions (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'cancellation',
+      summary TEXT NOT NULL,
+      content TEXT NOT NULL,
+      badge TEXT,
+      is_mandatory BOOLEAN NOT NULL DEFAULT true,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      created_at TEXT NOT NULL,
+      updated_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS vouchers (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      description TEXT,
+      discount_type TEXT NOT NULL DEFAULT 'percentage',
+      discount_value DOUBLE PRECISION NOT NULL,
+      min_spend_usd DOUBLE PRECISION DEFAULT 0,
+      max_discount_usd DOUBLE PRECISION,
+      valid_from TEXT,
+      valid_until TEXT,
+      usage_limit INTEGER,
+      used_count INTEGER DEFAULT 0,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      created_at TEXT NOT NULL,
+      updated_at TEXT
+    );
   `);
 }
 
@@ -393,12 +424,12 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
 
   const aptList = [
     {
-      id: "1-bedroom",
-      name: "1-Bedroom Ocean View Suite",
+      id: "1-bedroom Apartment",
+      name: "1-Bedroom Apartment",
       description: "An intimate, beautifully curated coastal sanctuary perched on the coral cliffs. Features a spacious private sea-facing balcony, an authentic Swahili lounge, an open-concept kitchen, and direct breeze from Tudor Creek.",
       size: "85 m²",
       maxGuests: 2,
-      pricePerNight: 160,
+      pricePerNight: 213,
       image: "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--2.jpg",
       gallery: [
         "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--2.jpg",
@@ -427,12 +458,12 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       isActive: true,
     },
     {
-      id: "2-bedroom",
-      name: "2-Bedroom Harbor Family Suite",
+      id: "2-bedroom Apartment",
+      name: "2-Bedroom Apartment",
       description: "Expansive multi-room residence designed for families or friends traveling together. Offering a master en-suite, separate guest twin room, spacious living/dining hall, and a private creek-view balcony.",
       size: "140 m²",
       maxGuests: 4,
-      pricePerNight: 240,
+      pricePerNight: 328,
       image: "https://media.tamarind.co.ke/tvl-website-assets/r21.jpg",
       gallery: [
         "https://media.tamarind.co.ke/tvl-website-assets/r21.jpg",
@@ -462,12 +493,12 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       isActive: true,
     },
     {
-      id: "3-bedroom",
-      name: "3-Bedroom Royal Penthouse Residence",
+      id: "3-bedroom Apartment",
+      name: "3-Bedroom Apartment",
       description: "The ultimate expression of coastal luxury. This palatial apartment boasts double-height vaulted ceilings, three gorgeous bedrooms, multiple sun-drenched private balconies, and an elite dining lounge.",
       size: "220 m²",
       maxGuests: 6,
-      pricePerNight: 350,
+      pricePerNight: 425,
       image: "https://media.tamarind.co.ke/tvl-website-assets/r36.jpg",
       gallery: [
         "https://media.tamarind.co.ke/tvl-website-assets/r36.jpg",
@@ -544,7 +575,7 @@ async function seedDining(db: ReturnType<typeof getDb>): Promise<void> {
     },
     {
       id: "dawa-terrace",
-      name: "Dawa Terrace Bar & Lounge",
+      name: "Dawa Terrace Bar",
       description: "The beating social heart of Mombasa sunsets. Savor the legendary original 'Dawa' cocktail—invented right here at Tamarind—while relaxing on our dramatic creekside terrace as traditional wooden dhows glide across the water.",
       highlights: [
         "The birthplace of Kenya's iconic 'Dawa' cocktail (Vodka, lime, honey stick)",
@@ -552,7 +583,7 @@ async function seedDining(db: ReturnType<typeof getDb>): Promise<void> {
         "Tapas & coastal Swahili bitings menu served until late",
         "Chilled lounge beats and live coastal acoustic sessions on weekends",
       ],
-      hours: "4:00 PM – Midnight Daily",
+      hours: "1:00 PM – Midnight Daily",
       image: "https://media.tamarind.co.ke/tvl-website-assets/t1.jpg",
       reservationLinkText: "Inquire for Dawa Terrace Table",
       maxCapacity: 80,
@@ -603,8 +634,8 @@ async function seedFacilities(db: ReturnType<typeof getDb>): Promise<void> {
     },
     {
       id: "conferences",
-      name: "Coastal Executive Conferences & Banquets",
-      description: "Combine productivity with coastal tranquility. Tamarind Village offers an air-conditioned conference venue tailored for executive retreats, boardroom meetings, team building, and social celebrations. Supported by state-of-the-art tech and world-class food.",
+      name: "Executive Conferences & Banquets",
+      description: "Tamarind Village offers an air-conditioned conference venue tailored for executive retreats, boardroom meetings, team building, and social celebrations. Supported by state-of-the-art tech and world-class food.",
       iconName: "Users",
       image: "https://media.tamarind.co.ke/tvl-website-assets/c1.jpg",
       details: [
@@ -671,9 +702,27 @@ async function seedMealPlans(db: ReturnType<typeof getDb>): Promise<void> {
     },
     {
       id: "half-board",
+      name: "Half Board Deal - (Breakfast & Dinner/Lunch)",
+      shortName: "HB",
+      description: "The ultimate Tamarind experience. Breakfast each morning, plus your choice of a lunch or dinner at the cliffside Tamarind Restaurant.",
+      pricePerPersonPerDayUsd: 41,
+      pricePerPersonPerDayKes: 5350,
+      image: "https://media.tamarind.co.ke/tvl-website-assets/mr6.jpg",
+      highlights: [
+        "Daily clifftop harbour breakfast at Harbour Restaurant",
+        "Choice of lunch or dinner from the à la carte menu at Tamarind Mombasa",
+        "Priority creekside table placement for staying residents",
+        "East Africa's premier fresh seafood specialties & Swahili coconut curries",
+      ],
+      isActive: true,
+      sortOrder: 3,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "half-board-seafood",
       name: "Stay & Dine — Half Board Deal with Seafood",
       shortName: "HB",
-      description: "The ultimate Tamarind experience. Gourmet breakfast each morning, plus your choice of a magnificent 3-course lunch or dinner at the cliffside Tamarind Restaurant.",
+      description: "The ultimate Tamarind experience. Gourmet breakfast each morning, plus your choice of a magnificent lunch or dinner at the cliffside Tamarind Restaurant.",
       pricePerPersonPerDayUsd: 41,
       pricePerPersonPerDayKes: 5350,
       image: "https://media.tamarind.co.ke/tvl-website-assets/mr6.jpg",
@@ -684,7 +733,7 @@ async function seedMealPlans(db: ReturnType<typeof getDb>): Promise<void> {
         "East Africa's premier fresh seafood specialties & Swahili coconut curries",
       ],
       isActive: true,
-      sortOrder: 3,
+      sortOrder: 4,
       createdAt: new Date().toISOString(),
     },
   ];
