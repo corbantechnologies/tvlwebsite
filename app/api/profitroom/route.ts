@@ -1,21 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchUpperBookingXml } from "@/lib/profitroomProxy";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const checkIn = searchParams.get("checkIn");
-  const checkOut = searchParams.get("checkOut");
-  const adults = searchParams.get("adults") || "2";
+  const type = searchParams.get("type") === "offers" ? "Offers" : "Rooms";
 
-  // Profitroom proxy endpoint returning structured rates
-  return NextResponse.json({
-    status: "ok",
-    hotel: "tamarind_village_mombasa",
-    channel: "website_direct",
-    query: { checkIn, checkOut, adults: Number(adults) },
-    rates: [
-      { roomCode: "1BED", pricePerNight: 160, currency: "USD", available: true },
-      { roomCode: "2BED", pricePerNight: 260, currency: "USD", available: true },
-      { roomCode: "3BED", pricePerNight: 390, currency: "USD", available: true }
-    ]
-  });
+  try {
+    const xml = await fetchUpperBookingXml(type);
+    return new NextResponse(xml, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "s-maxage=60, stale-while-revalidate=120",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+      },
+    });
+  } catch (err: any) {
+    console.error(`[Profitroom Proxy] ${type} error:`, err.message);
+    return NextResponse.json(
+      { error: err.message || `Failed to fetch live ${type}` },
+      { status: 500 }
+    );
+  }
 }

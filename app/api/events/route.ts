@@ -9,13 +9,10 @@ export async function GET() {
     await ensureDatabaseSeeded();
     const db = getDb();
     const data = await db.select().from(events);
-    if (!data || data.length === 0) {
-      return NextResponse.json({ events: DEFAULT_EVENTS, fallback: true });
-    }
-    return NextResponse.json({ events: data });
+    return NextResponse.json({ events: data || [] });
   } catch (err: any) {
     console.warn("Events DB lookup failed, returning baseline:", err);
-    return NextResponse.json({ events: DEFAULT_EVENTS, fallback: true, database_error: err.message });
+    return NextResponse.json({ events: [], database_error: err.message });
   }
 }
 

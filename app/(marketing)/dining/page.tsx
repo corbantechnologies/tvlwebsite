@@ -3,11 +3,25 @@
 import React, { useState } from 'react';
 import { Ship, Utensils, Sparkles, Clock, MapPin, Users, Phone, ArrowRight } from 'lucide-react';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-import BookingModal from '@/components/marketing/BookingModal';
+import DiningInquiryModal from '@/components/marketing/DiningInquiryModal';
 import { DINING } from '@/lib/data';
 
 export default function DiningPage() {
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [isDiningInquiryOpen, setIsDiningInquiryOpen] = useState(false);
+  const [selectedVenueKey, setSelectedVenueKey] = useState<'restaurant' | 'dawa_terrace' | 'dhow' | 'golden_key'>('restaurant');
+  const [selectedVenueTitle, setSelectedVenueTitle] = useState('');
+
+  const handleOpenInquiry = (venueId: string, title: string) => {
+    const map: Record<string, 'restaurant' | 'dawa_terrace' | 'dhow' | 'golden_key'> = {
+      'tamarind-restaurant': 'restaurant',
+      'dawa-terrace': 'dawa_terrace',
+      'tamarind-dhow': 'dhow',
+      'golden-key': 'golden_key',
+    };
+    setSelectedVenueKey(map[venueId] || 'restaurant');
+    setSelectedVenueTitle(title);
+    setIsDiningInquiryOpen(true);
+  };
 
   return (
     <div className="pt-28 pb-20 bg-[#FAF6F0] min-h-screen">
@@ -87,10 +101,11 @@ export default function DiningPage() {
 
                 <div className="pt-4 flex flex-wrap gap-3">
                   <button
-                    onClick={() => setIsBookingOpen(true)}
-                    className="px-6 py-3 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                    onClick={() => handleOpenInquiry(venue.id, venue.title || venue.name)}
+                    className="px-6 py-3 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer flex items-center gap-2"
                   >
-                    Reserve Table / Dhow Cruise
+                    <span>Reserve Table / Dhow Cruise</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -99,9 +114,11 @@ export default function DiningPage() {
         </div>
       </div>
 
-      <BookingModal
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
+      <DiningInquiryModal
+        isOpen={isDiningInquiryOpen}
+        onClose={() => setIsDiningInquiryOpen(false)}
+        defaultVenue={selectedVenueKey}
+        venueName={selectedVenueTitle}
       />
     </div>
   );

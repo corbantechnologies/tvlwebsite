@@ -8,30 +8,36 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await req.json();
     const db = getDb();
+    
     await db.update(events).set({
       title: body.title,
-      description: body.description,
-      venue: body.venue,
-      category: body.category,
-      startDate: body.startDate,
-      endDate: body.endDate,
-      timeText: body.timeText,
-      priceUsd: Number(body.priceUsd || 0),
-      priceKes: Number(body.priceKes || 0),
-      image: body.image,
-      gallery: body.gallery,
-      maxCapacity: Number(body.maxCapacity || 100),
+      description: body.description || "",
+      venue: body.venue || "Tamarind Dhow",
+      category: body.category || "dining_gala",
+      startDate: body.startDate || body.eventDate,
+      endDate: body.endDate || null,
+      timeText: body.timeText || body.eventTime || "6:30 PM - 10:30 PM",
+      priceUsd: Number(body.priceUsd ?? body.ticketPriceUsd ?? 0),
+      priceKes: Number(body.priceKes ?? body.ticketPriceKes ?? 0),
+      image: body.image || body.posterUrl || "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+      gallery: body.gallery || [],
+      maxCapacity: Number(body.maxCapacity || body.capacity || 100),
       bookedCount: Number(body.bookedCount || 0),
-      highlights: body.highlights,
-      dressCode: body.dressCode,
-      bookingLink: body.bookingLink,
+      highlights: body.highlights || [],
+      dressCode: body.dressCode || "Smart Casual",
+      bookingLink: body.bookingLink || "",
       isFeatured: !!body.isFeatured,
       isActive: body.isActive !== false
     } as any).where(eq(events.id, id));
+
     return NextResponse.json({ success: true, message: "Event updated" });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  return PUT(req, { params });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

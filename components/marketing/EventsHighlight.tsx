@@ -12,7 +12,9 @@ interface EventsHighlightProps {
 }
 
 export default function EventsHighlight({ events, onBookEvent }: EventsHighlightProps) {
+  if (!events || events.length === 0) return null;
   const activeEvents = events.filter(e => e.isActive !== false).slice(0, 3);
+  if (activeEvents.length === 0) return null;
 
   return (
     <section className="py-20 bg-[#FAF6F0] relative overflow-hidden" id="events">

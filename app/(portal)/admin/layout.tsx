@@ -8,7 +8,7 @@ import {
   HelpCircle, Settings, ShieldAlert, LogOut, ChevronLeft, 
   ChevronRight, ExternalLink, Menu, X, Bell, Layers,
   Compass, BarChart3, Clock, CheckCircle2, DollarSign,
-  UtensilsCrossed, Hotel, Activity
+  UtensilsCrossed, Hotel, Activity, ShieldCheck, Ticket
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -20,14 +20,13 @@ export default function AdminPortalLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  // If we are on the login page, render children without sidebar shell
+  // If on login page, render children cleanly without sidebar shell
   const isLoginPage = pathname === '/admin/login';
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Load session from /api/auth/session
   useEffect(() => {
     if (isLoginPage) return;
     fetch('/api/auth/session')
@@ -40,7 +39,6 @@ export default function AdminPortalLayout({
       .catch(() => {});
   }, [isLoginPage]);
 
-  // Handle logout
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -54,7 +52,7 @@ export default function AdminPortalLayout({
 
   if (isLoginPage) {
     return (
-      <div className="min-h-screen bg-[#1F1615] text-[#FAF6F0]">
+      <div className="min-h-screen bg-slate-50 text-slate-900">
         <Toaster position="top-right" />
         {children}
       </div>
@@ -79,6 +77,7 @@ export default function AdminPortalLayout({
         { label: 'Front Desk Hub', href: '/admin/frontdesk', icon: Hotel, badge: 'Live' },
         { label: 'Bookings Ledger', href: '/admin/bookings', icon: Calendar },
         { label: 'Guest Inquiries', href: '/admin/inquiries', icon: Bell, badge: 'Inbox' },
+        { label: 'Availability & Blocks', href: '/admin/availability', icon: Clock },
       ],
     },
     {
@@ -86,8 +85,10 @@ export default function AdminPortalLayout({
       items: [
         { label: 'Apartments & Suites', href: '/admin/apartments', icon: Building2 },
         { label: 'Dining & Dhow', href: '/admin/dining', icon: UtensilsCrossed },
-        { label: 'Village & Dhow Events', href: '/admin/events', icon: Sparkles, highlight: true },
-        { label: 'Curated Packages', href: '/admin/packages', icon: Tag, highlight: true },
+        { label: 'Events & Experiences', href: '/admin/events', icon: Sparkles, highlight: true },
+        { label: 'Meal Plans', href: '/admin/packages', icon: Tag, highlight: true },
+        { label: 'Extras & Add-ons', href: '/admin/extras', icon: Sparkles },
+        { label: 'Vouchers & Promos', href: '/admin/vouchers', icon: Ticket, badge: 'New', highlight: true },
         { label: 'VIP Transfers', href: '/admin/transfers', icon: Car },
         { label: 'Resort Facilities', href: '/admin/facilities', icon: Compass },
       ],
@@ -95,7 +96,9 @@ export default function AdminPortalLayout({
     {
       title: 'Management & Control',
       items: [
+        { label: 'Booking Conditions', href: '/admin/policies', icon: ShieldCheck, badge: 'Guest' },
         { label: 'Hero & Announcements', href: '/admin/hero', icon: Layers },
+        { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3 },
         { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign },
         { label: 'Staff Team', href: '/admin/team', icon: Users },
         { label: 'Audit Logs', href: '/admin/logs', icon: Activity },
@@ -105,50 +108,49 @@ export default function AdminPortalLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[#16100F] text-[#FAF6F0] flex">
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex">
       <Toaster position="top-right" />
 
-      {/* Desktop Sidebar Drawer */}
+      {/* Desktop Sidebar — 100% Full Viewport Height, Sticky, Scrollable Middle Links */}
       <aside
-        className={`hidden lg:flex flex-col border-r border-[#C59B27]/20 bg-[#1F1615] transition-all duration-300 relative z-30 ${
-          isCollapsed ? 'w-20' : 'w-72'
+        className={`hidden lg:flex flex-col h-screen sticky top-0 border-r border-slate-200 bg-white transition-all duration-300 z-30 shrink-0 ${
+          isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
-        {/* Sidebar Header */}
-        <div className="h-20 flex items-center justify-between px-4 border-b border-[#C59B27]/20">
-          <Link href="/admin" className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-full bg-white/10 p-1 border border-[#C59B27]/40 shrink-0 flex items-center justify-center">
+        {/* Fixed Header */}
+        <div className="h-16 px-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
+          <Link href="/admin" className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-9 h-9 rounded-full bg-slate-100 p-1 border border-slate-200 shrink-0 flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/assets/logo.png" alt="Tamarind Logo" className="w-full h-full object-contain" />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <span className="font-serif font-bold text-sm tracking-wider text-white block truncate">
+                <span className="font-serif font-bold text-xs tracking-wider text-slate-900 block truncate">
                   TAMARIND PORTAL
                 </span>
-                <span className="text-[10px] uppercase tracking-widest text-[#C59B27] block truncate">
-                  Mombasa Operations
+                <span className="text-[9px] uppercase tracking-widest text-[#821124] font-semibold block truncate">
+                  Operations Suite
                 </span>
               </div>
             )}
           </Link>
 
-          {/* Drawer collapse toggle */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Navigation List */}
-        <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+        {/* Scrollable Navigation Links (Middle Section) */}
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-5 scrollbar-thin">
           {navSections.map((section, idx) => (
             <div key={idx} className="space-y-1">
               {!isCollapsed && (
-                <div className="text-[10px] font-bold uppercase tracking-widest text-[#C59B27]/80 px-3 mb-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1.5">
                   {section.title}
                 </div>
               )}
@@ -160,22 +162,24 @@ export default function AdminPortalLayout({
                     key={item.href}
                     href={item.href}
                     title={isCollapsed ? item.label : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
+                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all group ${
                       isActive
-                        ? 'bg-[#821124] text-white shadow-md font-semibold'
+                        ? 'bg-[#821124] text-white shadow-sm font-semibold'
                         : item.highlight
-                        ? 'text-white/90 hover:bg-[#821124]/30 hover:text-white border border-[#C59B27]/20'
-                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        ? 'text-slate-700 hover:bg-slate-100 hover:text-[#821124]'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 shrink-0 ${
-                      isActive ? 'text-white' : item.highlight ? 'text-[#C59B27]' : 'text-white/60 group-hover:text-white'
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${
+                      isActive ? 'text-white' : item.highlight ? 'text-[#821124]' : 'text-slate-400 group-hover:text-slate-700'
                     }`} />
                     {!isCollapsed && (
                       <div className="flex-1 flex items-center justify-between min-w-0">
                         <span className="truncate">{item.label}</span>
                         {item.badge && (
-                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-[#C59B27]/30 text-[#FAF6F0] font-bold">
+                          <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded-full font-bold ${
+                            isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          }`}>
                             {item.badge}
                           </span>
                         )}
@@ -188,20 +192,20 @@ export default function AdminPortalLayout({
           ))}
         </div>
 
-        {/* User Card & Logout */}
-        <div className="p-3 border-t border-[#C59B27]/20 bg-black/20">
+        {/* Fixed Footer (Account & Logout) */}
+        <div className="p-3 border-t border-slate-200 bg-slate-50/80 shrink-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-[#821124] text-[#FAF6F0] text-xs font-bold flex items-center justify-center shrink-0 border border-[#C59B27]/40">
-                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'S'}
+              <div className="w-8 h-8 rounded-full bg-[#821124] text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-sm">
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
               </div>
               {!isCollapsed && (
                 <div className="min-w-0">
-                  <span className="text-xs font-bold text-white block truncate">
-                    {currentUser?.name || 'Staff User'}
+                  <span className="text-xs font-bold text-slate-800 block truncate">
+                    {currentUser?.name || 'Administrator'}
                   </span>
-                  <span className="text-[10px] text-[#C59B27] uppercase tracking-wider block truncate">
-                    {currentUser?.role || 'Authorized'}
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block truncate">
+                    {currentUser?.role || 'Master Control'}
                   </span>
                 </div>
               )}
@@ -209,7 +213,7 @@ export default function AdminPortalLayout({
 
             <button
               onClick={handleLogout}
-              className="p-1.5 text-white/50 hover:text-[#821124] hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -221,50 +225,47 @@ export default function AdminPortalLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Operational Navigation Bar */}
-        <header className="h-16 border-b border-[#C59B27]/20 bg-[#1F1615] px-4 sm:px-6 flex items-center justify-between shrink-0">
+        <header className="h-16 border-b border-slate-200 bg-white px-4 sm:px-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-            {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-white hover:bg-white/10"
+              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
               aria-label="Open navigation menu"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Live Cloud Status Beacon */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Drizzle Postgres Engine Online • Profitroom Active</span>
+            {/* Cloud Status Beacon */}
+            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Portal Active • Direct Engine</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Live website link */}
+          <div className="flex items-center gap-3">
             <Link
               href="/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1.5 text-xs text-white/70 hover:text-[#C59B27] px-3 py-1.5 rounded-lg border border-white/10 hover:border-[#C59B27]/40 transition-colors"
+              className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
             >
-              <span>View Live Website</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Live Website</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
             </Link>
 
-            {/* Quick Staff Badge */}
             <div className="text-right">
-              <span className="text-xs font-bold text-white block">
-                {currentUser?.name || 'Tamarind Staff'}
+              <span className="text-xs font-bold text-slate-800 block">
+                {currentUser?.name || 'Tamarind Admin'}
               </span>
-              <span className="text-[10px] text-[#C59B27] uppercase tracking-wider block">
-                {currentUser?.role || 'Desk Operations'}
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">
+                {currentUser?.role || 'Executive'}
               </span>
             </div>
           </div>
         </header>
 
         {/* Page Inner Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#16100F]">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#F8F9FA]">
           {children}
         </main>
       </div>
@@ -273,26 +274,26 @@ export default function AdminPortalLayout({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="relative w-80 max-w-[85vw] bg-[#1F1615] h-full flex flex-col z-10 border-r border-[#C59B27]/30 shadow-2xl">
-            <div className="p-4 border-b border-[#C59B27]/20 flex items-center justify-between">
-              <span className="font-serif font-bold text-sm tracking-wider text-white">
+          <div className="relative w-72 max-w-[85vw] bg-white h-full flex flex-col z-10 border-r border-slate-200 shadow-xl">
+            <div className="h-16 px-4 border-b border-slate-200 flex items-center justify-between">
+              <span className="font-serif font-bold text-xs tracking-wider text-slate-900">
                 TAMARIND VILLAGE
               </span>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-1 rounded-lg text-white hover:bg-white/10"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto p-3 space-y-5">
               {navSections.map((section, idx) => (
                 <div key={idx} className="space-y-1">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#C59B27] mb-2 px-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-2">
                     {section.title}
                   </div>
                   {section.items.map((item) => {
@@ -303,16 +304,18 @@ export default function AdminPortalLayout({
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium ${
-                          isActive ? 'bg-[#821124] text-white' : 'text-white/80 hover:bg-white/10'
+                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          isActive
+                            ? 'bg-[#821124] text-white font-semibold'
+                            : 'text-slate-600 hover:bg-slate-100'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <Icon className="w-4 h-4 text-[#C59B27]" />
+                        <div className="flex items-center gap-2.5">
+                          <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#821124]'}`} />
                           <span>{item.label}</span>
                         </div>
                         {item.badge && (
-                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-white/20 text-white font-bold">
+                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold border border-slate-200">
                             {item.badge}
                           </span>
                         )}
@@ -323,13 +326,13 @@ export default function AdminPortalLayout({
               ))}
             </div>
 
-            <div className="p-4 border-t border-[#C59B27]/20 flex items-center justify-between">
-              <span className="text-xs text-white/70">{currentUser?.name || 'Staff User'}</span>
+            <div className="p-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <span className="text-xs text-slate-700 font-medium">{currentUser?.name || 'Administrator'}</span>
               <button
                 onClick={handleLogout}
-                className="text-xs text-[#821124] font-bold uppercase flex items-center gap-1"
+                className="text-xs text-rose-600 font-bold uppercase flex items-center gap-1 hover:text-rose-700"
               >
-                <LogOut className="w-4 h-4" /> Sign Out
+                <LogOut className="w-3.5 h-3.5" /> Sign Out
               </button>
             </div>
           </div>
