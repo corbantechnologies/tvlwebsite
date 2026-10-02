@@ -187,9 +187,10 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Processed apartments with live markupMultiplier applied (from database only, filtering active only)
+  // Processed apartments with live markupMultiplier applied (from database only, filtering active only, ordered by rank)
   const processedApartments = (apartments || [])
     .filter(apt => apt.isActive !== false)
+    .sort((a, b) => (Number(a.rank) || 99) - (Number(b.rank) || 99))
     .map(apt => ({
       ...apt,
       pricePerNight: Math.round(apt.pricePerNight * (pricingRules?.markupMultiplier || 1.0))

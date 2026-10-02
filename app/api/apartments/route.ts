@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { apartments } from "@/lib/db/schema";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
 
     let data;
     if (includeAll) {
-      data = await db.select().from(apartments);
+      data = await db.select().from(apartments).orderBy(asc(apartments.rank), asc(apartments.id));
     } else {
-      data = await db.select().from(apartments).where(eq(apartments.isActive, true));
+      data = await db.select().from(apartments).where(eq(apartments.isActive, true)).orderBy(asc(apartments.rank), asc(apartments.id));
     }
     return NextResponse.json({ apartments: data || [] });
   } catch (err: any) {
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
       highlights: body.highlights || [],
       bedConfig: body.bedConfig || "1 King Bed",
       viewType: body.viewType || "Ocean View",
-      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true
+      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
+      rank: Number(body.rank || 0),
     };
     await db.insert(apartments).values(newApt as any);
     return NextResponse.json({ success: true, apartment: newApt });

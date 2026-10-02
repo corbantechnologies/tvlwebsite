@@ -28,7 +28,10 @@ export default function AdminApartmentsPage() {
       const res = await fetch('/api/apartments?all=true');
       const data = await res.json();
       if (data.apartments) {
-        setApartments(data.apartments);
+        const sorted = [...data.apartments].sort(
+          (a: any, b: any) => (Number(a.rank) || 99) - (Number(b.rank) || 99)
+        );
+        setApartments(sorted);
       }
     } catch {
       toast.error('Failed to load apartments inventory');
@@ -64,11 +67,34 @@ export default function AdminApartmentsPage() {
     }
   };
 
+  // Quick inline rank updater
+  const handleQuickRankChange = async (aptId: string, newRank: number) => {
+    try {
+      const res = await fetch(`/api/apartments/${aptId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rank: newRank })
+      });
+      if (res.ok) {
+        toast.success(`Display order rank set to #${newRank}`);
+        setApartments(prev =>
+          prev.map(a => a.id === aptId ? { ...a, rank: newRank } : a)
+              .sort((a, b) => (Number(a.rank) || 99) - (Number(b.rank) || 99))
+        );
+      } else {
+        toast.error('Failed to update rank');
+      }
+    } catch {
+      toast.error('Network error updating rank');
+    }
+  };
+
   // Form state for creating a new apartment
   const [newApt, setNewApt] = useState<any>({
     id: '',
     name: '',
     viewType: 'Ocean View',
+    rank: 1,
     pricePerNight: 213,
     pricePerNightKes: 27500,
     size: '85 m²',
@@ -99,6 +125,7 @@ export default function AdminApartmentsPage() {
     const payload = {
       ...newApt,
       id: aptId,
+      rank: Number(newApt.rank) || 0,
       pricePerNight: Number(newApt.pricePerNight) || 0,
       pricePerNightKes: Number(newApt.pricePerNightKes) || 0,
       bedrooms: Number(newApt.bedrooms) || 1,
@@ -137,6 +164,7 @@ export default function AdminApartmentsPage() {
     setUpdating(true);
     const payload = {
       ...editingApt,
+      rank: Number(editingApt.rank) || 0,
       pricePerNight: Number(editingApt.pricePerNight) || 0,
       pricePerNightKes: Number(editingApt.pricePerNightKes) || 0,
       bedrooms: Number(editingApt.bedrooms) || 1,
@@ -296,6 +324,9 @@ export default function AdminApartmentsPage() {
                                 Inactive / Draft (Hidden)
                               </span>
                             )}
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#821124]/10 text-[#821124] border border-[#821124]/20 shadow-xs" title="Arrangement Display Order Rank">
+                              Rank #{apt.rank ?? 0}
+                            </span>
                           </div>
                           <span className="text-xs text-[#821124] font-medium block mt-0.5">
                             Tamarind Luxury Serviced Suite
@@ -362,6 +393,30 @@ export default function AdminApartmentsPage() {
                       </a>
 
                       <div className="flex items-center gap-2">
+                        {/* Inline Rank Selector */}
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200" title="Arrangement Display Order Rank (1 appears first)">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Rank</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="99"
+                            defaultValue={apt.rank ?? 0}
+                            key={`rank-${apt.id}-${apt.rank}`}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value, 10) || 0;
+                              if (val !== (apt.rank ?? 0)) {
+                                handleQuickRankChange(apt.id, val);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="w-11 h-6 text-xs text-center font-bold text-[#821124] bg-white border border-slate-300 rounded focus:ring-1 focus:ring-[#821124] focus:outline-none"
+                          />
+                        </div>
+
                         <button
                           type="button"
                           onClick={() => handleToggleActive(apt)}
@@ -563,6 +618,20 @@ export default function AdminApartmentsPage() {
                       setNewApt({ ...newApt, pricePerNightKes: val === '' ? '' : Number(val) });
                     }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#821124] mb-1">Display Rank (Order)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                    value={newApt.rank ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewApt({ ...newApt, rank: val === '' ? '' : Number(val) });
+                    }}
+                    className="w-full bg-white border border-[#821124]/30 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:ring-1 focus:ring-[#821124]"
                   />
                 </div>
               </div>
@@ -870,6 +939,20 @@ export default function AdminApartmentsPage() {
                       setEditingApt({ ...editingApt, pricePerNightKes: val === '' ? '' : Number(val) });
                     }}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#821124] mb-1">Display Rank (Order)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                    value={editingApt.rank ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingApt({ ...editingApt, rank: val === '' ? '' : Number(val) });
+                    }}
+                    className="w-full bg-white border border-[#821124]/30 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:ring-1 focus:ring-[#821124]"
                   />
                 </div>
               </div>

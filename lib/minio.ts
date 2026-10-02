@@ -37,15 +37,9 @@ export async function uploadToMinio(
   const cleanName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   const key = `${folder}/${Date.now()}-${cleanName}`;
 
-  // Verify bucket existence safely
-  try {
-    const exists = await client.bucketExists(BUCKET_NAME);
-    if (!exists) {
-      await client.makeBucket(BUCKET_NAME, 'us-east-1');
-    }
-  } catch (err: any) {
-    console.warn('Bucket verification warning (proceeding):', err.message);
-  }
+  // Directly upload to bucket without calling admin bucketExists/makeBucket
+  // This prevents 401 / 403 AccessDenied errors on scoped S3 credentials
+
 
   // Upload buffer to MinIO bucket tvl-website-assets
   await client.putObject(BUCKET_NAME, key, buffer, buffer.length, {

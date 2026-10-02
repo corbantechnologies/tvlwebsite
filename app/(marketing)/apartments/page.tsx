@@ -25,7 +25,11 @@ export default function ApartmentsIndexPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.apartments && d.apartments.length > 0) {
-          setApartmentsList(d.apartments.filter((a: any) => a.isActive !== false));
+          setApartmentsList(
+            d.apartments
+              .filter((a: any) => a.isActive !== false)
+              .sort((a: any, b: any) => (Number(a.rank) || 99) - (Number(b.rank) || 99))
+          );
         }
       })
       .catch(() => {})

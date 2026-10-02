@@ -21,6 +21,7 @@ export interface ApartmentType {
   bedConfig: string;
   viewType: string;
   isActive?: boolean;
+  rank?: number;
 }
 
 export interface PackageType {

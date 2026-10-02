@@ -80,8 +80,11 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       highlights JSONB NOT NULL DEFAULT '[]',
       bed_config TEXT NOT NULL,
       view_type TEXT NOT NULL,
-      is_active BOOLEAN NOT NULL DEFAULT TRUE
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
+      rank INTEGER NOT NULL DEFAULT 0
     );
+
+    ALTER TABLE apartments ADD COLUMN IF NOT EXISTS rank INTEGER DEFAULT 0;
 
     CREATE TABLE IF NOT EXISTS dining_options (
       id TEXT PRIMARY KEY,
@@ -419,12 +422,24 @@ async function seedHeroSettings(db: ReturnType<typeof getDb>): Promise<void> {
 // 4. Apartments & Inventory (1BR, 2BR, 3BR)
 // ---------------------------------------------------------------
 async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
+  // Ensure the rank column exists in existing live DBs and populate default 1, 2, 3 ranks
+  try {
+    await db.execute(sql`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS rank INTEGER DEFAULT 0;`);
+    await db.execute(sql`
+      UPDATE apartments SET rank = 1 WHERE (id ILIKE '%1-bedroom%' OR bedrooms = 1) AND (rank = 0 OR rank IS NULL);
+      UPDATE apartments SET rank = 2 WHERE (id ILIKE '%2-bedroom%' OR bedrooms = 2) AND (rank = 0 OR rank IS NULL);
+      UPDATE apartments SET rank = 3 WHERE (id ILIKE '%3-bedroom%' OR bedrooms = 3) AND (rank = 0 OR rank IS NULL);
+    `);
+  } catch (e) {
+    console.warn("[Seed] Warning updating apartment rank columns:", e);
+  }
+
   const existing = await db.select().from(apartments).limit(1);
   if (existing.length > 0) return;
 
   const aptList = [
     {
-      id: "1-bedroom Apartment",
+      id: "1-bedroom",
       name: "1-Bedroom Apartment",
       description: "An intimate, beautifully curated coastal sanctuary perched on the coral cliffs. Features a spacious private sea-facing balcony, an authentic Swahili lounge, an open-concept kitchen, and direct breeze from Tudor Creek.",
       size: "85 m²",
@@ -456,9 +471,10 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       bedConfig: "1 King-size Bed",
       viewType: "Ocean & Tudor Creek View",
       isActive: true,
+      rank: 1,
     },
     {
-      id: "2-bedroom Apartment",
+      id: "2-bedroom",
       name: "2-Bedroom Apartment",
       description: "Expansive multi-room residence designed for families or friends traveling together. Offering a master en-suite, separate guest twin room, spacious living/dining hall, and a private creek-view balcony.",
       size: "140 m²",
@@ -491,9 +507,10 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       bedConfig: "1 King Bed & 2 Twin Beds (can be merged)",
       viewType: "Resort Pool & Harbor View",
       isActive: true,
+      rank: 2,
     },
     {
-      id: "3-bedroom Apartment",
+      id: "3-bedroom",
       name: "3-Bedroom Apartment",
       description: "The ultimate expression of coastal luxury. This palatial apartment boasts double-height vaulted ceilings, three gorgeous bedrooms, multiple sun-drenched private balconies, and an elite dining lounge.",
       size: "220 m²",
@@ -527,6 +544,7 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       bedConfig: "2 King Beds & 2 Twin Beds",
       viewType: "360° Creek, Ocean & Old Town Panoramic View",
       isActive: true,
+      rank: 3,
     },
   ];
 

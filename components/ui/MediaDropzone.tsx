@@ -62,28 +62,141 @@ export default function MediaDropzone({
     }
   };
 
-  const uploadFile = async (file: File) => {
+  const compressImage = async (
+    file: File,
+    quality = 0.78,
+    maxDimension = 1600
+  ): Promise<File> => {
+    if (!file.type.startsWith('image/')) return file;
+    // If already under 400KB, no compression needed
+    if (file.size <= 400 * 1024) return file;
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        img.onload = () => {
+          let { width, height } = img;
+
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                resolve(file);
+                return;
+              }
+              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+
+              // If still over 900KB, compress further once
+              if (compressedFile.size > 900 * 1024 && quality > 0.6) {
+                compressImage(compressedFile, 0.65, 1280).then(resolve);
+              } else {
+                resolve(compressedFile);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const uploadFile = async (rawFile: File) => {
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', folder);
 
     try {
+      const file = await compressImage(rawFile);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', folder);
+
       const res = await fetch('/api/media/upload', {
         method: 'POST',
         body: formData,
       });
 
+      if (!res.ok) {
+        if (res.status === 413) {
+          // If server proxy returned 413 Payload Too Large, retry with ultra compression
+          toast.loading('Optimizing image for server limits...', { id: 'recompress' });
+          const ultraFile = await compressImage(rawFile, 0.60, 1200);
+          const retryData = new FormData();
+          retryData.append('file', ultraFile);
+          retryData.append('folder', folder);
+
+          const retryRes = await fetch('/api/media/upload', {
+            method: 'POST',
+            body: retryData,
+          });
+          toast.dismiss('recompress');
+
+          if (retryRes.ok) {
+            const data = await retryRes.json();
+            if (data.url) {
+              notifyChange(data.url);
+              setInputUrl(data.url);
+              toast.success('Asset uploaded to MinIO Media Store!');
+              return;
+            }
+          }
+          toast.error('File exceeds server size limit (413). Please select a smaller photo or paste direct link.');
+          return;
+        }
+
+        if (res.status === 401 || res.status === 403) {
+          toast.error('Media storage unauthorized (401/403). Check MinIO credentials.');
+          return;
+        }
+
+        let errMsg = 'Failed to upload to MinIO storage';
+        try {
+          const errData = await res.json();
+          if (errData.error) errMsg = errData.error;
+        } catch {
+          // Non-JSON response (e.g. proxy HTML error)
+        }
+        toast.error(errMsg);
+        return;
+      }
+
       const data = await res.json();
-      if (res.ok && data.url) {
+      if (data.url) {
         notifyChange(data.url);
         setInputUrl(data.url);
         toast.success(data.note ? `Uploaded: ${data.note}` : 'Asset uploaded to MinIO Media Store!');
       } else {
         toast.error(data.error || 'Failed to upload to MinIO storage');
       }
-    } catch {
-      toast.error('Network error during media upload');
+    } catch (err: any) {
+      toast.error(err?.message || 'Network error during media upload');
     } finally {
       setUploading(false);
     }
