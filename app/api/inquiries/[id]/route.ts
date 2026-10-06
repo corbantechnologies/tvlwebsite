@@ -123,8 +123,11 @@ async function handleUpdate(req: NextRequest, params: Promise<{ id: string }>) {
           metadata: { bookingReference: generatedBooking.bookingReference, inquiryId: id },
         });
 
-        // Send guest confirmation email
-        sendGuestConfirmationEmail(generatedBooking).catch(console.warn);
+        // Await guest confirmation and staff notification emails
+        await Promise.allSettled([
+          sendGuestConfirmationEmail(generatedBooking),
+          notifyStaffOfBooking(generatedBooking),
+        ]);
       }
     }
 
@@ -216,6 +219,35 @@ async function sendGuestConfirmationEmail(booking: any) {
         </div>
         <p style="font-size:13px">Our team will be in touch with full arrival details.</p>
         <p style="font-size:13px">📞 +254 725 959 552<br/>✉ reservations.village@tamarind.co.ke</p>
+      </div>`,
+  });
+}
+
+async function notifyStaffOfBooking(booking: any) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return;
+  const resend = new Resend(key);
+  const staffEmail = process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke";
+
+  await resend.emails.send({
+    from: process.env.EMAIL_FROM || "reservations.village@tamarind.co.ke",
+    to: staffEmail,
+    subject: `[Inquiry Converted — Booking] ${booking.guestName} · ${booking.bookingReference}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;padding:24px;border:1px solid #e2d9d0">
+        <h2 style="color:#821124">Inquiry Converted to Confirmed Booking</h2>
+        <p><strong>Reference:</strong> ${booking.bookingReference}</p>
+        <p><strong>Guest:</strong> ${booking.guestName}</p>
+        <p><strong>Email:</strong> ${booking.guestEmail}</p>
+        <p><strong>Phone:</strong> ${booking.guestPhone || "—"}</p>
+        <p><strong>Suite:</strong> ${booking.apartmentName}</p>
+        <p><strong>Check-In:</strong> ${booking.checkIn}</p>
+        <p><strong>Check-Out:</strong> ${booking.checkOut}</p>
+        <p><strong>Guests:</strong> ${booking.adults} adults, ${booking.children} children</p>
+        ${booking.mealPlanName ? `<p><strong>Meal Plan:</strong> ${booking.mealPlanName}</p>` : ""}
+        ${booking.allocatedUnit ? `<p><strong>Allocated Unit:</strong> ${booking.allocatedUnit}</p>` : ""}
+        <p><strong>Total Amount:</strong> ${booking.currency} ${Number(booking.totalAmount).toLocaleString()}</p>
+        <p style="color:#8b7355;font-size:12px;margin-top:16px">Converted via the reservations dashboard.</p>
       </div>`,
   });
 }

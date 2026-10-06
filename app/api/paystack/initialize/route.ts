@@ -49,8 +49,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Derive callback URL: POST-payment redirect to the booking confirmed page
-    const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "";
-    const callbackUrl = process.env.PAYSTACK_CALLBACK_URL || `${origin}/booking-confirmed`;
+    const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://tamarindvillage.co.ke";
+    const callbackUrl = process.env.PAYSTACK_CALLBACK_URL && (!process.env.PAYSTACK_CALLBACK_URL.includes("localhost") || origin.includes("localhost"))
+      ? process.env.PAYSTACK_CALLBACK_URL
+      : `${origin}/booking-confirmed`;
 
     const paystackRef = reference || `TVL-${Date.now()}`;
 

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Utensils, Ship, Clock, Users, Sparkles, Plus, Trash2, Edit, Save, X, 
-  RotateCw, ExternalLink, Mail, Shield, Info, Loader2, Check 
+import {
+  Utensils, Ship, Clock, Users, Sparkles, Plus, Trash2, Edit, Save, X,
+  RotateCw, ExternalLink, Mail, Shield, Info, Loader2, Check
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
@@ -202,7 +202,7 @@ export default function AdminDiningPage() {
               The Dawa Terrace Lounge
             </span>
             <div className="text-xs font-mono text-slate-800 truncate">
-              dawa@tamarind.co.ke
+              reservations.mombasa@tamarind.co.ke
             </div>
             <span className="text-[10px] text-slate-500 block">Lounge &amp; Sundowner Inquiries</span>
           </div>
@@ -222,7 +222,7 @@ export default function AdminDiningPage() {
               Golden Key Casino
             </span>
             <div className="text-xs font-mono text-slate-800 truncate">
-              goldenkey@tamarind.co.ke
+              goldenkey.casino@tamarind.co.ke
             </div>
             <span className="text-[10px] text-slate-500 block">VIP &amp; Gaming Inquiries</span>
           </div>
