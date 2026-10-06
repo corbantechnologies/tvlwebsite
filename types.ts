@@ -22,6 +22,7 @@ export interface ApartmentType {
   viewType: string;
   isActive?: boolean;
   rank?: number;
+  discountPercentage?: number;
 }
 
 export interface PackageType {

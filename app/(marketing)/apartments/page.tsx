@@ -99,7 +99,9 @@ export default function ApartmentsIndexPage() {
                 </div>
               ))
             ) : apartmentsList.map((apt, index) => {
-              const livePrice = apt.pricePerNight;
+              const basePrice = apt.pricePerNight;
+              const discount = Number(apt.discountPercentage) || 0;
+              const livePrice = discount > 0 ? Math.round(basePrice * (1 - discount / 100)) : basePrice;
               const slug = getSlug(apt.id);
 
               return (
@@ -115,6 +117,11 @@ export default function ApartmentsIndexPage() {
                       alt={apt.name}
                       className="w-full h-full object-cover transform duration-500 group-hover:scale-103"
                     />
+                    {discount > 0 && (
+                      <div className="absolute top-4 left-4 bg-rose-600 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm z-10">
+                        {discount}% OFF
+                      </div>
+                    )}
                     <div className="absolute top-4 right-4 bg-brand-dark/90 backdrop-blur-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
                       {apt.viewType.split(' ')[0]} View
                     </div>
@@ -161,12 +168,22 @@ export default function ApartmentsIndexPage() {
                       <div>
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">
-                            Rate
+                            {discount > 0 ? "Special Rate" : "Rate"}
                           </span>
+                          {discount > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 text-[8px] font-bold text-white bg-rose-600 rounded-none uppercase tracking-wider">
+                              Save {discount}%
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xl font-serif text-brand-dark font-extrabold">
-                          ${livePrice} <span className="text-xs font-sans text-stone-500 font-light">/ night</span>
-                        </p>
+                        <div className="flex items-baseline gap-1.5">
+                          {discount > 0 && (
+                            <span className="text-xs text-stone-400 line-through">${basePrice}</span>
+                          )}
+                          <p className="text-xl font-serif text-brand-dark font-extrabold">
+                            ${livePrice} <span className="text-xs font-sans text-stone-500 font-light">/ night</span>
+                          </p>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2">

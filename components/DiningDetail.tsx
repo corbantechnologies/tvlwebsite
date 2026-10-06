@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import {
   Clock, Calendar, Users, ArrowLeft, Utensils, CheckCircle2,
   MapPin, Sparkles, Wine, Compass, Sunset, Anchor, ArrowRight,
-  Info, Star, GlassWater, ChefHat, AlertCircle, RefreshCw
+  Info, Star, GlassWater, ChefHat, AlertCircle, RefreshCw, Ticket
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DiningExperience } from "@/types";
@@ -75,6 +76,28 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
   const [diningSubmitError, setDiningSubmitError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [confirmedToken, setConfirmedToken] = useState("");
+  const [venueEvents, setVenueEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => {
+        if (data.events && Array.isArray(data.events)) {
+          const matching = data.events.filter((e: any) => {
+            const brandNorm = (e.brand || '').toLowerCase().replace(/_/g, '-');
+            const diningIdNorm = dining.id.toLowerCase().replace(/_/g, '-');
+            return (
+              brandNorm === diningIdNorm ||
+              (dining.id === 'tamarind-restaurant' && (brandNorm.includes('restaurant') || e.venue?.toLowerCase().includes('restaurant'))) ||
+              (dining.id === 'tamarind-dhow' && (brandNorm.includes('dhow') || e.venue?.toLowerCase().includes('dhow'))) ||
+              (dining.id === 'dawa-terrace' && (brandNorm.includes('dawa') || e.venue?.toLowerCase().includes('dawa')))
+            );
+          });
+          setVenueEvents(matching);
+        }
+      })
+      .catch(() => {});
+  }, [dining.id]);
 
   // Additional data based on dining ID
   const getDiningSpecials = (id: string) => {
@@ -658,6 +681,93 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
           </div>
         </div>
       </div>
+
+      {/* Embedded Venue Events & Experiences */}
+      {venueEvents.length > 0 && (
+        <div className="pt-10 pb-4 border-t border-stone-200" id="venue-events-section">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand-gold/15 text-brand-dark text-[10px] font-bold tracking-widest uppercase mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-brand-gold" />
+                <span>Special Happenings &amp; Curated Sessions</span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-serif text-brand-dark">
+                Upcoming Experiences at {dining.name}
+              </h3>
+            </div>
+            <Link
+              href="/events"
+              className="text-xs uppercase tracking-widest font-bold text-brand-teal hover:underline inline-flex items-center gap-1 shrink-0"
+            >
+              <span>View All Group Events</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {venueEvents.map((evt) => {
+              const poster = evt.image || evt.posterUrl || gallery[0];
+              const dateStr = evt.startDate || evt.eventDate || 'Upcoming Date';
+              const timeStr = evt.timeText || evt.eventTime || 'Evening Session';
+              const priceKes = evt.priceKes || evt.ticketPriceKes || 0;
+              const priceUsd = evt.priceUsd || 0;
+
+              return (
+                <div
+                  key={evt.id}
+                  className="bg-white border border-stone-200 rounded-none overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="relative aspect-[16/10] bg-stone-100 overflow-hidden">
+                      <OptimizedImage
+                        src={poster}
+                        alt={evt.title}
+                        preset="card"
+                        className="w-full h-full object-cover transform duration-500 group-hover:scale-103"
+                      />
+                      {priceKes > 0 && (
+                        <div className="absolute bottom-3 right-3 bg-brand-dark/90 backdrop-blur-xs text-brand-gold px-2.5 py-1 text-[11px] font-bold font-mono shadow">
+                          KES {priceKes.toLocaleString()}
+                          {priceUsd > 0 && <span className="text-stone-300 ml-1">(${priceUsd})</span>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5 space-y-3">
+                      <div className="flex items-center gap-3 text-[11px] text-stone-500 font-medium">
+                        <span className="flex items-center gap-1 text-brand-teal font-semibold">
+                          <Calendar className="w-3.5 h-3.5" /> {dateStr}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" /> {timeStr}
+                        </span>
+                      </div>
+                      <h4 className="font-serif text-base font-bold text-brand-dark group-hover:text-brand-teal transition-colors">
+                        {evt.title}
+                      </h4>
+                      <p className="text-stone-600 text-xs font-light line-clamp-2 leading-relaxed">
+                        {evt.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-5 pt-0 border-t border-stone-100 flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                      {evt.venue}
+                    </span>
+                    <Link
+                      href="/events"
+                      className="px-3.5 py-1.5 bg-brand-teal text-white text-[11px] font-bold uppercase tracking-wider hover:bg-brand-dark transition-colors inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Reserve</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Alternative dining choices cross-linking */}
       <div className="pt-10 border-t border-stone-200">

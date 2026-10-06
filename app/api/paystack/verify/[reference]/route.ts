@@ -213,7 +213,7 @@ async function sendConfirmationEmail(booking: any) {
           <p style="font-size:12px;color:#8b7355;margin:4px 0 0">Use your reference code to update special requests or view your booking status.</p>
         </div>
         <p style="font-size:13px">Questions? Contact us:</p>
-        <p style="font-size:13px">📞 +254 711 082 000<br/>✉ reservations.village@tamarind.co.ke</p>
+        <p style="font-size:13px">📞 +254 725 959 552<br/>✉ reservations.village@tamarind.co.ke</p>
         <hr style="border:none;border-top:1px solid #e2d9d0;margin:32px 0"/>
         <p style="font-size:11px;color:#8b7355;text-align:center">Tamarind Village · Mombasa · Kenya<br/>A member of the Tamarind Group</p>
       </div>`,

@@ -143,8 +143,11 @@ export default function BookingModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [confirmedData, setConfirmedData] = useState<any | null>(null);
-
-  const livePrice = selectedApartment?.pricePerNight || 120;
+  const discountPct = selectedApartment?.discountPercentage || 0;
+  const originalRoomRate = selectedApartment?.pricePerNight || 120;
+  const livePrice = discountPct > 0
+    ? Math.round(originalRoomRate * (1 - discountPct / 100))
+    : originalRoomRate;
 
   // Fetch meal plans, extras, and booking conditions on open
   useEffect(() => {
@@ -251,7 +254,9 @@ export default function BookingModal({
     const totalGuests = adults + children;
 
     // Room cost
+    const originalBaseRoomUsd = originalRoomRate * nights;
     const baseRoomUsd = livePrice * nights;
+    const apartmentDiscountSavingsUsd = (originalRoomRate - livePrice) * nights;
 
     // Meal plan cost: (rate × total guests × nights)
     const activeMealPlan = mealPlans.find(m => m.id === mealPlanId) || mealPlans[0];
@@ -294,6 +299,10 @@ export default function BookingModal({
     return {
       nights,
       totalGuests,
+      originalRoomRate,
+      originalBaseRoomUsd,
+      apartmentDiscountPct: discountPct,
+      apartmentDiscountSavingsUsd,
       baseRoomUsd,
       mealPlanName: activeMealPlan?.name || "Room Only",
       mealPlanRateUsd,
@@ -1049,14 +1058,37 @@ export default function BookingModal({
                     {/* Itemized Calculation */}
                     {breakdown ? (
                       <div className="space-y-2.5 text-xs text-stone-600">
-                        <div className="flex justify-between">
-                          <span>
-                            Suite Base ({breakdown.nights} nights x ${livePrice})
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-1.5 flex-wrap">
+                            <span>Suite Base ({breakdown.nights} nights x ${livePrice})</span>
+                            {breakdown.apartmentDiscountPct > 0 && (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-none uppercase">
+                                {breakdown.apartmentDiscountPct}% OFF
+                              </span>
+                            )}
                           </span>
-                          <span className="font-semibold text-stone-900 font-mono">
-                            ${breakdown.baseRoomUsd}
-                          </span>
+                          <div className="text-right">
+                            {breakdown.apartmentDiscountPct > 0 && (
+                              <span className="text-[11px] line-through text-stone-400 mr-1.5 font-mono">
+                                ${breakdown.originalBaseRoomUsd}
+                              </span>
+                            )}
+                            <span className="font-semibold text-stone-900 font-mono">
+                              ${breakdown.baseRoomUsd}
+                            </span>
+                          </div>
                         </div>
+
+                        {breakdown.apartmentDiscountSavingsUsd > 0 && (
+                          <div className="flex justify-between items-center text-amber-800 bg-amber-50/80 px-2.5 py-1.5 border border-amber-200 text-xs">
+                            <span className="font-medium text-[11px]">
+                              Direct Suite Offer ({breakdown.apartmentDiscountPct}% Discount)
+                            </span>
+                            <span className="font-mono font-bold text-xs text-amber-900">
+                              -${breakdown.apartmentDiscountSavingsUsd} USD
+                            </span>
+                          </div>
+                        )}
 
                         {breakdown.mealPlanTotalUsd > 0 && (
                           <div className="flex justify-between">

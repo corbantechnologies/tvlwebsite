@@ -3,21 +3,21 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  CheckCircle2, 
-  Calendar, 
-  Users, 
-  Hotel, 
-  CreditCard, 
-  Utensils, 
-  Printer, 
+import {
+  CheckCircle2,
+  Calendar,
+  Users,
+  Hotel,
+  CreditCard,
+  Utensils,
+  Printer,
   Download,
-  ArrowRight, 
-  ShieldCheck, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Loader2, 
+  ArrowRight,
+  ShieldCheck,
+  Phone,
+  Mail,
+  MapPin,
+  Loader2,
   AlertCircle,
   Sparkles
 } from 'lucide-react';
@@ -60,7 +60,7 @@ function BookingConfirmedContent() {
           setConditions(data.conditions);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const verifyPayment = async () => {
@@ -193,7 +193,7 @@ function BookingConfirmedContent() {
 
             <div className="border-t border-slate-200 pt-5 text-xs text-slate-500 space-y-1">
               <p className="font-semibold text-slate-700">Need Immediate Front Desk Assistance?</p>
-              <p>Call Reservations at <strong>+254 711 082 000</strong> or email <strong>reservations.village@tamarind.co.ke</strong>.</p>
+              <p>Call Reservations at <strong>+254 725 959 552</strong> or email <strong>reservations.village@tamarind.co.ke</strong>.</p>
             </div>
           </div>
         )}
@@ -437,7 +437,7 @@ function BookingConfirmedContent() {
                     <span>Front Desk</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-snug">
-                    +254 711 082 000<br />Available 24/7 for guest assistance.
+                    +254 725 959 552<br />Available 24/7 for guest assistance.
                   </p>
                 </div>
 

@@ -50,6 +50,16 @@ const BRAND_DISPLAY: Record<string, string> = {
   golden_key: 'Golden Key Casino',
 };
 
+function getBrandUrl(brand?: string, venue?: string): string {
+  const b = (brand || '').toLowerCase();
+  const v = (venue || '').toLowerCase();
+  if (b.includes('restaurant') || v.includes('restaurant')) return '/dining/tamarind-restaurant';
+  if (b.includes('dhow') || v.includes('dhow')) return '/dining/tamarind-dhow';
+  if (b.includes('dawa') || v.includes('dawa')) return '/dining/dawa-terrace';
+  if (b.includes('village') || v.includes('village')) return '/apartments';
+  return '/dining';
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [selectedBrand, setSelectedBrand] = useState('all');
@@ -144,9 +154,12 @@ export default function EventsPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                     
                     {/* Brand Pill */}
-                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#821124] text-white text-[10px] font-bold tracking-wider uppercase shadow">
+                    <Link
+                      href={getBrandUrl(evt.brand, evt.venue)}
+                      className="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#821124] hover:bg-[#680e1c] text-white text-[10px] font-bold tracking-wider uppercase shadow transition-colors cursor-pointer"
+                    >
                       {brandLabel}
-                    </div>
+                    </Link>
 
                     {/* Price Badge */}
                     {priceKes > 0 && (
@@ -174,9 +187,15 @@ export default function EventsPage() {
                         {evt.title}
                       </h3>
 
-                      <div className="flex items-center gap-1 text-[11px] text-[#821124] font-semibold mt-1">
-                        <MapPin className="w-3 h-3 text-[#C59B27]" />
-                        <span>{evt.venue} · {evt.city || 'Mombasa'}</span>
+                      <div className="mt-1">
+                        <Link
+                          href={getBrandUrl(evt.brand, evt.venue)}
+                          className="inline-flex items-center gap-1 text-[11px] text-[#821124] hover:text-[#C59B27] font-semibold transition-colors"
+                        >
+                          <MapPin className="w-3 h-3 text-[#C59B27]" />
+                          <span>Hosted at {evt.venue} · {evt.city || 'Mombasa'}</span>
+                          <ArrowRight className="w-2.5 h-2.5 ml-0.5" />
+                        </Link>
                       </div>
 
                       <p className="text-xs text-[#1F1615]/75 mt-3 leading-relaxed line-clamp-3">

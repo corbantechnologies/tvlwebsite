@@ -187,14 +187,21 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Processed apartments with live markupMultiplier applied (from database only, filtering active only, ordered by rank)
+  // Processed apartments with live markupMultiplier & discountPercentage applied (from database only, filtering active only, ordered by rank)
   const processedApartments = (apartments || [])
     .filter(apt => apt.isActive !== false)
     .sort((a, b) => (Number(a.rank) || 99) - (Number(b.rank) || 99))
-    .map(apt => ({
-      ...apt,
-      pricePerNight: Math.round(apt.pricePerNight * (pricingRules?.markupMultiplier || 1.0))
-    }));
+    .map(apt => {
+      const basePrice = Math.round(apt.pricePerNight * (pricingRules?.markupMultiplier || 1.0));
+      const discount = Number(apt.discountPercentage) || 0;
+      const effectivePrice = discount > 0 ? Math.round(basePrice * (1 - discount / 100)) : basePrice;
+      return {
+        ...apt,
+        originalPrice: basePrice,
+        pricePerNight: effectivePrice,
+        discountPercentage: discount,
+      };
+    });
 
   // Starting price for mobile booking bar (dynamic from apartment inventory)
   const { mobileStartingPrice, isMobilePriceLive } = useMemo(() => {
@@ -850,6 +857,11 @@ export default function App() {
                               alt={apt.name}
                               className="w-full h-full object-cover transform duration-500 group-hover:scale-103"
                             />
+                            {Number(apt.discountPercentage) > 0 && (
+                              <div className="absolute top-4 left-4 bg-rose-600 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm z-10">
+                                {apt.discountPercentage}% OFF
+                              </div>
+                            )}
                             <div className="absolute top-4 right-4 bg-brand-dark/90 backdrop-blur-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
                               {apt.viewType.split(" ")[0]} View
                             </div>
@@ -900,17 +912,26 @@ export default function App() {
                               <div>
                                 <div className="flex items-center gap-1.5 mb-0.5">
                                   <span className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">
-                                    {isLive ? "Live Rate" : "Base Rate"}
+                                    {Number(apt.discountPercentage) > 0 ? "Special Offer" : (isLive ? "Live Rate" : "Base Rate")}
                                   </span>
-                                  {isLive && (
+                                  {Number(apt.discountPercentage) > 0 ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.2 text-[8px] font-bold text-white bg-rose-600 rounded-none uppercase tracking-wider">
+                                      Save {apt.discountPercentage}%
+                                    </span>
+                                  ) : isLive && (
                                     <span className="inline-flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-bold text-white bg-emerald-600 rounded-none uppercase tracking-wider">
                                       ● Live
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xl font-serif text-brand-dark font-extrabold">
-                                  ${livePrice} <span className="text-xs font-sans text-stone-500 font-light">/ night</span>
-                                </p>
+                                <div className="flex items-baseline gap-1.5">
+                                  {Number(apt.discountPercentage) > 0 && apt.originalPrice && (
+                                    <span className="text-xs text-stone-400 line-through">${apt.originalPrice}</span>
+                                  )}
+                                  <p className="text-xl font-serif text-brand-dark font-extrabold">
+                                    ${livePrice} <span className="text-xs font-sans text-stone-500 font-light">/ night</span>
+                                  </p>
+                                </div>
                               </div>
 
                               <div className="flex flex-col gap-2">

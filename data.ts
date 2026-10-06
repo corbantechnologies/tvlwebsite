@@ -46,7 +46,9 @@ export const APARTMENTS: ApartmentType[] = [
       "Fully self-catering capable with modern premium appliances"
     ],
     bedConfig: "1 King-sized Swahili Canopy Bed",
-    viewType: "Direct Tudor Creek & Sea View"
+    viewType: "Direct Tudor Creek & Sea View",
+    rank: 1,
+    discountPercentage: 0
   },
   {
     id: "2-bedroom",
@@ -81,7 +83,9 @@ export const APARTMENTS: ApartmentType[] = [
       "Master en-suite bathroom with custom glass shower and Swahili vanity"
     ],
     bedConfig: "1 King Bed & 2 Twin Beds (can be merged)",
-    viewType: "Resort Pool & Harbor View"
+    viewType: "Resort Pool & Harbor View",
+    rank: 2,
+    discountPercentage: 0
   },
   {
     id: "3-bedroom",
@@ -116,7 +120,9 @@ export const APARTMENTS: ApartmentType[] = [
       "Dedicated chef available upon request for private dining events"
     ],
     bedConfig: "2 King Beds & 2 Twin Beds",
-    viewType: "360° Creek, Ocean & Old Town Panoramic View"
+    viewType: "360° Creek, Ocean & Old Town Panoramic View",
+    rank: 3,
+    discountPercentage: 0
   }
 ];
 

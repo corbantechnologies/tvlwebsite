@@ -89,12 +89,34 @@ export default function AdminApartmentsPage() {
     }
   };
 
+  // Quick inline discount updater
+  const handleQuickDiscountChange = async (aptId: string, newDiscount: number) => {
+    try {
+      const res = await fetch(`/api/apartments/${aptId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discountPercentage: newDiscount })
+      });
+      if (res.ok) {
+        toast.success(`Promotional discount set to ${newDiscount}%`);
+        setApartments(prev =>
+          prev.map(a => a.id === aptId ? { ...a, discountPercentage: newDiscount } : a)
+        );
+      } else {
+        toast.error('Failed to update discount');
+      }
+    } catch {
+      toast.error('Network error updating discount');
+    }
+  };
+
   // Form state for creating a new apartment
   const [newApt, setNewApt] = useState<any>({
     id: '',
     name: '',
     viewType: 'Ocean View',
     rank: 1,
+    discountPercentage: 0,
     pricePerNight: 213,
     pricePerNightKes: 27500,
     size: '85 m²',
@@ -126,6 +148,7 @@ export default function AdminApartmentsPage() {
       ...newApt,
       id: aptId,
       rank: Number(newApt.rank) || 0,
+      discountPercentage: Number(newApt.discountPercentage) || 0,
       pricePerNight: Number(newApt.pricePerNight) || 0,
       pricePerNightKes: Number(newApt.pricePerNightKes) || 0,
       bedrooms: Number(newApt.bedrooms) || 1,
@@ -165,6 +188,7 @@ export default function AdminApartmentsPage() {
     const payload = {
       ...editingApt,
       rank: Number(editingApt.rank) || 0,
+      discountPercentage: Number(editingApt.discountPercentage) || 0,
       pricePerNight: Number(editingApt.pricePerNight) || 0,
       pricePerNightKes: Number(editingApt.pricePerNightKes) || 0,
       bedrooms: Number(editingApt.bedrooms) || 1,
@@ -327,6 +351,11 @@ export default function AdminApartmentsPage() {
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#821124]/10 text-[#821124] border border-[#821124]/20 shadow-xs" title="Arrangement Display Order Rank">
                               Rank #{apt.rank ?? 0}
                             </span>
+                            {Number(apt.discountPercentage) > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-300 shadow-xs animate-pulse">
+                                {apt.discountPercentage}% OFF
+                              </span>
+                            )}
                           </div>
                           <span className="text-xs text-[#821124] font-medium block mt-0.5">
                             Tamarind Luxury Serviced Suite
@@ -337,10 +366,20 @@ export default function AdminApartmentsPage() {
                           <span className="text-[10px] uppercase font-bold text-slate-500 block">
                             Nightly Rate
                           </span>
-                          <div className="text-xl font-serif font-bold text-slate-900">
-                            ${apt.pricePerNight}
-                            <span className="text-xs text-slate-500 font-sans font-normal"> / night</span>
-                          </div>
+                          {Number(apt.discountPercentage) > 0 ? (
+                            <div>
+                              <span className="text-xs text-slate-400 line-through mr-1">${apt.pricePerNight}</span>
+                              <span className="text-xl font-serif font-bold text-rose-700">
+                                ${Math.round(apt.pricePerNight * (1 - Number(apt.discountPercentage) / 100))}
+                              </span>
+                              <span className="text-xs text-slate-500 font-sans font-normal"> / night</span>
+                            </div>
+                          ) : (
+                            <div className="text-xl font-serif font-bold text-slate-900">
+                              ${apt.pricePerNight}
+                              <span className="text-xs text-slate-500 font-sans font-normal"> / night</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -414,6 +453,30 @@ export default function AdminApartmentsPage() {
                               }
                             }}
                             className="w-11 h-6 text-xs text-center font-bold text-[#821124] bg-white border border-slate-300 rounded focus:ring-1 focus:ring-[#821124] focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Inline Discount Control */}
+                        <div className="flex items-center gap-1.5 bg-rose-50/60 px-2 py-1 rounded-lg border border-rose-200" title="Promotional Discount % (0 for none)">
+                          <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">Disc%</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            defaultValue={apt.discountPercentage ?? 0}
+                            key={`disc-${apt.id}-${apt.discountPercentage}`}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value, 10) || 0;
+                              if (val !== (apt.discountPercentage ?? 0)) {
+                                handleQuickDiscountChange(apt.id, val);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="w-11 h-6 text-xs text-center font-bold text-rose-700 bg-white border border-rose-300 rounded focus:ring-1 focus:ring-rose-500 focus:outline-none"
                           />
                         </div>
 
@@ -595,7 +658,7 @@ export default function AdminApartmentsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Base Price (USD)</label>
                   <input
@@ -621,7 +684,7 @@ export default function AdminApartmentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-[#821124] mb-1">Display Rank (Order)</label>
+                  <label className="block text-[10px] font-bold uppercase text-[#821124] mb-1">Display Rank</label>
                   <input
                     type="number"
                     min="1"
@@ -632,6 +695,21 @@ export default function AdminApartmentsPage() {
                       setNewApt({ ...newApt, rank: val === '' ? '' : Number(val) });
                     }}
                     className="w-full bg-white border border-[#821124]/30 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:ring-1 focus:ring-[#821124]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-rose-700 mb-1">Discount (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={newApt.discountPercentage ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewApt({ ...newApt, discountPercentage: val === '' ? '' : Number(val) });
+                    }}
+                    className="w-full bg-white border border-rose-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:ring-1 focus:ring-rose-500"
                   />
                 </div>
               </div>
@@ -916,7 +994,7 @@ export default function AdminApartmentsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Base Price (USD)</label>
                   <input
@@ -942,7 +1020,7 @@ export default function AdminApartmentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-[#821124] mb-1">Display Rank (Order)</label>
+                  <label className="block text-[10px] font-bold uppercase text-[#821124] mb-1">Display Rank</label>
                   <input
                     type="number"
                     min="1"
@@ -953,6 +1031,21 @@ export default function AdminApartmentsPage() {
                       setEditingApt({ ...editingApt, rank: val === '' ? '' : Number(val) });
                     }}
                     className="w-full bg-white border border-[#821124]/30 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:ring-1 focus:ring-[#821124]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-rose-700 mb-1">Discount (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={editingApt.discountPercentage ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingApt({ ...editingApt, discountPercentage: val === '' ? '' : Number(val) });
+                    }}
+                    className="w-full bg-white border border-rose-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono font-bold focus:ring-1 focus:ring-rose-500"
                   />
                 </div>
               </div>

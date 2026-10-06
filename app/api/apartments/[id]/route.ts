@@ -51,7 +51,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       bedConfig: body.bedConfig || "1 King Bed",
       viewType: body.viewType || "Ocean View",
       isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
-      rank: body.rank !== undefined ? Number(body.rank) : 0
+      rank: body.rank !== undefined ? Number(body.rank) : 0,
+      discountPercentage: body.discountPercentage !== undefined ? Number(body.discountPercentage) : 0
     } as any).where(eq(apartments.id, id));
 
     return NextResponse.json({ success: true, message: "Suite updated" });
@@ -83,6 +84,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.viewType !== undefined) updateData.viewType = body.viewType;
     if (body.isActive !== undefined) updateData.isActive = Boolean(body.isActive);
     if (body.rank !== undefined) updateData.rank = Number(body.rank);
+    if (body.discountPercentage !== undefined) updateData.discountPercentage = Number(body.discountPercentage);
 
     await db.update(apartments).set(updateData as any).where(eq(apartments.id, id));
     return NextResponse.json({ success: true, message: "Suite patched" });

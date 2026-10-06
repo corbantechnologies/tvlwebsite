@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       viewType: body.viewType || "Ocean View",
       isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
       rank: Number(body.rank || 0),
+      discountPercentage: Number(body.discountPercentage || 0),
     };
     await db.insert(apartments).values(newApt as any);
     return NextResponse.json({ success: true, apartment: newApt });

@@ -8,30 +8,42 @@ import { Resend } from "resend";
 // ============================================================
 // Venue → staff email routing
 // ============================================================
-function getStaffEmailForVenue(venue: string): string {
+function getStaffEmailForVenue(venue: string, brand?: string): string {
+  const effectiveKey = (brand || venue).toLowerCase().replace(/-/g, "_");
   const map: Record<string, string | undefined> = {
     village_apartment: process.env.EMAIL_VILLAGE,
+    tamarind_village: process.env.EMAIL_VILLAGE,
+    village: process.env.EMAIL_VILLAGE,
     restaurant: process.env.EMAIL_RESTAURANT,
+    tamarind_restaurant: process.env.EMAIL_RESTAURANT,
     dhow: process.env.EMAIL_DHOW,
+    tamarind_dhow: process.env.EMAIL_DHOW,
     dawa_terrace: process.env.EMAIL_DAWA,
+    dawa: process.env.EMAIL_DAWA,
     golden_key: process.env.EMAIL_GOLDEN_KEY,
-    event: process.env.EMAIL_VILLAGE, // events route back to village inbox by default
+    golden_key_casino: process.env.EMAIL_GOLDEN_KEY,
+    event: process.env.EMAIL_VILLAGE,
     general: process.env.EMAIL_VILLAGE,
   };
-  return map[venue] || process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke";
+  return map[effectiveKey] || map[venue] || process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke";
 }
 
-function getVenueDisplayName(venue: string): string {
+function getVenueDisplayName(venue: string, brand?: string): string {
+  const effectiveKey = (brand || venue).toLowerCase().replace(/-/g, "_");
   const names: Record<string, string> = {
     village_apartment: "Tamarind Village Apartments",
+    tamarind_village: "Tamarind Village",
     restaurant: "Tamarind Mombasa Restaurant",
+    tamarind_restaurant: "Tamarind Mombasa Restaurant",
     dhow: "Tamarind Dhow",
+    tamarind_dhow: "Tamarind Dhow",
     dawa_terrace: "Dawa Terrace",
     golden_key: "Golden Key Casino",
-    event: "Tamarind Events",
+    golden_key_casino: "Golden Key Casino",
+    event: "Tamarind Mombasa Event",
     general: "Tamarind Village",
   };
-  return names[venue] || "Tamarind Village";
+  return names[effectiveKey] || names[venue] || "Tamarind Village";
 }
 
 // ============================================================
@@ -118,8 +130,9 @@ async function sendStaffAlertEmail(inquiry: any) {
   const resend = new Resend(key);
   const payload = inquiry.payload || {};
   const venue = inquiry.venue || "village_apartment";
-  const staffEmail = getStaffEmailForVenue(venue);
-  const venueDisplay = getVenueDisplayName(venue);
+  const brand = payload.brand || payload.eventBrand;
+  const staffEmail = getStaffEmailForVenue(venue, brand);
+  const venueDisplay = getVenueDisplayName(venue, brand);
   const fromEmail = process.env.EMAIL_FROM || "reservations@tamarind.co.ke";
 
   // Build a readable summary from the payload

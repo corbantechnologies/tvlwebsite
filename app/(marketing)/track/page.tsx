@@ -43,7 +43,7 @@ function TrackContent() {
         <div className="w-full max-w-2xl">
           <GuestBookingTrackerModal
             isOpen={true}
-            onClose={() => {}}
+            onClose={() => { }}
             initialToken={token}
           />
         </div>
@@ -53,7 +53,7 @@ function TrackContent() {
       <footer className="border-t border-white/10 bg-[#1F1615] px-6 py-6 text-center text-xs text-white/50 space-y-1">
         <p className="font-serif text-[#C59B27]">Tamarind Village · Mombasa Clifftop Luxury</p>
         <p className="text-[11px]">
-          Need immediate concierge assistance? Call +254 711 082 000 or email reservations.village@tamarind.co.ke
+          Need immediate concierge assistance? Call +254 725 959 552 or email reservations.village@tamarind.co.ke
         </p>
       </footer>
     </div>

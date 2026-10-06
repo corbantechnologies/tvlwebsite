@@ -94,7 +94,7 @@ export async function PATCH(
         .where(eq(inquiries.id, current.id));
 
       // Notify staff
-      notifyStaffOfGuestUpdate(current, updatedPayload, "Special requests updated by guest").catch(() => {});
+      notifyStaffOfGuestUpdate(current, updatedPayload, "Special requests updated by guest").catch(() => { });
 
       await db.insert(auditLogs).values({
         id: "log_" + Date.now(),
@@ -176,7 +176,7 @@ export async function DELETE(
         current.id,
         current.venue,
         "inquiry"
-      ).catch(() => {});
+      ).catch(() => { });
 
       await db.insert(auditLogs).values({
         id: "log_" + Date.now(),
@@ -212,7 +212,7 @@ export async function DELETE(
         current.bookingReference,
         current.inquirySource || "village_apartment",
         "booking"
-      ).catch(() => {});
+      ).catch(() => { });
 
       await db.insert(auditLogs).values({
         id: "log_" + Date.now(),
@@ -283,7 +283,7 @@ async function sendCancellationEmails(
       <p style="font-size:14px;line-height:1.6">Dear ${guestName},</p>
       <p style="font-size:14px;line-height:1.6">Your ${type === "booking" ? "reservation" : "inquiry"} <strong>${reference}</strong> has been successfully cancelled.</p>
       <p style="font-size:14px;line-height:1.6">If this was a mistake, or if you would like to rebook, please contact us:</p>
-      <p style="font-size:13px">📞 +254 711 082 000<br/>✉ reservations.village@tamarind.co.ke</p>
+      <p style="font-size:13px">📞 +254 725 959 552<br/>✉ reservations.village@tamarind.co.ke</p>
       <p style="font-size:12px;color:#8b7355;margin-top:32px">Tamarind Village — Mombasa Serviced Apartments</p>
     </div>`;
 

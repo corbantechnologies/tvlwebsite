@@ -37,7 +37,9 @@ export default function ApartmentDetail({
     );
   }
 
-  const livePrice = apartment.pricePerNight;
+  const discount = apartment.discountPercentage || 0;
+  const originalPrice = apartment.pricePerNight;
+  const livePrice = discount > 0 ? Math.round(originalPrice * (1 - discount / 100)) : originalPrice;
   const isPriceLive = false;
 
   const [activeImage, setActiveImage] = useState(apartment.image);
@@ -227,8 +229,15 @@ export default function ApartmentDetail({
               id="main-gallery-image"
               loading="eager"
             />
-            <div className="absolute top-4 left-4 bg-brand-dark/95 border border-stone-800 px-3 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-widest text-brand-gold">
-              {apartment.viewType}
+            <div className="absolute top-4 left-4 flex flex-col gap-1.5 items-start">
+              <div className="bg-brand-dark/95 border border-stone-800 px-3 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-widest text-brand-gold shadow">
+                {apartment.viewType}
+              </div>
+              {discount > 0 && (
+                <div className="bg-amber-600 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest shadow-md">
+                  {discount}% OFF
+                </div>
+              )}
             </div>
           </div>
           
@@ -327,8 +336,13 @@ export default function ApartmentDetail({
             
             <div className="mt-6 p-4 bg-brand-teal/5 border border-brand-teal/15 rounded-none flex justify-between items-center">
               <div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="text-[10px] text-brand-teal font-bold uppercase tracking-widest">Base Rate per Night</p>
+                  {discount > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold text-white bg-amber-600 rounded-none uppercase tracking-wider">
+                      {discount}% OFF
+                    </span>
+                  )}
                   {isPriceLive && (
                     <span className="inline-flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-bold text-white bg-emerald-600 rounded-none uppercase tracking-wider">
                       ● Live
@@ -336,11 +350,18 @@ export default function ApartmentDetail({
                   )}
                 </div>
                 <p className="text-xs text-stone-500 font-light">
-                  Direct website rate
+                  {discount > 0 ? "Promotional direct rate" : "Direct website rate"}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-serif text-brand-dark font-bold">${livePrice}</p>
+                <div className="flex items-baseline justify-end gap-2">
+                  {discount > 0 && (
+                    <span className="text-sm font-sans line-through text-stone-400">
+                      ${originalPrice}
+                    </span>
+                  )}
+                  <p className="text-2xl font-serif text-brand-dark font-bold">${livePrice}</p>
+                </div>
                 <p className="text-[10px] text-brand-teal font-bold uppercase tracking-wider">USD / Apartment</p>
               </div>
             </div>
@@ -483,9 +504,23 @@ export default function ApartmentDetail({
                     <div className="flex justify-between text-stone-600">
                       <span className="flex items-center gap-1">
                         Apartment Base ({cost.nights} nights x ${livePrice})
+                        {discount > 0 && (
+                          <span className="text-[10px] text-amber-700 font-bold">({discount}% off)</span>
+                        )}
                       </span>
-                      <span className="font-semibold text-stone-800">${cost.basePrice}</span>
+                      <div className="text-right">
+                        {discount > 0 && (
+                          <span className="text-[11px] line-through text-stone-400 mr-1.5">${originalPrice * cost.nights}</span>
+                        )}
+                        <span className="font-semibold text-stone-800">${cost.basePrice}</span>
+                      </div>
                     </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-amber-800 bg-amber-50/80 px-2 py-1 border border-amber-200/60 text-[11px] font-medium">
+                        <span>Promotional Savings ({discount}% off):</span>
+                        <span className="font-semibold">-${(originalPrice - livePrice) * cost.nights} USD</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-stone-600">
                       <span className="flex items-center gap-1">
                         {PACKAGES.find(p => p.id === selectedPackage)?.name} upgrade ({guestCount} guests x ${livePackageRate}/day)

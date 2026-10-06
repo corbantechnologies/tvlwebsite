@@ -53,6 +53,7 @@ export const apartments = pgTable("apartments", {
   viewType: text("view_type").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   rank: integer("rank").notNull().default(0),
+  discountPercentage: integer("discount_percentage").notNull().default(0),
 });
 
 // ============================================================

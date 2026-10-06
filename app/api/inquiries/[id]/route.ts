@@ -215,7 +215,7 @@ async function sendGuestConfirmationEmail(booking: any) {
           <p style="font-size:12px;margin:4px 0 0">Visit: <a href="${guestPortalUrl}" style="color:#821124">${guestPortalUrl}</a></p>
         </div>
         <p style="font-size:13px">Our team will be in touch with full arrival details.</p>
-        <p style="font-size:13px">📞 +254 711 082 000<br/>✉ reservations.village@tamarind.co.ke</p>
+        <p style="font-size:13px">📞 +254 725 959 552<br/>✉ reservations.village@tamarind.co.ke</p>
       </div>`,
   });
 }

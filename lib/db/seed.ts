@@ -81,10 +81,12 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       bed_config TEXT NOT NULL,
       view_type TEXT NOT NULL,
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
-      rank INTEGER NOT NULL DEFAULT 0
+      rank INTEGER NOT NULL DEFAULT 0,
+      discount_percentage INTEGER NOT NULL DEFAULT 0
     );
 
     ALTER TABLE apartments ADD COLUMN IF NOT EXISTS rank INTEGER DEFAULT 0;
+    ALTER TABLE apartments ADD COLUMN IF NOT EXISTS discount_percentage INTEGER DEFAULT 0;
 
     CREATE TABLE IF NOT EXISTS dining_options (
       id TEXT PRIMARY KEY,
@@ -422,16 +424,17 @@ async function seedHeroSettings(db: ReturnType<typeof getDb>): Promise<void> {
 // 4. Apartments & Inventory (1BR, 2BR, 3BR)
 // ---------------------------------------------------------------
 async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
-  // Ensure the rank column exists in existing live DBs and populate default 1, 2, 3 ranks
+  // Ensure the rank & discount_percentage columns exist in existing live DBs and populate defaults
   try {
     await db.execute(sql`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS rank INTEGER DEFAULT 0;`);
+    await db.execute(sql`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS discount_percentage INTEGER DEFAULT 0;`);
     await db.execute(sql`
       UPDATE apartments SET rank = 1 WHERE (id ILIKE '%1-bedroom%' OR bedrooms = 1) AND (rank = 0 OR rank IS NULL);
       UPDATE apartments SET rank = 2 WHERE (id ILIKE '%2-bedroom%' OR bedrooms = 2) AND (rank = 0 OR rank IS NULL);
       UPDATE apartments SET rank = 3 WHERE (id ILIKE '%3-bedroom%' OR bedrooms = 3) AND (rank = 0 OR rank IS NULL);
     `);
   } catch (e) {
-    console.warn("[Seed] Warning updating apartment rank columns:", e);
+    console.warn("[Seed] Warning updating apartment columns:", e);
   }
 
   const existing = await db.select().from(apartments).limit(1);
@@ -472,6 +475,7 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       viewType: "Ocean & Tudor Creek View",
       isActive: true,
       rank: 1,
+      discountPercentage: 0,
     },
     {
       id: "2-bedroom",
@@ -508,6 +512,7 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       viewType: "Resort Pool & Harbor View",
       isActive: true,
       rank: 2,
+      discountPercentage: 0,
     },
     {
       id: "3-bedroom",
@@ -545,6 +550,7 @@ async function seedApartments(db: ReturnType<typeof getDb>): Promise<void> {
       viewType: "360° Creek, Ocean & Old Town Panoramic View",
       isActive: true,
       rank: 3,
+      discountPercentage: 0,
     },
   ];
 
