@@ -105,60 +105,37 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
       case "tamarind-restaurant":
         return {
           tagline: "East Africa's Seafood Pinnacle",
-          menuTitle: "Signature Culinary Masterpieces",
           seatingOptions: [
             { id: "creekside", name: "Creekside Cliffside Deck (Highly Recommended)" },
             { id: "indoor-dome", name: "Moorish Domed Main Hall" },
             { id: "bar-lounge", name: "Copper Dome Bar Counter" }
-          ],
-          menuItems: [
-            { name: "Famous Seafood Platter", desc: "Plentiful bounty of local lobster, crab, prawns, oysters, and ocean fish grilled to perfection.", price: "$65" },
-            { name: "Samaki wa Kupaka", desc: "Local line-caught red snapper grilled over open charcoal, basted in a rich spiced coconut-tamarind sauce.", price: "$32" },
-            { name: "Chili Crab", desc: "Fresh mangrove mud-crab prepared in our chef's secret spicy sweet ginger-chili paste.", price: "$38" },
-            { name: "Tamarind Lobster Thermidor", desc: "Succulent local spiny lobster cooked in creamy cognac sauce, finished under high grill with local cheese.", price: "$48" }
           ],
           extraDetail: "Our seafood is sourced exclusively from registered artisanal fishermen in Shimoni and Kilifi, delivering 'hook-to-plate' freshness within 6 hours of catch."
         };
       case "dawa-terrace":
         return {
           tagline: "Sunset Lounge & Overwater Deck",
-          menuTitle: "Muddled Drinks & Coastal Tapas",
           seatingOptions: [
             { id: "creekside", name: "Floating Overwater Sofa" },
             { id: "sunset-counter", name: "High-top Sunset Ridge Bar" },
             { id: "garden-alcove", name: "Palm Tree Garden Lounge" }
-          ],
-          menuItems: [
-            { name: "The Original 'Dawa'", desc: "Mombasa's legendary drink: local premium vodka, crushed limes, brown sugar, muddled with a pure organic forest honey stick.", price: "$10" },
-            { name: "Swahili Tapas Platter", desc: "Spiced vegetable samosas, beef mishkaki skewers, local viazi karai potatoes with coconut chutney.", price: "$18" },
-            { name: "Prawns Pili Pili Bites", desc: "Peel-and-eat ocean prawns sautéed in garlic, local pili-pili chilies, lime juice, and fresh coriander.", price: "$16" },
-            { name: "Mombasa Mule", desc: "Premium dark rum, muddled fresh ginger, local lemongrass syrup, fresh lime juice, topped with sparkling club soda.", price: "$12" }
           ],
           extraDetail: "Enjoy deep tropical house sets and authentic acoustic live performances every Friday and Saturday evening from 6:30 PM."
         };
       case "tamarind-dhow":
         return {
           tagline: "Floating Historical Romance",
-          menuTitle: "Multi-Course Onboard Feast",
           seatingOptions: [
             { id: "main-deck", name: "Main Dining Deck (Open Sky Under Sail)" },
             { id: "stern-lounge", name: "Stern Captain's Lounge" },
             { id: "bow-viewpoint", name: "Bow Viewpoint Cushion Deck" }
-          ],
-          menuItems: [
-            { name: "Tamarind Dhow Dinner Cruise", desc: "Candlelit sunset sail, 4-course gourmet seafood menu grilled on hot coals, welcoming Dawa cocktail, and live band.", price: "$85 / person" },
-            { name: "Tamarind Dhow Lunch Cruise", desc: "Sunny harbor cruise, 3-course seafood lunch, local beer/soft drinks, Swahili music, and ocean swim stop.", price: "$60 / person" },
-            { name: "Private Anniversary Charter", desc: "Exclusive use of the entire sailing dhow with tailored menu, private chef, and custom harbor sailing route.", price: "Custom Inquiry" },
-            { name: "Sunset Sundowner Cruise", desc: "A 2-hour pre-dinner sailing cruise featuring unlimited local signature bitings, beers, soft drinks, and Dawas.", price: "$45 / person" }
           ],
           extraDetail: "Built in 1977 and 1983 respectively, the Nawalikoni and Babulkher are hand-crafted from indigenous mvule wood, maintaining the pure structural spirit of traditional maritime trade."
         };
       default:
         return {
           tagline: "Fine Dining Mombasa",
-          menuTitle: "Signature Offerings",
           seatingOptions: [{ id: "creekside", name: "Creekside Deck" }],
-          menuItems: [],
           extraDetail: "Tamarind hospitality offers unforgettable service and cuisine."
         };
     }
@@ -342,21 +319,22 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
               "{specials.extraDetail}"
             </p>
 
-            {/* Menu Highlights Grid */}
-            <h4 className="text-lg font-serif text-brand-dark mb-4 pb-2 border-b border-stone-200">{specials.menuTitle}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {specials.menuItems.map((item, idx) => (
-                <div key={idx} className="bg-brand-sand/50 p-4 border border-stone-200 rounded-none flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start gap-2">
-                      <h5 className="font-serif text-sm font-bold text-brand-dark leading-tight">{item.name}</h5>
-                      <span className="font-mono text-xs text-brand-teal font-semibold">{item.price}</span>
+            {/* Experience Highlights */}
+            {dining.highlights && dining.highlights.length > 0 && (
+              <div>
+                <h4 className="text-lg font-serif text-brand-dark mb-4 pb-2 border-b border-stone-200">
+                  Experience Highlights
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {dining.highlights.map((highlight, idx) => (
+                    <div key={idx} className="bg-brand-sand/50 p-3.5 border border-stone-200 rounded-none flex items-start gap-2.5">
+                      <Sparkles className="w-4 h-4 text-brand-teal shrink-0 mt-0.5" />
+                      <span className="text-stone-700 text-xs font-light leading-relaxed">{highlight}</span>
                     </div>
-                    <p className="text-stone-500 text-xs font-light mt-1.5 leading-relaxed">{item.desc}</p>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
