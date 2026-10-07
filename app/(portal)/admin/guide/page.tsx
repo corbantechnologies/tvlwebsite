@@ -6,7 +6,8 @@ import {
   BookOpen, Hotel, Calendar, Bell, Building2, UtensilsCrossed, 
   Sparkles, Tag, Car, DollarSign, Users, Activity, Layers, 
   ArrowRight, CheckCircle2, ShieldCheck, Key, Compass, Search,
-  ExternalLink, HelpCircle, ChevronRight, Info
+  ExternalLink, HelpCircle, ChevronRight, Info,
+  QrCode, ClipboardList, Ticket, Lock, CreditCard
 } from 'lucide-react';
 
 export default function AdminGuidePage() {
@@ -229,24 +230,40 @@ export default function AdminGuidePage() {
       {/* TAB 3: Lifestyle (Events & Packages) */}
       {activeTab === 'lifestyle' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Events Manager */}
+          {/* Events Manager & Lifecycle */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <h3 className="font-serif text-xl font-bold text-slate-900">Village &amp; Dhow Events Platform</h3>
-                <span className="text-xs text-[#821124] font-medium">Publishing Theme Nights, Dhow Cruises &amp; Feasts</span>
+                <span className="text-xs text-[#821124] font-medium">Publishing Theme Nights, Dhow Cruises, Galas &amp; Feasts</span>
               </div>
-              <Link
-                href="/admin/events"
-                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 border border-slate-200"
-              >
-                <span>Manage Events</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/admin/events"
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 border border-slate-200"
+                >
+                  <span>Events Hub</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href="/admin/events/ledger"
+                  className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-[#821124] text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 border border-rose-200"
+                >
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  <span>Hosting Ledger</span>
+                </Link>
+                <Link
+                  href="/admin/events/checkin"
+                  className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 border border-amber-200"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Gate Scanner</span>
+                </Link>
+              </div>
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Tamarind Village is an all-round lifestyle resort. You can publish happenings across three primary venues:
+              Tamarind Village is an all-round lifestyle resort. You can publish happenings across multiple venues with automated online ticketing, gate validation, and direct bank settlement:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
@@ -264,12 +281,196 @@ export default function AdminGuidePage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-rose-50/50 border border-rose-100 text-xs text-slate-700 space-y-1">
-              <span className="font-bold text-[#821124] flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" /> Publishing Pro-Tip:
+            {/* Event Status & Visibility Rules */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5 text-sm">
+                <Info className="w-4 h-4 text-[#821124]" />
+                Event Lifecycle &amp; Status Controls
               </span>
-              <p>
-                When you create an event in <Link href="/admin/events" className="underline font-semibold text-[#821124]">/admin/events</Link>, it immediately updates the dynamic calendar without needing any server restart. Per policy, when no events are published, the public events section is cleanly hidden.
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-slate-600">
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <span className="font-bold text-slate-900 block flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Active Status (<code className="text-slate-800 text-[11px]">isActive / is_active</code>)</span>
+                  </span>
+                  <p>
+                    Determines whether the event is visible to guests on the public website and dynamic calendar. If toggled off, the event is immediately hidden from the public while remaining visible to staff in the admin hub.
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <span className="font-bold text-slate-900 block flex items-center gap-1">
+                    <Ticket className="w-3.5 h-3.5 text-[#821124]" />
+                    <span>Direct Ticketing (<code className="text-slate-800 text-[11px]">paymentEnabled / payment_enabled</code>)</span>
+                  </span>
+                  <p>
+                    Controls whether live online ticket purchases through Paystack are currently open. When enabled, guests can purchase tickets directly with credit card or M-Pesa. When disabled, the public button displays an RSVP / Contact concierge prompt.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Event Hosting Desk Ledger */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="font-serif text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-[#821124]" />
+                  <span>Event Hosting Desk Ledger</span>
+                </h3>
+                <span className="text-xs text-[#821124] font-medium">Real-Time Attendee Tracking, Revenue Metrics &amp; VIP Admissions</span>
+              </div>
+              <Link
+                href="/admin/events/ledger"
+                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 border border-slate-200"
+              >
+                <span>Open Ledger</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-700">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="font-bold text-slate-900 block text-sm">Active Event Dropdown &amp; &quot;All Experiences &amp; Galas&quot;</span>
+                <p className="text-slate-600 leading-relaxed">
+                  The <strong className="text-slate-900">&quot;Active Event&quot;</strong> selector at the top defaults to <code className="text-[#821124] bg-rose-50 px-1 py-0.5 rounded font-semibold">All Experiences &amp; Galas</code>. This aggregates statistics, ticket sales, and admissions across every event in the resort. Selecting a specific event filters the ledger, capacity gauges, and CSV export exclusively to that celebration.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="font-bold text-slate-900 block text-sm">Real-Time Capacity &amp; Revenue Gauges</span>
+                <p className="text-slate-600 leading-relaxed">
+                  Monitors total tickets sold against maximum venue capacity, real-time Paystack revenue collected, and live gate arrivals. Helps operations know exactly how many guests have entered and how many are still expected.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="font-bold text-slate-900 block text-sm">Issuing VIP &amp; Complimentary Passes</span>
+                <p className="text-slate-600 leading-relaxed">
+                  Staff can click <strong className="text-[#821124]">+ Issue VIP Pass</strong> to provision complimentary or press passes for special dignitaries or performers. VIP passes generate valid QR tokens and barcode references without requiring payment.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="font-bold text-slate-900 block text-sm">Instant CSV Export</span>
+                <p className="text-slate-600 leading-relaxed">
+                  Click <strong className="text-slate-800">Export CSV</strong> to download a complete manifest containing attendee names, emails, phone numbers, ticket reference codes, amounts paid, and gate check-in status.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Gate Scanner Terminal & PIN Security */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="font-serif text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <QrCode className="w-5 h-5 text-amber-600" />
+                  <span>Gate Entrance Terminal &amp; Scanner PINs</span>
+                </h3>
+                <span className="text-xs text-amber-700 font-medium">Entrance Stewards, QR Barcode Scanners &amp; Anti-Fraud Protection</span>
+              </div>
+              <Link
+                href="/admin/events/checkin"
+                className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 border border-amber-200"
+              >
+                <span>Launch Scanner</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="space-y-4 text-xs text-slate-700">
+              <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200 text-slate-700 space-y-2">
+                <span className="font-bold text-amber-900 flex items-center gap-1.5 text-sm">
+                  <Lock className="w-4 h-4 text-amber-700" />
+                  Who Creates Gate Lock PINs?
+                </span>
+                <p className="leading-relaxed">
+                  Gate lock PINs are created and configured by <strong className="text-slate-900">Admins / Event Hosts</strong> in the <Link href="/admin/events" className="underline font-semibold text-[#821124]">Events Hub (/admin/events)</Link>. When creating or editing any event, you will find the <strong className="text-slate-900">&quot;Gate Check-in PIN&quot;</strong> field (defaults to <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300 font-bold text-slate-900">2026</code>). Each event can have its own distinct 4-digit PIN for security.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <span className="font-bold text-slate-900 block text-sm">Distributing Scanner Links to Stewards</span>
+                  <p className="text-slate-600 leading-relaxed">
+                    Gate stewards and security personnel do not need admin access. Simply share either of these URLs:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-slate-600">
+                    <li><strong className="text-slate-800">General Scanner URL:</strong> <code className="bg-white border px-1.5 py-0.5 rounded font-mono text-[11px] text-[#821124]">/admin/events/checkin</code></li>
+                    <li><strong className="text-slate-800">Event-Specific URL:</strong> <code className="bg-white border px-1.5 py-0.5 rounded font-mono text-[11px] text-[#821124]">/admin/events/checkin?eventId=YOUR_EVENT_ID</code> (or click &quot;Open Gate Scanner&quot; directly on the ledger)</li>
+                  </ul>
+                  <p className="text-slate-500 text-[11px]">
+                    Upon opening the page, the steward enters their name and the 4-digit Gate PIN to arm the scanner.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <span className="font-bold text-slate-900 block text-sm">Anti-Fraud &amp; Hardware Compatibility</span>
+                  <p className="text-slate-600 leading-relaxed">
+                    The terminal supports Bluetooth/USB handheld barcode guns, mobile camera scans, or manual ticket reference lookup.
+                  </p>
+                  <div className="space-y-1.5 pt-1 text-[11px]">
+                    <div className="flex items-center gap-1.5 text-emerald-700">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Valid ticket: Admits attendee and marks timestamp &amp; steward name.</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-rose-700">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Duplicate attempt: Immediately alarms &quot;Already Checked In&quot; to prevent pass reuse.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Paystack Subaccounts Configuration */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="font-serif text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-emerald-600" />
+                  <span>Paystack Subaccounts &amp; Automated Payouts</span>
+                </h3>
+                <span className="text-xs text-emerald-700 font-medium">Automatic Split Payouts by Business Unit &amp; Venue</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Ticket revenues can be automatically routed to specific venue bank accounts (e.g. Tamarind Dhow vs Tamarind Restaurant vs Tamarind Village) using Paystack Subaccounts.
+            </p>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+              <span className="font-bold text-slate-900 block text-sm">Required Environment Variables (<code className="font-mono text-[11px] text-[#821124]">.env.local</code>)</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <code className="text-[#821124] font-bold block">PAYSTACK_SECRET_KEY</code>
+                  <span className="text-slate-500">Master Paystack secret key (<code className="text-[11px]">sk_live_...</code> or <code className="text-[11px]">sk_test_...</code>).</span>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <code className="text-[#821124] font-bold block">PAYSTACK_SUBACCOUNT_VILLAGE</code>
+                  <span className="text-slate-500">Subaccount code for Tamarind Village accommodations &amp; stays.</span>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <code className="text-[#821124] font-bold block">PAYSTACK_SUBACCOUNT_RESTAURANT</code>
+                  <span className="text-slate-500">Subaccount code for Clifftop Seafood Restaurant galas.</span>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <code className="text-[#821124] font-bold block">PAYSTACK_SUBACCOUNT_DHOW</code>
+                  <span className="text-slate-500">Subaccount code for Tamarind Dhow cruises &amp; charters.</span>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <code className="text-[#821124] font-bold block">PAYSTACK_SUBACCOUNT_DAWA</code>
+                  <span className="text-slate-500">Subaccount code for Dawa Lounge &amp; Terrace events.</span>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+                  <code className="text-[#821124] font-bold block">PAYSTACK_SUBACCOUNT_CASINO</code>
+                  <span className="text-slate-500">Subaccount code for Golden Key Casino happenings.</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 pt-1">
+                <strong>Per-Event Override:</strong> If an individual event needs to route payouts to a specific custom partner or promoter subaccount, simply input their <code className="font-mono text-slate-800">ACCT_xxxxxxx</code> code into the &quot;Paystack Subaccount Override&quot; field in the event editor.
               </p>
             </div>
           </div>

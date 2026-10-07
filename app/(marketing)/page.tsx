@@ -1267,10 +1267,10 @@ export default function App() {
                       <p className="text-stone-300 text-xs sm:text-sm font-light leading-relaxed">
                         Arrive in luxury with our private chauffeured transfer service. From personalized flight/train tracking and meet-and-greet baggage assistance to executive Alphards and chilled Tamarind Dawa refreshments on arrival.
                       </p>
-                      <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-stone-400 font-mono pt-2">
-                        <span>✓ Executive Saloons ($25)</span>
-                        <span>✓ VIP Alphard Captain Seats ($50)</span>
-                        <span>✓ Group Minivans ($65)</span>
+                      <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-stone-300 font-light pt-2">
+                        <span>✓ Flight &amp; Train Schedule Tracking</span>
+                        <span>✓ Dedicated Chauffeur Meet &amp; Greet</span>
+                        <span>✓ Chilled Dawa Refreshment on Arrival</span>
                       </div>
                     </div>
 

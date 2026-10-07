@@ -59,6 +59,7 @@ export default function AdminExtrasPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<Extra | null>(null);
 
   const loadExtras = async () => {
     setLoading(true);
@@ -161,15 +162,16 @@ export default function AdminExtrasPage() {
     }
   };
 
-  const handleDelete = async (ext: Extra) => {
-    if (!confirm(`Are you sure you want to delete "${ext.name}"?`)) return;
+  const confirmDeleteExtra = async () => {
+    if (!itemToDelete) return;
 
-    setDeletingId(ext.id);
+    setDeletingId(itemToDelete.id);
     try {
-      const res = await fetch(`/api/extras/${ext.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/extras/${itemToDelete.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
-      toast.success(`Deleted "${ext.name}"`);
+      toast.success(`Deleted "${itemToDelete.name}" successfully!`);
+      setItemToDelete(null);
       loadExtras();
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete extra');
@@ -388,13 +390,13 @@ export default function AdminExtrasPage() {
                         <span>Edit</span>
                       </button>
                       <button
-                        onClick={() => handleDelete(ext)}
-                        disabled={isDeleting}
+                        onClick={() => setItemToDelete(ext)}
+                        disabled={deletingId === ext.id}
                         className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
                         title="Delete extra"
                         id={`btn-delete-extra-${ext.id}`}
                       >
-                        {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        {deletingId === ext.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" /> : <Trash2 className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -596,6 +598,46 @@ export default function AdminExtrasPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirm Delete Extra (Modern in-app confirmation replacing browser confirm) */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-serif font-bold text-slate-900">Delete Extra &amp; Add-on</h3>
+                <p className="text-xs text-slate-500">Permanent removal from database</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-slate-900">&quot;{itemToDelete.name}&quot;</strong>? This item will be removed from all future booking flows immediately.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setItemToDelete(null)}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(deletingId)}
+                onClick={confirmDeleteExtra}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {deletingId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <span>Delete Extra</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

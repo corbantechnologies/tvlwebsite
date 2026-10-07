@@ -60,18 +60,19 @@ export async function DELETE(
     const { id } = await params;
     const db = getDb();
     const { searchParams } = new URL(req.url);
-    const hard = searchParams.get("hard") === "true";
+    const soft = searchParams.get("soft") === "true";
 
     const existing = await db.select().from(extras).where(eq(extras.id, id)).limit(1);
     if (existing.length === 0) {
       return NextResponse.json({ error: "Extra not found" }, { status: 404 });
     }
 
-    if (hard) {
-      await db.delete(extras).where(eq(extras.id, id));
-    } else {
-      // Soft delete — deactivate so existing bookings with this extra aren't orphaned
+    if (soft) {
+      // Soft delete — deactivate
       await db.update(extras).set({ isActive: false }).where(eq(extras.id, id));
+    } else {
+      // Permanent delete by default
+      await db.delete(extras).where(eq(extras.id, id));
     }
 
     await db.insert(auditLogs).values({
@@ -80,12 +81,12 @@ export async function DELETE(
       actor: "Admin",
       actorRole: "admin",
       category: "content",
-      action: hard ? "Extra Hard Deleted" : "Extra Deactivated",
-      details: `${hard ? "Deleted" : "Deactivated"} extra "${existing[0].name}" (id: ${id})`,
+      action: soft ? "Extra Deactivated" : "Extra Permanently Deleted",
+      details: `${soft ? "Deactivated" : "Deleted"} extra "${existing[0].name}" (id: ${id})`,
       targetId: id,
     });
 
-    return NextResponse.json({ success: true, message: hard ? "Extra permanently deleted" : "Extra deactivated" });
+    return NextResponse.json({ success: true, message: soft ? "Extra deactivated" : "Extra permanently deleted" });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

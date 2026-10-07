@@ -63,7 +63,7 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
 
   const [terminal, setTerminal] = useState<"moi-airport" | "miritini-sgr" | "vipingo-airstrip">("moi-airport");
   const [transferType, setTransferType] = useState<"one-way-arrival" | "one-way-departure" | "round-trip">("one-way-arrival");
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("ext_trf_saloon");
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
   
   const [passengers, setPassengers] = useState<number>(2);
   const [luggageCount, setLuggageCount] = useState<number>(2);
@@ -298,31 +298,41 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
                   )}
                 </div>
 
-                {/* Fleet Quick Selector Tabs */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-3 scrollbar-none">
-                  {activeVehicles.map((v, idx) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedVehicleId(v.id);
-                        setVehicleCarouselIndex(idx);
-                      }}
-                      className={`px-3 py-1.5 text-xs whitespace-nowrap transition-all border cursor-pointer ${
-                        selectedVehicleId === v.id
-                          ? "bg-brand-teal text-white border-brand-teal font-bold shadow-sm"
-                          : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100"
-                      }`}
-                    >
-                      {v.name} {v.rateUsd > 0 ? `($${Math.round(v.rateUsd * multiplier)})` : ''}
-                    </button>
-                  ))}
-                </div>
+                {activeVehicles.length === 0 ? (
+                  <div className="p-6 bg-stone-50 border border-stone-200 text-center space-y-2">
+                    <Car className="w-8 h-8 text-stone-400 mx-auto" />
+                    <p className="font-serif font-bold text-sm text-brand-dark">Private Fleet Arranged Upon Request</p>
+                    <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
+                      Custom chauffeur &amp; transfer vehicles can be tailored to your luggage and arrival time. Fill in your flight or train schedule below, and our reservations team will confirm your dedicated driver.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Fleet Quick Selector Tabs */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-3 scrollbar-none">
+                      {activeVehicles.map((v, idx) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedVehicleId(v.id);
+                            setVehicleCarouselIndex(idx);
+                          }}
+                          className={`px-3 py-1.5 text-xs whitespace-nowrap transition-all border cursor-pointer ${
+                            selectedVehicleId === v.id
+                              ? "bg-brand-teal text-white border-brand-teal font-bold shadow-sm"
+                              : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100"
+                          }`}
+                        >
+                          {v.name} {v.rateUsd > 0 ? `($${Math.round(v.rateUsd * multiplier)})` : ''}
+                        </button>
+                      ))}
+                    </div>
 
-                {/* Vehicles Grid / Carousel View */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {activeVehicles.map((v) => {
-                    const vPriceUsd = Math.round(v.rateUsd * multiplier);
+                    {/* Vehicles Grid / Carousel View */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {activeVehicles.map((v) => {
+                        const vPriceUsd = Math.round(v.rateUsd * multiplier);
                     const vPriceKes = Math.round(v.rateKes * multiplier);
                     const isSelected = selectedVehicleId === v.id;
 
@@ -386,7 +396,9 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
                     );
                   })}
                 </div>
-              </div>
+              </>
+            )}
+          </div>
 
               {/* Step 4: Arrival & Contact Details */}
               <div className="bg-stone-50 border border-stone-200 p-6 space-y-4">
