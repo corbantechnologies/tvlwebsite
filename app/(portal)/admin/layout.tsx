@@ -8,7 +8,8 @@ import {
   HelpCircle, Settings, ShieldAlert, LogOut, ChevronLeft, 
   ChevronRight, ExternalLink, Menu, X, Bell, Layers,
   Compass, BarChart3, Clock, CheckCircle2, DollarSign,
-  UtensilsCrossed, Hotel, Activity, ShieldCheck, Ticket
+  UtensilsCrossed, Hotel, Activity, ShieldCheck, Ticket,
+  ClipboardList, QrCode
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -86,6 +87,8 @@ export default function AdminPortalLayout({
         { label: 'Apartments & Suites', href: '/admin/apartments', icon: Building2 },
         { label: 'Dining & Dhow', href: '/admin/dining', icon: UtensilsCrossed },
         { label: 'Events & Experiences', href: '/admin/events', icon: Sparkles, highlight: true },
+        { label: 'Event Tickets Ledger', href: '/admin/events/ledger', icon: ClipboardList, badge: 'Desk' },
+        { label: 'Gate Entrance Scan', href: '/admin/events/checkin', icon: QrCode },
         { label: 'Meal Plans', href: '/admin/packages', icon: Tag, highlight: true },
         { label: 'Extras & Add-ons', href: '/admin/extras', icon: Sparkles },
         { label: 'Vouchers & Promos', href: '/admin/vouchers', icon: Ticket, badge: 'New', highlight: true },

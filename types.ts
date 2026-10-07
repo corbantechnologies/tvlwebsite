@@ -142,9 +142,47 @@ export interface ResortEvent {
   highlights?: string[];
   dressCode?: string;
   bookingLink?: string;
+  brand?: string;
+  city?: string;
+  gatePin?: string;
+  subaccountCode?: string;
+  paymentEnabled?: boolean;
+  externalTicketUrl?: string;
   isFeatured?: boolean;
   isActive?: boolean;
   createdAt?: string;
+}
+
+export interface EventTicketType {
+  id: string;
+  ticketReference: string;
+  eventId: string;
+  eventTitle: string;
+  brand: string;
+  venue: string;
+  eventDate: string;
+  guestName: string;
+  guestEmail: string;
+  guestPhone: string;
+  ticketCount: number;
+  unitPriceKes: number;
+  unitPriceUsd?: number;
+  totalAmountKes: number;
+  totalAmountUsd?: number;
+  currency: string;
+  discountAmountKes?: number;
+  voucherCode?: string;
+  paymentStatus: "paid" | "comp" | "refunded";
+  paymentMethod?: string;
+  paymentReference: string;
+  subaccountCode?: string;
+  checkInStatus: "pending" | "checked_in";
+  checkedInAt?: string;
+  checkedInBy?: string;
+  dietaryRequirements?: string;
+  specialRequests?: string;
+  ticketQrToken: string;
+  createdAt: string;
 }
 
 export interface ResortPackage {

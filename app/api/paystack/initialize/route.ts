@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolvePaystackSubaccount } from "@/lib/paystackSubaccounts";
 
 // ============================================================
 // POST /api/paystack/initialize
@@ -12,6 +13,8 @@ import { NextRequest, NextResponse } from "next/server";
 //   amount: number,        — in the currency's major unit (e.g. KES 5000, USD 120)
 //   currency: "KES" | "USD",
 //   reference: string,    — your booking/inquiry reference
+//   callbackUrl?: string, — optional custom redirect
+//   subaccount?: string,  — optional explicit subaccount code
 //   metadata: { ... }     — arbitrary metadata passed back by Paystack on verify
 // }
 // ============================================================
@@ -26,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { email, amount, currency, reference, metadata } = body;
+    const { email, amount, currency, reference, metadata, callbackUrl: explicitCallbackUrl, subaccount: explicitSubaccount } = body;
 
     if (!email || !amount) {
       return NextResponse.json({ error: "email and amount are required" }, { status: 400 });
@@ -35,10 +38,9 @@ export async function POST(req: NextRequest) {
     // Paystack amounts are in the smallest currency unit:
     //   KES: kobo (1 KES = 100 kobo)
     //   USD: cents (1 USD = 100 cents)
-    //   GHS: pesewa (1 GHS = 100 pesewa)
     const amountInSmallestUnit = Math.round(Number(amount) * 100);
 
-    // Supported currencies for Paystack (as of 2026)
+    // Supported currencies for Paystack
     const supportedCurrencies = ["KES", "USD", "GHS", "ZAR", "NGN"];
     const paystackCurrency = (currency || "KES").toUpperCase();
     if (!supportedCurrencies.includes(paystackCurrency)) {
@@ -48,13 +50,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Derive callback URL: POST-payment redirect to the booking confirmed page
+    // Derive callback URL
     const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://tamarindvillage.co.ke";
-    const callbackUrl = process.env.PAYSTACK_CALLBACK_URL && (!process.env.PAYSTACK_CALLBACK_URL.includes("localhost") || origin.includes("localhost"))
-      ? process.env.PAYSTACK_CALLBACK_URL
-      : `${origin}/booking-confirmed`;
+    const isEventTicket = metadata?.type === "event_ticket";
+    
+    let defaultCallbackPath = isEventTicket ? "/events/ticket-confirmed" : "/booking-confirmed";
+    const callbackUrl = explicitCallbackUrl || 
+      (process.env.PAYSTACK_CALLBACK_URL && !isEventTicket && (!process.env.PAYSTACK_CALLBACK_URL.includes("localhost") || origin.includes("localhost"))
+        ? process.env.PAYSTACK_CALLBACK_URL
+        : `${origin}${defaultCallbackPath}`);
 
-    const paystackRef = reference || `TVL-${Date.now()}`;
+    const paystackRef = reference || (isEventTicket ? `TKT-${Date.now()}` : `TVL-${Date.now()}`);
+
+    // Resolve subaccount if applicable
+    const resolvedSubaccount = explicitSubaccount ||
+      metadata?.subaccountCode ||
+      resolvePaystackSubaccount(metadata?.brand, metadata?.subaccountCode);
+
+    const payload: Record<string, any> = {
+      email,
+      amount: amountInSmallestUnit,
+      currency: paystackCurrency,
+      reference: paystackRef,
+      callback_url: callbackUrl,
+      metadata: {
+        ...(metadata || {}),
+        tamarind_ref: paystackRef,
+        currency: paystackCurrency,
+        subaccountCode: resolvedSubaccount || undefined,
+      },
+    };
+
+    if (resolvedSubaccount) {
+      payload.subaccount = resolvedSubaccount;
+      payload.bearer = "subaccount";
+    }
 
     const res = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -62,18 +92,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${PAYSTACK_SECRET}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        email,
-        amount: amountInSmallestUnit,
-        currency: paystackCurrency,
-        reference: paystackRef,
-        callback_url: callbackUrl,
-        metadata: {
-          ...(metadata || {}),
-          tamarind_ref: paystackRef,
-          currency: paystackCurrency,
-        },
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = (await res.json()) as any;

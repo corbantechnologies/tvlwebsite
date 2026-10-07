@@ -12,7 +12,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await db.update(events).set({
       title: body.title,
       description: body.description || "",
+      brand: body.brand || "tamarind_restaurant",
       venue: body.venue || "Tamarind Dhow",
+      city: body.city || "Mombasa",
       category: body.category || "dining_gala",
       startDate: body.startDate || body.eventDate,
       endDate: body.endDate || null,
@@ -26,8 +28,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       highlights: body.highlights || [],
       dressCode: body.dressCode || "Smart Casual",
       bookingLink: body.bookingLink || "",
+      externalTicketUrl: body.externalTicketUrl || null,
+      paymentEnabled: !!body.paymentEnabled,
       isFeatured: !!body.isFeatured,
-      isActive: body.isActive !== false
+      isActive: body.isActive !== false,
+      gatePin: body.gatePin || "2026",
+      subaccountCode: body.subaccountCode || null,
     } as any).where(eq(events.id, id));
 
     return NextResponse.json({ success: true, message: "Event updated" });

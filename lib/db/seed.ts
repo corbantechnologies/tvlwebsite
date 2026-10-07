@@ -170,6 +170,41 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       created_at TEXT NOT NULL
     );
 
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS gate_pin TEXT DEFAULT '2026';
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS subaccount_code TEXT;
+
+    CREATE TABLE IF NOT EXISTS event_tickets (
+      id TEXT PRIMARY KEY,
+      ticket_reference TEXT NOT NULL UNIQUE,
+      event_id TEXT NOT NULL,
+      event_title TEXT NOT NULL,
+      brand TEXT NOT NULL,
+      venue TEXT NOT NULL,
+      event_date TEXT NOT NULL,
+      guest_name TEXT NOT NULL,
+      guest_email TEXT NOT NULL,
+      guest_phone TEXT NOT NULL,
+      ticket_count INTEGER NOT NULL DEFAULT 1,
+      unit_price_kes INTEGER NOT NULL DEFAULT 0,
+      unit_price_usd INTEGER DEFAULT 0,
+      total_amount_kes INTEGER NOT NULL,
+      total_amount_usd INTEGER DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'KES',
+      discount_amount_kes INTEGER DEFAULT 0,
+      voucher_code TEXT,
+      payment_status TEXT NOT NULL DEFAULT 'paid',
+      payment_method TEXT DEFAULT 'paystack',
+      payment_reference TEXT NOT NULL,
+      subaccount_code TEXT,
+      check_in_status TEXT NOT NULL DEFAULT 'pending',
+      checked_in_at TEXT,
+      checked_in_by TEXT,
+      dietary_requirements TEXT,
+      special_requests TEXT,
+      ticket_qr_token TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS inquiries (
       id TEXT PRIMARY KEY,
       type TEXT NOT NULL,
@@ -325,6 +360,9 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       created_at TEXT NOT NULL,
       updated_at TEXT
     );
+
+    ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS scope TEXT DEFAULT 'all';
+    ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS applicable_event_ids JSONB DEFAULT '[]'::jsonb;
   `);
 }
 
