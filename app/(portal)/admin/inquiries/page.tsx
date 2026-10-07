@@ -1,12 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Bell, Search, CheckCircle2, Clock, Mail, Phone, MessageSquare, 
   ArrowRight, Filter, Calendar, Building2, CreditCard, DollarSign, 
-  UserCheck, ShieldCheck, X, RotateCw, ExternalLink, Copy, Check, Loader2 
+  UserCheck, ShieldCheck, X, RotateCw, ExternalLink, Copy, Check, Loader2, Trash2 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+function formatInquiryDate(dateStr?: string) {
+  if (!dateStr) return 'Recently received';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function InquiriesPage() {
   const [inquiries, setInquiries] = useState<any[]>([]);
@@ -15,6 +32,10 @@ export default function InquiriesPage() {
   const [selectedInquiry, setSelectedInquiry] = useState<any | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+
+  // Delete state
+  const [inquiryToDelete, setInquiryToDelete] = useState<any | null>(null);
+  const [deletingInquiry, setDeletingInquiry] = useState(false);
 
   // Editing state for selected inquiry
   const [quoteKes, setQuoteKes] = useState('');
@@ -125,6 +146,29 @@ export default function InquiriesPage() {
       toast.error('Network error updating inquiry');
     } finally {
       setSavingAction(false);
+    }
+  };
+
+  const confirmDeleteInquiry = async () => {
+    if (!inquiryToDelete) return;
+    setDeletingInquiry(true);
+    try {
+      const res = await fetch(`/api/inquiries/${inquiryToDelete.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success(`Deleted inquiry from ${inquiryToDelete.payload?.name || inquiryToDelete.guest_name || 'Guest'}`);
+        if (selectedInquiry?.id === inquiryToDelete.id) {
+          setSelectedInquiry(null);
+        }
+        setInquiryToDelete(null);
+        fetchInquiries();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to delete inquiry');
+      }
+    } catch {
+      toast.error('Network error deleting inquiry');
+    } finally {
+      setDeletingInquiry(false);
     }
   };
 
@@ -283,11 +327,15 @@ export default function InquiriesPage() {
             const refToken = p.guestToken || inq.id;
             const isBooked = inq.status === 'Booked' || inq.status === 'confirmed';
 
+            const isInquiryDining = inq.type === 'restaurant' || inq.venue === 'dhow' || inq.venue === 'dawa_terrace' || !!p.diningName;
+            const isInquiryApartment = inq.type === 'apartment' || !!p.apartmentName || (!!p.checkIn && p.checkIn !== 'Flexible / Not specified');
+            const guestMessage = p.message || p.requests || p.specialRequests || p.details || p.comments;
+
             return (
               <div
                 key={inq.id}
                 onClick={() => handleSelect(inq)}
-                className={`p-5 rounded-2xl border transition-all cursor-pointer ${
+                className={`p-5 rounded-2xl border transition-all cursor-pointer relative ${
                   isSelected
                     ? 'bg-white border-[#821124] ring-2 ring-[#821124]/30 shadow-md'
                     : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
@@ -295,10 +343,23 @@ export default function InquiriesPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-mono text-[10px] text-[#821124] uppercase tracking-wider font-semibold">
                         REF: {refToken.toString().toUpperCase()}
                       </span>
+                      {isInquiryDining ? (
+                        <span className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[9px] font-bold uppercase">
+                          Dining & Experiences
+                        </span>
+                      ) : isInquiryApartment ? (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[9px] font-bold uppercase">
+                          Apartment Stay
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[9px] font-bold uppercase">
+                          {p.department ? `Contact: ${p.department}` : 'General Inquiry'}
+                        </span>
+                      )}
                       {p.bookingReference && (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[9px] font-bold uppercase">
                           Booking: {p.bookingReference}
@@ -312,45 +373,107 @@ export default function InquiriesPage() {
                       <span>{p.email || inq.guest_email || 'No email'}</span>
                       <span>•</span>
                       <span>{p.phone || inq.guest_phone || 'No phone'}</span>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1 font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        {formatInquiryDate(inq.createdAt)}
+                      </span>
                     </div>
                   </div>
 
-                  <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full whitespace-nowrap ${
-                    isBooked ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                    inq.status === 'Offer Sent' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                    inq.status === 'Contacted' ? 'bg-sky-50 text-sky-700 border border-sky-200' :
-                    inq.status === 'Declined' ? 'bg-slate-100 text-slate-500 border border-slate-200' :
-                    'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}>
-                    {inq.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full whitespace-nowrap ${
+                      isBooked ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      inq.status === 'Offer Sent' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                      inq.status === 'Contacted' ? 'bg-sky-50 text-sky-700 border border-sky-200' :
+                      inq.status === 'Declined' ? 'bg-slate-100 text-slate-500 border border-slate-200' :
+                      'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {inq.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInquiryToDelete(inq);
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Delete inquiry"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Details Bar */}
-                <div className="grid grid-cols-3 gap-2 text-xs py-3 border-y border-slate-100 mt-3 text-slate-700">
-                  <div>
-                    <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Stay Dates:</span>
-                    <span className="font-semibold text-slate-900 truncate block">
-                      {p.checkIn && p.checkIn !== 'Flexible / Not specified' ? p.checkIn : 'Flexible'} → {p.checkOut && p.checkOut !== 'Flexible / Not specified' ? p.checkOut : 'Flexible'}
-                    </span>
+                {isInquiryApartment ? (
+                  <div className="grid grid-cols-3 gap-2 text-xs py-3 border-y border-slate-100 mt-3 text-slate-700">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Stay Dates:</span>
+                      <span className="font-semibold text-slate-900 truncate block">
+                        {p.checkIn && p.checkIn !== 'Flexible / Not specified' ? p.checkIn : 'Flexible'} → {p.checkOut && p.checkOut !== 'Flexible / Not specified' ? p.checkOut : 'Flexible'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Suite / Guests:</span>
+                      <span className="font-semibold text-slate-900 truncate block">
+                        {p.apartmentName || inq.apartment_id || 'Suite Inquiry'} ({p.adults || p.guests || 1}A, {p.children || 0}C)
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Quoted Rate:</span>
+                      <span className="font-bold text-[#821124] block">
+                        {p.quotedRateKes ? `KES ${Number(p.quotedRateKes).toLocaleString()}` : 'Pending Quote'}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Suite / Guests:</span>
-                    <span className="font-semibold text-slate-900 truncate block">
-                      {p.apartmentName || inq.apartment_id || 'Suite Inquiry'} ({p.adults || p.guests || 1}A, {p.children || 0}C)
-                    </span>
+                ) : isInquiryDining ? (
+                  <div className="grid grid-cols-3 gap-2 text-xs py-3 border-y border-slate-100 mt-3 text-slate-700">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Experience / Venue:</span>
+                      <span className="font-semibold text-slate-900 truncate block">
+                        {p.diningName || inq.venue || 'Tamarind Dining'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Reservation Time:</span>
+                      <span className="font-semibold text-slate-900 truncate block">
+                        {p.date ? `${p.date}${p.time ? ` at ${p.time}` : ''}` : 'Date Flexible'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Party Size:</span>
+                      <span className="font-semibold text-[#821124] block">
+                        {p.guests ? `${p.guests} Guests` : 'Party TBD'}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Quoted Rate:</span>
-                    <span className="font-bold text-[#821124] block">
-                      {p.quotedRateKes ? `KES ${Number(p.quotedRateKes).toLocaleString()}` : 'Pending Quote'}
-                    </span>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 text-xs py-3 border-y border-slate-100 mt-3 text-slate-700">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Department:</span>
+                      <span className="font-semibold text-slate-900 truncate block">
+                        {p.department || 'Guest Relations'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Channel:</span>
+                      <span className="font-semibold text-slate-900 truncate block">
+                        Website Contact Form
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Status:</span>
+                      <span className="font-semibold text-[#821124] block">
+                        {inq.status || 'Pending Response'}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {p.specialRequests && (
-                  <p className="text-xs text-slate-600 pt-2.5 italic line-clamp-2">
-                    &ldquo;{p.specialRequests}&rdquo;
+                {guestMessage && (
+                  <p className="text-xs text-slate-700 pt-2.5 italic line-clamp-2 bg-slate-50/70 p-2 rounded-lg border border-slate-100/80 mt-2">
+                    &ldquo;{guestMessage}&rdquo;
                   </p>
                 )}
 
@@ -394,8 +517,9 @@ export default function InquiriesPage() {
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Guest Profile</span>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      Received: {new Date(selectedInquiry.createdAt).toLocaleDateString()}
+                    <span className="text-[10px] text-slate-600 font-medium flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      {formatInquiryDate(selectedInquiry.createdAt)}
                     </span>
                   </div>
                   <div className="text-base font-bold text-slate-900">
@@ -408,6 +532,18 @@ export default function InquiriesPage() {
                     {selectedInquiry.payload?.phone || 'No phone provided'}
                   </div>
                 </div>
+
+                {/* Full Guest Message if provided */}
+                {(selectedInquiry.payload?.message || selectedInquiry.payload?.requests || selectedInquiry.payload?.specialRequests || selectedInquiry.payload?.details || selectedInquiry.payload?.comments) && (
+                  <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 text-xs text-slate-800 space-y-1">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                      Inquiry Message / Request:
+                    </span>
+                    <p className="italic leading-relaxed whitespace-pre-line text-slate-700">
+                      &ldquo;{selectedInquiry.payload?.message || selectedInquiry.payload?.requests || selectedInquiry.payload?.specialRequests || selectedInquiry.payload?.details || selectedInquiry.payload?.comments}&rdquo;
+                    </p>
+                  </div>
+                )}
 
                 {/* Status Selector */}
                 <div>
@@ -489,6 +625,15 @@ export default function InquiriesPage() {
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>Copy Guest Tracking Link</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInquiryToDelete(selectedInquiry)}
+                    className="w-full py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors border border-rose-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Inquiry</span>
                   </button>
                 </div>
               </div>
@@ -761,6 +906,49 @@ export default function InquiriesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE INQUIRY CONFIRMATION MODAL */}
+      {inquiryToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-slate-200 shadow-2xl relative text-slate-900 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0 mt-0.5">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-bold text-slate-900">Delete Inquiry</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Are you sure you want to permanently delete the inquiry from{' '}
+                  <strong className="text-slate-800">
+                    {inquiryToDelete.payload?.name || inquiryToDelete.guest_name || 'this guest'}
+                  </strong>
+                  ? This record will be removed from the database and cannot be recovered.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={deletingInquiry}
+                onClick={() => setInquiryToDelete(null)}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingInquiry}
+                onClick={confirmDeleteInquiry}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {deletingInquiry ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <span>Delete Permanently</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

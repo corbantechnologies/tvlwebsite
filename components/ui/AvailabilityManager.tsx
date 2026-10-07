@@ -98,7 +98,7 @@ export default function AvailabilityManager({ apartments: propApartments, curren
   // Modals
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
-  const [cellDetailModal, setCellDetailModal] = useState<{
+  const [cellPopover, setCellPopover] = useState<{
     apartment: Apartment;
     dateStr: string;
     availableUnits: number;
@@ -106,7 +106,43 @@ export default function AvailabilityManager({ apartments: propApartments, curren
     rateOverride: RateOverride | null;
     activeBlocks: AvailabilityBlock[];
     activeBookings: BookingRecord[];
+    x: number;
+    y: number;
   } | null>(null);
+
+  const handleCellClick = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    apt: Apartment,
+    dateStr: string,
+    status: ReturnType<typeof getDayStatus>
+  ) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const popoverWidth = 320;
+    const popoverHeight = 330;
+
+    let x = rect.left + rect.width / 2 - popoverWidth / 2;
+    if (x < 16) x = 16;
+    if (typeof window !== 'undefined' && x + popoverWidth > window.innerWidth - 16) {
+      x = window.innerWidth - popoverWidth - 16;
+    }
+
+    let y = rect.bottom + 8;
+    if (typeof window !== 'undefined' && y + popoverHeight > window.innerHeight - 16) {
+      y = Math.max(16, rect.top - popoverHeight - 8);
+    }
+
+    setCellPopover({
+      apartment: apt,
+      dateStr,
+      availableUnits: status.availableUnits,
+      totalUnits: status.totalUnits,
+      rateOverride: status.activeOverride,
+      activeBlocks: status.matchingBlocks,
+      activeBookings: status.activeBookings,
+      x,
+      y,
+    });
+  };
 
   // Form states for Block
   const [blockAptId, setBlockAptId] = useState<string>('all');
@@ -533,29 +569,39 @@ export default function AvailabilityManager({ apartments: propApartments, curren
           </div>
 
           {/* Swimlane Calendar Table */}
-          <div className="overflow-x-auto scrollbar-thin">
-            <div className="min-w-[950px] space-y-4">
+          <div className="overflow-x-auto scrollbar-thin border border-slate-200 rounded-2xl bg-white shadow-2xs">
+            <div
+              className="divide-y divide-slate-100"
+              style={{ minWidth: `${200 + monthDates.length * 38}px` }}
+            >
               {/* Date Header Row */}
-              <div className="grid grid-cols-[180px_repeat(auto-fit,minmax(28px,1fr))] items-center border-b border-slate-200 pb-2 text-[10px] uppercase font-bold text-slate-400">
-                <div className="pl-2">Apartment Tier</div>
-                <div className="contents">
-                  {monthDates.map((dateStr) => {
-                    const d = new Date(dateStr);
-                    const dayNum = d.getDate();
-                    const dayLetter = d.toLocaleDateString('en-KE', { weekday: 'narrow' });
-                    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-
-                    return (
-                      <div
-                        key={dateStr}
-                        className={`text-center py-1 ${isWeekend ? 'text-[#821124] font-bold' : 'text-slate-600'}`}
-                      >
-                        <div className="font-mono font-bold text-xs">{dayNum}</div>
-                        <div className="text-[9px] opacity-70">{dayLetter}</div>
-                      </div>
-                    );
-                  })}
+              <div
+                className="grid items-center bg-slate-50/90 py-2 text-[10px] uppercase font-bold text-slate-400 select-none"
+                style={{
+                  gridTemplateColumns: `200px repeat(${monthDates.length}, minmax(36px, 1fr))`,
+                }}
+              >
+                <div className="sticky left-0 z-20 bg-slate-50/95 backdrop-blur-xs pl-4 pr-2 font-bold tracking-wider text-slate-600 border-r border-slate-200 shadow-[2px_0_4px_rgba(0,0,0,0.02)]">
+                  Apartment Tier
                 </div>
+                {monthDates.map((dateStr) => {
+                  const d = new Date(dateStr);
+                  const dayNum = d.getDate();
+                  const dayLetter = d.toLocaleDateString('en-KE', { weekday: 'narrow' });
+                  const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+                  return (
+                    <div
+                      key={dateStr}
+                      className={`text-center py-0.5 border-r border-slate-100 last:border-r-0 ${
+                        isWeekend ? 'text-[#821124] font-bold' : 'text-slate-600'
+                      }`}
+                    >
+                      <div className="font-mono font-bold text-xs">{dayNum}</div>
+                      <div className="text-[9px] opacity-70">{dayLetter}</div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Apartment Rows */}
@@ -563,11 +609,14 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                 return (
                   <div
                     key={apt.id}
-                    className="grid grid-cols-[180px_repeat(auto-fit,minmax(28px,1fr))] items-center py-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
+                    className="grid items-center hover:bg-slate-50/50 transition-colors"
+                    style={{
+                      gridTemplateColumns: `200px repeat(${monthDates.length}, minmax(36px, 1fr))`,
+                    }}
                   >
-                    {/* Apartment Name Column */}
-                    <div className="pr-3 pl-2 truncate">
-                      <span className="text-xs font-serif font-bold text-slate-900 block truncate">
+                    {/* Apartment Name Column (Sticky left) */}
+                    <div className="sticky left-0 z-10 bg-white hover:bg-slate-50/90 pl-4 pr-3 py-3 border-r border-slate-200 shadow-[2px_0_4px_rgba(0,0,0,0.02)] truncate">
+                      <span className="text-xs font-serif font-bold text-slate-900 block truncate" title={apt.name}>
                         {apt.name}
                       </span>
                       <span className="text-[10px] text-slate-500 font-mono">
@@ -576,26 +625,27 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                     </div>
 
                     {/* Day Cells */}
-                    <div className="contents">
-                      {monthDates.map((dateStr) => {
-                        const status = getDayStatus(apt.id, dateStr);
+                    {monthDates.map((dateStr) => {
+                      const status = getDayStatus(apt.id, dateStr);
+                      const isSelected =
+                        cellPopover?.apartment.id === apt.id && cellPopover?.dateStr === dateStr;
 
-                        return (
-                          <div
-                            key={dateStr}
-                            onClick={() =>
-                              setCellDetailModal({
-                                apartment: apt,
-                                dateStr,
-                                availableUnits: status.availableUnits,
-                                totalUnits: status.totalUnits,
-                                rateOverride: status.activeOverride,
-                                activeBlocks: status.matchingBlocks,
-                                activeBookings: status.activeBookings,
-                              })
-                            }
-                            className={`mx-0.5 h-11 rounded-lg border text-center flex flex-col justify-center items-center cursor-pointer transition-transform hover:scale-105 relative ${status.badgeColor} ${
-                              status.activeOverride ? 'ring-1 ring-[#821124]' : ''
+                      return (
+                        <div
+                          key={dateStr}
+                          className="p-1 border-r border-slate-100 last:border-r-0 flex items-center justify-center"
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) => handleCellClick(e, apt, dateStr, status)}
+                            className={`w-full h-9 rounded-lg border text-center flex flex-col justify-center items-center cursor-pointer transition-all hover:scale-105 hover:shadow-xs relative ${
+                              status.badgeColor
+                            } ${
+                              isSelected
+                                ? 'ring-2 ring-[#821124] shadow-xs'
+                                : status.activeOverride
+                                ? 'ring-1 ring-[#821124]'
+                                : ''
                             }`}
                             title={`${apt.name} on ${dateStr}: ${status.availableUnits} free / ${status.totalUnits} total`}
                           >
@@ -607,16 +657,16 @@ export default function AvailabilityManager({ apartments: propApartments, curren
                                   {status.availableUnits}
                                 </span>
                                 {status.activeOverride?.rateUsd && (
-                                  <span className="text-[8px] font-mono text-[#821124] mt-0.5 leading-none font-bold">
+                                  <span className="text-[7.5px] font-mono text-[#821124] mt-0.5 leading-none font-bold">
                                     ${status.activeOverride.rateUsd}
                                   </span>
                                 )}
                               </>
                             )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
@@ -852,89 +902,81 @@ export default function AvailabilityManager({ apartments: propApartments, curren
         </div>
       )}
 
-      {/* CELL DETAIL MODAL (Click on any cell in grid) */}
-      {cellDetailModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5 text-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      {/* ANCHORED CELL POPOVER */}
+      {cellPopover && (
+        <>
+          {/* Transparent dismiss backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]"
+            onClick={() => setCellPopover(null)}
+          />
+
+          {/* Floating In-Context Popover */}
+          <div
+            style={{
+              top: `${cellPopover.y}px`,
+              left: `${cellPopover.x}px`,
+              width: '320px',
+            }}
+            className="fixed z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 space-y-3.5 text-slate-900 animate-in fade-in zoom-in-95 duration-150"
+          >
+            {/* Popover Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-2.5">
               <div>
-                <span className="text-[10px] font-mono text-[#821124] uppercase tracking-wider font-semibold">
-                  {cellDetailModal.dateStr}
+                <span className="text-[10px] font-mono text-[#821124] uppercase tracking-wider font-semibold block">
+                  {new Date(cellPopover.dateStr).toLocaleDateString('en-GB', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
                 </span>
-                <h3 className="font-serif text-lg font-bold text-slate-900">
-                  {cellDetailModal.apartment.name}
-                </h3>
+                <h4 className="font-serif text-sm font-bold text-slate-900 truncate max-w-[240px]">
+                  {cellPopover.apartment.name}
+                </h4>
               </div>
               <button
-                onClick={() => setCellDetailModal(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                type="button"
+                onClick={() => setCellPopover(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Quick summary stats */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Availability</span>
-                <span className="text-xl font-mono font-bold text-emerald-700">
-                  {cellDetailModal.availableUnits} / {cellDetailModal.totalUnits} free
+            {/* Quick Stats: Free Units & Rate */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Units Free</span>
+                <span className="text-base font-mono font-bold text-emerald-700 block">
+                  {cellPopover.availableUnits} / {cellPopover.totalUnits}
                 </span>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Rate Override</span>
-                <span className="text-sm font-mono font-bold text-[#821124] block truncate">
-                  {cellDetailModal.rateOverride
-                    ? `$${cellDetailModal.rateOverride.rateUsd} USD (${cellDetailModal.rateOverride.label || 'Override'})`
-                    : 'Standard Base Rate'}
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block">Rate</span>
+                <span className="text-xs font-mono font-bold text-[#821124] block truncate">
+                  {cellPopover.rateOverride?.rateUsd
+                    ? `$${cellPopover.rateOverride.rateUsd} USD`
+                    : 'Standard Rate'}
                 </span>
               </div>
             </div>
 
             {/* Active Bookings on this date */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider block">
-                Active Bookings ({cellDetailModal.activeBookings.length}):
-              </span>
-              {cellDetailModal.activeBookings.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">No confirmed reservations on this date.</p>
-              ) : (
-                <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                  {cellDetailModal.activeBookings.map((b) => (
+            {cellPopover.activeBookings.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
+                  Bookings ({cellPopover.activeBookings.length}):
+                </span>
+                <div className="max-h-24 overflow-y-auto space-y-1">
+                  {cellPopover.activeBookings.map((b) => (
                     <div
                       key={b.id}
-                      className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center justify-between text-xs"
+                      className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between text-xs"
                     >
-                      <div>
-                        <span className="font-bold text-slate-900 block">{b.guestName}</span>
-                        <span className="text-[10px] font-mono text-[#821124]">
-                          Ref: {b.bookingReference} · Unit: {b.allocatedUnit || 'Unallocated'}
-                        </span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold bg-[#821124] text-white">
-                        {b.bookingStatus}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Active Blocks on this date */}
-            {cellDetailModal.activeBlocks.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider block">
-                  Active Closures / Blocks ({cellDetailModal.activeBlocks.length}):
-                </span>
-                <div className="space-y-1.5">
-                  {cellDetailModal.activeBlocks.map((bl) => (
-                    <div
-                      key={bl.id}
-                      className="bg-rose-50 border border-rose-200 p-2.5 rounded-lg text-xs flex items-center justify-between text-rose-900"
-                    >
-                      <span>{bl.reason || 'Manual block'}</span>
-                      <span className="text-[10px] font-mono text-rose-700 font-bold">
-                        {bl.startDate} → {bl.endDate}
+                      <span className="font-semibold text-slate-900 truncate max-w-[170px]">{b.guestName}</span>
+                      <span className="font-mono text-[9px] text-[#821124] font-bold">
+                        {b.allocatedUnit || b.bookingReference}
                       </span>
                     </div>
                   ))}
@@ -942,16 +984,50 @@ export default function AvailabilityManager({ apartments: propApartments, curren
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            {/* Active Block if any */}
+            {cellPopover.activeBlocks.length > 0 && (
+              <div className="bg-rose-50 border border-rose-200 p-2 rounded-lg text-xs space-y-0.5">
+                <span className="text-[9px] uppercase font-bold text-rose-700 block">Closure Block Active</span>
+                <span className="text-rose-900 block truncate font-medium">
+                  {cellPopover.activeBlocks[0].reason || 'Manual staff closure'}
+                </span>
+              </div>
+            )}
+
+            {/* In-Popover Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
               <button
-                onClick={() => setCellDetailModal(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setRateAptId(cellPopover.apartment.id);
+                  setRateStart(cellPopover.dateStr);
+                  setRateEnd(cellPopover.dateStr);
+                  setCellPopover(null);
+                  setShowRateModal(true);
+                }}
+                className="py-1.5 px-2.5 rounded-lg bg-[#821124] hover:bg-[#680e1c] text-white text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-2xs"
               >
-                Close
+                <DollarSign className="w-3 h-3" />
+                <span>Override Rate</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setBlockAptId(cellPopover.apartment.id);
+                  setBlockStart(cellPopover.dateStr);
+                  setBlockEnd(cellPopover.dateStr);
+                  setCellPopover(null);
+                  setShowBlockModal(true);
+                }}
+                className="py-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors border border-slate-200"
+              >
+                <Lock className="w-3 h-3 text-[#821124]" />
+                <span>Add Block</span>
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* CREATE BLOCK MODAL */}
