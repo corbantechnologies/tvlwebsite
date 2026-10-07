@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import {
   users,
@@ -9,6 +9,7 @@ import {
   diningOptions,
   globalSettings,
   mealPlans,
+  extras,
 } from "./schema";
 
 // Seeding guard — only run once per process lifecycle
@@ -388,6 +389,7 @@ async function seedRequiredDefaults(db: ReturnType<typeof getDb>): Promise<void>
   await seedDining(db);
   await seedFacilities(db);
   await seedMealPlans(db);
+  await seedTransferExtras(db);
 }
 
 // ---------------------------------------------------------------
@@ -805,5 +807,74 @@ async function seedMealPlans(db: ReturnType<typeof getDb>): Promise<void> {
   }
 
   console.log("[Seed] Official Boarding Packages seeded (RO: $0, BB: $21, HB: $41).");
+}
+
+// ---------------------------------------------------------------
+// 8. Chauffeur & Airport / SGR Transfers into Extras Table
+// ---------------------------------------------------------------
+async function seedTransferExtras(db: ReturnType<typeof getDb>): Promise<void> {
+  const existing = await db.select().from(extras).where(eq(extras.category, "transfer")).limit(1);
+  if (existing.length > 0) return;
+
+  const transferVehicles = [
+    {
+      id: "ext_trf_saloon",
+      name: "Executive Saloon",
+      description: "Sleek, air-conditioned comfort for solo travelers & couples. Up to 3 passengers, 2 luggage items.",
+      category: "transfer",
+      priceUsd: 25,
+      priceKes: 3500,
+      pricingUnit: "per_booking",
+      image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80",
+      isActive: true,
+      sortOrder: 1,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "ext_trf_alphard",
+      name: "VIP Alphard / Vellfire",
+      description: "First-class executive seating with extra legroom & luxury finish. Up to 5 passengers, 4 luggage items.",
+      category: "transfer",
+      priceUsd: 50,
+      priceKes: 7000,
+      pricingUnit: "per_booking",
+      image: "https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=800&q=80",
+      isActive: true,
+      sortOrder: 2,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "ext_trf_landcruiser",
+      name: "VIP Safari 4x4 Landcruiser",
+      description: "Rugged elegance with pop-up roof & all-terrain luxury. Up to 6 passengers, 5 luggage items.",
+      category: "transfer",
+      priceUsd: 85,
+      priceKes: 11500,
+      pricingUnit: "per_booking",
+      image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80",
+      isActive: true,
+      sortOrder: 3,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "ext_trf_shuttle",
+      name: "Group Minivan / Shuttle",
+      description: "Spacious passenger van ideal for families & travel groups. Up to 10 passengers, 8 luggage items.",
+      category: "transfer",
+      priceUsd: 65,
+      priceKes: 9000,
+      pricingUnit: "per_booking",
+      image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+      isActive: true,
+      sortOrder: 4,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const trf of transferVehicles) {
+    await db.insert(extras).values(trf as any).onConflictDoNothing();
+  }
+
+  console.log("[Seed] Chauffeur & Transfer vehicles seeded into extras table.");
 }
 

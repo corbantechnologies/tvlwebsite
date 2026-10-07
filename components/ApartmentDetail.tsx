@@ -48,8 +48,29 @@ export default function ApartmentDetail({
   const [checkOut, setCheckOut] = useState<string>("");
   const [guestCount, setGuestCount] = useState<number>(apartment.maxGuests);
 
-  const selPkgData = PACKAGES.find(p => p.id === selectedPackage) || PACKAGES[0];
-  const livePackageRate = selPkgData.pricePerPersonPerDay;
+  const [mealPlansList, setMealPlansList] = useState<PackageType[]>(PACKAGES);
+
+  React.useEffect(() => {
+    fetch('/api/meal-plans?active=true')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.mealPlans) && data.mealPlans.length > 0) {
+          const mapped: PackageType[] = data.mealPlans.map((mp: any) => ({
+            id: mp.id,
+            name: mp.name,
+            description: mp.description,
+            priceMarkupPercentage: 0,
+            pricePerPersonPerDay: Number(mp.pricePerPersonPerDayUsd) || 0,
+            highlights: mp.highlights || [],
+          }));
+          setMealPlansList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const selPkgData = mealPlansList.find(p => p.id === selectedPackage) || mealPlansList[0];
+  const livePackageRate = selPkgData?.pricePerPersonPerDay || 0;
   const isPackageLive = false;
   const [inquiryName, setInquiryName] = useState("");
   const [inquiryEmail, setInquiryEmail] = useState("");
@@ -447,11 +468,11 @@ export default function ApartmentDetail({
                     className="w-full text-xs px-3 py-2 border border-stone-300 rounded-none text-stone-800 bg-stone-50/50 focus:outline-none focus:border-brand-teal"
                     id="calc-package"
                   >
-                    {PACKAGES.map(p => {
+                    {mealPlansList.map(p => {
                       const rate = p.pricePerPersonPerDay;
                       return (
                         <option key={p.id} value={p.id}>
-                          {p.name} (+${rate}/person/day)
+                          {p.name} {rate > 0 ? `(+${rate} USD/person/day)` : ''}
                         </option>
                       );
                     })}

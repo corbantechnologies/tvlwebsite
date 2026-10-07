@@ -35,7 +35,7 @@ export default function PackagesShowcase({ packages, onSelectPackage }: Packages
             const imageSrc = pkg.heroImage || pkg.image || 'https://images.unsplash.com/photo-1540555700478-4be289fbecef';
             const tierStr = pkg.tier || pkg.category || 'Signature';
             const nightsCount = pkg.nights || pkg.minimumNights || 2;
-            const pKes = pkg.priceKes || pkg.rateKes || 75000;
+            const pKes = pkg.priceKes || pkg.rateKes || 0;
             const pUsd = pkg.priceUsd || pkg.rateUsd;
             const incs = pkg.inclusions || pkg.features || [];
 
@@ -93,16 +93,22 @@ export default function PackagesShowcase({ packages, onSelectPackage }: Packages
 
                     <div className="pt-2">
                       <span className="text-[10px] text-[#1F1615]/60 uppercase tracking-wider block">Package Total</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-[#821124] font-serif">
-                          KES {pKes.toLocaleString()}
-                        </span>
-                        {pUsd && (
-                          <span className="text-xs text-[#1F1615]/60">
-                            (approx. ${pUsd} USD)
+                      {pKes > 0 ? (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-[#821124] font-serif">
+                            KES {pKes.toLocaleString()}
                           </span>
-                        )}
-                      </div>
+                          {pUsd && (
+                            <span className="text-xs text-[#1F1615]/60">
+                              (approx. ${pUsd} USD)
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm font-bold text-[#821124] font-serif">
+                          Inquire for Bespoke Quotation
+                        </span>
+                      )}
                     </div>
 
                     <div className="space-y-2 pt-2 border-t border-[#1F1615]/10">

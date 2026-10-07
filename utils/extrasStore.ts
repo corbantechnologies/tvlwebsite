@@ -31,8 +31,8 @@ export const DEFAULT_TRANSFER_VEHICLES: TransferVehicle[] = [
     tagline: "Sleek, air-conditioned comfort for solo travelers & couples",
     maxPassengers: 3,
     maxLuggage: 2,
-    rateUsd: 25,
-    rateKes: 3500,
+    rateUsd: 0,
+    rateKes: 0,
     image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80",
     features: ["Air-Conditioned", "Chauffeur Meet & Greet", "Complimentary Water", "Free Wi-Fi Onboard"]
   },
@@ -42,8 +42,8 @@ export const DEFAULT_TRANSFER_VEHICLES: TransferVehicle[] = [
     tagline: "First-class executive seating with extra legroom & luxury finish",
     maxPassengers: 5,
     maxLuggage: 4,
-    rateUsd: 50,
-    rateKes: 7000,
+    rateUsd: 0,
+    rateKes: 0,
     image: "https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=800&q=80",
     features: ["Reclining VIP Leather Captain Chairs", "Welcome Cold Dawa Drink", "Chauffeur Signage", "Extra Luggage Storage"]
   },
@@ -53,8 +53,8 @@ export const DEFAULT_TRANSFER_VEHICLES: TransferVehicle[] = [
     tagline: "Rugged elegance with pop-up roof & all-terrain luxury",
     maxPassengers: 6,
     maxLuggage: 5,
-    rateUsd: 85,
-    rateKes: 11500,
+    rateUsd: 0,
+    rateKes: 0,
     image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80",
     features: ["High Clearance 4x4", "Pop-up Roof", "Complimentary Refreshment Cooler", "Chauffeur Guide"]
   },
@@ -64,8 +64,8 @@ export const DEFAULT_TRANSFER_VEHICLES: TransferVehicle[] = [
     tagline: "Spacious passenger van ideal for families & travel groups",
     maxPassengers: 10,
     maxLuggage: 8,
-    rateUsd: 65,
-    rateKes: 9000,
+    rateUsd: 0,
+    rateKes: 0,
     image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
     features: ["High Capacity", "Dedicated Luggage Trailer Option", "Group Assistance", "Group Refreshment Pack"]
   }

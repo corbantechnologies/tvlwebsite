@@ -17,16 +17,53 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
   const [vehicles, setVehicles] = useState<TransferVehicle[]>([]);
 
   useEffect(() => {
-    if (vehiclesList && vehiclesList.length > 0) {
-      setVehicles(vehiclesList);
-    } else {
-      setVehicles(loadTransferVehicles());
+    async function loadVehicles() {
+      try {
+        const res = await fetch('/api/extras?active=true');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.extras)) {
+          const dbTransfers = data.extras.filter((e: any) => e.category === 'transfer');
+          if (dbTransfers.length > 0) {
+            const mapped: TransferVehicle[] = dbTransfers.map((e: any) => {
+              const lower = (e.name || '').toLowerCase();
+              return {
+                id: e.id,
+                name: e.name,
+                tagline: e.description || '',
+                maxPassengers: lower.includes('alphard') ? 5 : lower.includes('landcruiser') ? 6 : lower.includes('shuttle') || lower.includes('minivan') ? 10 : 3,
+                maxLuggage: lower.includes('alphard') ? 4 : lower.includes('landcruiser') ? 5 : lower.includes('shuttle') || lower.includes('minivan') ? 8 : 2,
+                rateUsd: Number(e.priceUsd) || 0,
+                rateKes: Number(e.priceKes) || 0,
+                image: e.image || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80",
+                features: ["Air-Conditioned", "Chauffeur Meet & Greet", "Complimentary Water", "Free Wi-Fi Onboard"]
+              };
+            });
+            setVehicles(mapped);
+            if (!mapped.some(m => m.id === selectedVehicleId)) {
+              setSelectedVehicleId(mapped[0].id);
+            }
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load transfer extras from DB:", err);
+      }
+
+      if (vehiclesList && vehiclesList.length > 0) {
+        setVehicles(vehiclesList);
+      } else {
+        setVehicles(loadTransferVehicles());
+      }
+    }
+
+    if (isOpen) {
+      loadVehicles();
     }
   }, [vehiclesList, isOpen]);
 
   const [terminal, setTerminal] = useState<"moi-airport" | "miritini-sgr" | "vipingo-airstrip">("moi-airport");
   const [transferType, setTransferType] = useState<"one-way-arrival" | "one-way-departure" | "round-trip">("one-way-arrival");
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("executive-saloon");
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("ext_trf_saloon");
   
   const [passengers, setPassengers] = useState<number>(2);
   const [luggageCount, setLuggageCount] = useState<number>(2);
@@ -47,15 +84,25 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
   const [bookingRef, setBookingRef] = useState<string>("");
 
   const activeVehicles = vehicles.length > 0 ? vehicles : loadTransferVehicles();
-  const selectedVehicle = activeVehicles.find(v => v.id === selectedVehicleId) || activeVehicles[0];
+  const selectedVehicle = activeVehicles.find(v => v.id === selectedVehicleId) || activeVehicles[0] || {
+    id: "transfer",
+    name: "Chauffeur Transfer",
+    tagline: "",
+    maxPassengers: 4,
+    maxLuggage: 3,
+    rateUsd: 0,
+    rateKes: 0,
+    image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80",
+    features: []
+  };
 
   // Carousel index state for vehicle fleet selection
   const [vehicleCarouselIndex, setVehicleCarouselIndex] = useState(0);
 
   // Base pricing multiplier for round-trip vs one-way
   const multiplier = transferType === "round-trip" ? 1.85 : 1.0; // 15% discount on return
-  const totalUsd = Math.round(selectedVehicle.rateUsd * multiplier);
-  const totalKes = Math.round(selectedVehicle.rateKes * multiplier);
+  const totalUsd = Math.round((selectedVehicle?.rateUsd || 0) * multiplier);
+  const totalKes = Math.round((selectedVehicle?.rateKes || 0) * multiplier);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,7 +314,7 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
                           : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100"
                       }`}
                     >
-                      {v.name} (${Math.round(v.rateUsd * multiplier)})
+                      {v.name} {v.rateUsd > 0 ? `($${Math.round(v.rateUsd * multiplier)})` : ''}
                     </button>
                   ))}
                 </div>
@@ -325,7 +372,11 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
                         <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
                           <div>
                             <span className="text-[9px] text-stone-400 uppercase font-bold tracking-widest block">Transfer Rate</span>
-                            <span className="font-serif font-bold text-sm text-brand-dark">${vPriceUsd} <span className="text-[10px] text-stone-500 font-normal">/ KES {vPriceKes.toLocaleString()}</span></span>
+                            {vPriceUsd > 0 ? (
+                              <span className="font-serif font-bold text-sm text-brand-dark">${vPriceUsd} <span className="text-[10px] text-stone-500 font-normal">/ KES {vPriceKes.toLocaleString()}</span></span>
+                            ) : (
+                              <span className="font-serif font-bold text-xs text-brand-dark">Quote on Request</span>
+                            )}
                           </div>
                           <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? "text-brand-teal font-extrabold" : "text-stone-400"}`}>
                             {isSelected ? "✓ Selected" : "Select Vehicle"}
@@ -468,10 +519,16 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
               <div className="bg-brand-dark text-white p-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                   <span className="text-[10px] text-stone-400 font-mono uppercase tracking-widest block">Estimated Total Cost</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-serif text-2xl font-bold text-brand-gold">${totalUsd} USD</span>
-                    <span className="text-xs text-stone-400 font-mono">(KES {totalKes.toLocaleString()})</span>
-                  </div>
+                  {totalUsd > 0 ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-serif text-2xl font-bold text-brand-gold">${totalUsd} USD</span>
+                      <span className="text-xs text-stone-400 font-mono">(KES {totalKes.toLocaleString()})</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-serif text-xl font-bold text-brand-gold">Quote on Request</span>
+                    </div>
+                  )}
                   <span className="text-[10px] text-stone-400 font-light block mt-0.5">
                     Pay upon arrival or add to room folio. Driver signage & baggage assistance included.
                   </span>
@@ -527,7 +584,7 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
                 </div>
                 <div className="flex justify-between border-b border-stone-200 pb-2">
                   <span className="text-stone-400">Transfer Rate:</span>
-                  <span className="font-bold text-brand-dark">${totalUsd} / KES {totalKes.toLocaleString()}</span>
+                  <span className="font-bold text-brand-dark">{totalUsd > 0 ? `$${totalUsd} / KES ${totalKes.toLocaleString()}` : "Bespoke Quote on Arrival"}</span>
                 </div>
               </div>
 

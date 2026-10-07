@@ -15,57 +15,11 @@ interface MealPlan {
   highlights: string[];
 }
 
-const DEFAULT_MEAL_PLANS: MealPlan[] = [
-  {
-    id: 'room-only',
-    name: 'Flexible Rate — Room Only',
-    shortName: 'RO',
-    description: 'Accommodation only. Complete flexibility to explore Mombasa’s finest dining at your own leisure.',
-    pricePerPersonPerDayUsd: 0,
-    pricePerPersonPerDayKes: 0,
-    image: 'https://media.tamarind.co.ke/tvl-website-assets/r12.jpg',
-    highlights: [
-      'Self-catering granite Swahili kitchen access',
-      'Complimentary welcome arrival cocktail',
-      'Full resident access to Harbour Restaurant & 2 Clifftop Pools',
-      'No meal commitments'
-    ],
-  },
-  {
-    id: 'bed-breakfast',
-    name: 'Bed & Breakfast',
-    shortName: 'BB',
-    description: 'Start every morning with our celebrated clifftop harbour breakfast overlooking the tranquil Indian Ocean.',
-    pricePerPersonPerDayUsd: 21,
-    pricePerPersonPerDayKes: 2730,
-    image: 'https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--11.jpg',
-    highlights: [
-      'Daily clifftop harbour breakfast at Harbour Restaurant',
-      'Fresh tropical coastal juices & Swahili pastries',
-      'À la carte hot breakfast selections made to order',
-      'Creekside morning ocean views'
-    ],
-  },
-  {
-    id: 'half-board',
-    name: 'Stay & Dine — Half Board Deal with Seafood',
-    shortName: 'HB',
-    description: 'The ultimate Tamarind experience. Breakfast each morning, plus nightly dinner at Tamarind Mombasa’s legendary seafood restaurant.',
-    pricePerPersonPerDayUsd: 41,
-    pricePerPersonPerDayKes: 5330,
-    image: 'https://media.tamarind.co.ke/tvl-website-assets/mr6.jpg',
-    highlights: [
-      'Daily clifftop harbour breakfast',
-      'Nightly dinner at Tamarind Mombasa Restaurant',
-      'World-famous fresh East African seafood specialties',
-      'Resident priority creekside table placement',
-      'Guest favourite & best value'
-    ],
-  },
-];
+const DEFAULT_MEAL_PLANS: MealPlan[] = [];
 
 export default function PackagesPage() {
-  const [plans, setPlans] = useState<MealPlan[]>(DEFAULT_MEAL_PLANS);
+  const [plans, setPlans] = useState<MealPlan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('half-board');
 
@@ -73,9 +27,12 @@ export default function PackagesPage() {
     fetch('/api/meal-plans?active=true')
       .then((r) => r.json())
       .then((d) => {
-        if (d.success && d.mealPlans && d.mealPlans.length > 0) setPlans(d.mealPlans);
+        if (d.success && d.mealPlans && d.mealPlans.length > 0) {
+          setPlans(d.mealPlans);
+        }
       })
-      .catch(() => {});
+      .catch((err) => console.error("Error fetching meal plans:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSelectPlan = (planId: string) => {

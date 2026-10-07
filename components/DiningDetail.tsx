@@ -143,42 +143,6 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
 
   const specials = getDiningSpecials(dining.id);
 
-  // Budget calculations
-  const calculateEstimate = () => {
-    let perPerson = 0;
-    let baseTotal = 0;
-    let extraChargeName = "";
-    let extraChargeVal = 0;
-
-    if (dining.id === "tamarind-restaurant") {
-      perPerson = 45;
-    } else if (dining.id === "dawa-terrace") {
-      perPerson = 25;
-    } else if (dining.id === "tamarind-dhow") {
-      perPerson = cruiseType === "dinner" ? 85 : 60;
-      if (charterType === "private") {
-        baseTotal = 850; // base charter fee
-        extraChargeName = "Private Charter Crew & Fuel Service";
-        extraChargeVal = 150;
-      }
-    }
-
-    const foodCost = perPerson * reserveGuests;
-    const finalFood = baseTotal > 0 ? baseTotal : foodCost;
-    const taxes = Math.round(finalFood * 0.16); // 16% VAT and Service
-    const grandTotal = finalFood + taxes + extraChargeVal;
-
-    return {
-      perPerson,
-      foodCost: finalFood,
-      taxes,
-      extraName: extraChargeName,
-      extraVal: extraChargeVal,
-      total: grandTotal
-    };
-  };
-
-  const estimate = calculateEstimate();
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +179,6 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
             time: reserveTime,
             guests: reserveGuests,
             details: extraDetails,
-            totalCost: estimate.total,
           },
         }),
       });
@@ -381,8 +344,8 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
                   <Wine className="w-4 h-4 text-brand-teal" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold">Corkage</p>
-                  <p className="text-xs font-semibold text-stone-800">Allowed ($15 fee)</p>
+                  <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold">Cellar Selection</p>
+                  <p className="text-xs font-semibold text-stone-800">Sommelier Curated</p>
                 </div>
               </div>
             </div>
@@ -413,9 +376,9 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
                         onChange={(e) => setCruiseType(e.target.value)}
                         className="w-full text-xs px-3 py-2 border border-stone-300 rounded-none text-stone-800 bg-white focus:outline-none focus:border-brand-teal"
                       >
-                        <option value="lunch">Tamarind Lunch Cruise ($60/person)</option>
-                        <option value="dinner">Tamarind Candlelit Sunset Dinner Cruise ($85/person)</option>
-                        <option value="sundowner">Sunset Cocktail Cruise ($45/person)</option>
+                        <option value="lunch">Tamarind Lunch Cruise</option>
+                        <option value="dinner">Tamarind Candlelit Sunset Dinner Cruise</option>
+                        <option value="sundowner">Sunset Cocktail Cruise</option>
                       </select>
                     </div>
 
@@ -518,33 +481,16 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
                   </div>
                 </div>
 
-                {/* Dynamic Price Estimator Panel */}
-                {reserveDate ? (
-                  <div className="p-4 bg-brand-sand border border-stone-200 rounded-none space-y-1.5 text-xs">
-                    <div className="flex justify-between text-stone-600">
-                      <span>Cover Food & Drinks Estimation ({reserveGuests} guests)</span>
-                      <span className="font-semibold text-stone-800">${estimate.foodCost}</span>
-                    </div>
-                    {estimate.extraName && (
-                      <div className="flex justify-between text-stone-600">
-                        <span>{estimate.extraName}</span>
-                        <span className="font-semibold text-stone-800">${estimate.extraVal}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-stone-600">
-                      <span>Government Tourism VAT & Catering Levy (16%)</span>
-                      <span className="font-semibold text-stone-800">${estimate.taxes}</span>
-                    </div>
-                    <div className="border-t border-stone-300 pt-2 flex justify-between text-xs font-serif font-bold text-brand-dark">
-                      <span>Estimated Dining Balance</span>
-                      <span className="text-brand-teal font-sans">${estimate.total} USD</span>
-                    </div>
+                {/* À La Carte Reservation Informational Note */}
+                <div className="p-3.5 bg-brand-sand border border-stone-200 rounded-none space-y-1.5 text-xs text-stone-600 font-light">
+                  <div className="flex items-center gap-2 text-brand-dark font-medium">
+                    <Utensils className="w-3.5 h-3.5 text-brand-teal" />
+                    <span className="font-serif">À La Carte Dining &amp; Refreshments</span>
                   </div>
-                ) : (
-                  <div className="p-3 bg-brand-teal/5 border border-brand-teal/15 text-brand-dark rounded-none text-xs text-center font-light">
-                    Select a preferred date to generate custom menu cost projections.
-                  </div>
-                )}
+                  <p className="text-[11px] leading-relaxed text-stone-500">
+                    Tables are reserved exclusively for your party. Food, beverages, and seafood specialties are billed à la carte at the venue according to seasonal culinary menus.
+                  </p>
+                </div>
 
                 {/* Guest Contacts */}
                 <div className="pt-2 border-t border-stone-100 space-y-3">
@@ -635,7 +581,7 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
                   {dining.id === "tamarind-dhow" && (
                     <p><strong>Voyage Type:</strong> {cruiseType === "dinner" ? "Dinner Cruise" : cruiseType === "lunch" ? "Lunch Cruise" : "Sunset Cocktail"}</p>
                   )}
-                  <p className="text-brand-teal font-medium"><strong>Projected Menu Total:</strong> ${estimate.total} USD</p>
+                  <p className="text-brand-teal font-medium"><strong>Reservation Status:</strong> Table Reserved with Priority Seating</p>
                 </div>
                 <p className="text-stone-500 text-xs font-light leading-relaxed">
                   The dining reservation desk has prioritized your Swahili coastal booking. A formal SMS and email verification with dining credentials has been dispatched to <span className="font-semibold">{guestEmail}</span>.
