@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Sparkles, Calendar, Clock, MapPin, Ticket, Plus, Trash2, Edit3, 
-  Save, X, RotateCw, ExternalLink, ShieldAlert, CheckCircle2, Lock, Loader2, Check 
+  Save, X, RotateCw, ExternalLink, ShieldAlert, CheckCircle2, Lock, Loader2, Check,
+  QrCode, ClipboardList, CreditCard
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
@@ -25,8 +27,11 @@ interface AdminEvent {
   image?: string;
   posterUrl?: string;
   maxCapacity?: number;
+  bookedCount?: number;
   paymentEnabled?: boolean;
   externalTicketUrl?: string | null;
+  gatePin?: string;
+  subaccountCode?: string | null;
   isFeatured?: boolean;
   isActive?: boolean;
 }
@@ -71,6 +76,8 @@ export default function AdminEventsPage() {
   const [image, setImage] = useState('https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg');
   const [paymentEnabled, setPaymentEnabled] = useState(false);
   const [externalTicketUrl, setExternalTicketUrl] = useState('');
+  const [gatePin, setGatePin] = useState('2026');
+  const [subaccountCode, setSubaccountCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -111,6 +118,8 @@ export default function AdminEventsPage() {
     setImage('https://media.tamarind.co.ke/tvl-website-assets/dhow_sunset_cruise.jpg');
     setPaymentEnabled(false);
     setExternalTicketUrl('');
+    setGatePin('2026');
+    setSubaccountCode('');
     setShowAddModal(true);
   };
 
@@ -131,6 +140,8 @@ export default function AdminEventsPage() {
     setImage(evt.image || evt.posterUrl || '');
     setPaymentEnabled(evt.paymentEnabled === true);
     setExternalTicketUrl(evt.externalTicketUrl || '');
+    setGatePin(evt.gatePin || '2026');
+    setSubaccountCode(evt.subaccountCode || '');
   };
 
   const handleBrandChange = (newBrand: string) => {
@@ -175,6 +186,8 @@ export default function AdminEventsPage() {
           posterUrl: image,
           paymentEnabled,
           externalTicketUrl: externalTicketUrl.trim() || null,
+          gatePin: gatePin.trim() || '2026',
+          subaccountCode: subaccountCode.trim() || null,
         }),
       });
 
@@ -218,6 +231,8 @@ export default function AdminEventsPage() {
           posterUrl: image,
           paymentEnabled,
           externalTicketUrl: externalTicketUrl.trim() || null,
+          gatePin: gatePin.trim() || '2026',
+          subaccountCode: subaccountCode.trim() || null,
         }),
       });
 
@@ -275,7 +290,23 @@ export default function AdminEventsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/events/ledger"
+            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <ClipboardList className="w-3.5 h-3.5 text-[#821124]" />
+            <span>Tickets Ledger</span>
+          </Link>
+
+          <Link
+            href="/admin/events/checkin"
+            className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <QrCode className="w-3.5 h-3.5 text-amber-700" />
+            <span>Gate Check-In</span>
+          </Link>
+
           <button
             onClick={loadEvents}
             disabled={loading}
@@ -395,31 +426,70 @@ export default function AdminEventsPage() {
                         <span className="truncate">{evt.venue}, {evt.city}</span>
                       </div>
                     </div>
+
+                    {/* Ticketing Status & Capacity */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <div>
+                        {evt.paymentEnabled ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px]">
+                            <CreditCard className="w-2.5 h-2.5 text-emerald-600" />
+                            <span>Online Paystack</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 border border-slate-200 text-[10px]">
+                            <span>Inquiry / RSVP</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-slate-500 font-mono text-[10px]">
+                        <span>Booked: <strong>{evt.bookedCount || 0}</strong>/{evt.maxCapacity || 80}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    Cap: {evt.maxCapacity || 80}
-                  </span>
+                <div className="p-3 bg-slate-50 border-t border-slate-100 space-y-2">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <Link
+                      href={`/admin/events/ledger?eventId=${evt.id}`}
+                      className="px-2 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold flex items-center justify-center gap-1 border border-slate-200 transition-colors shadow-2xs"
+                    >
+                      <ClipboardList className="w-3 h-3 text-[#821124]" />
+                      <span>Ledger</span>
+                    </Link>
 
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => openEditModal(evt)}
-                      className="px-2.5 py-1 rounded bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-slate-200"
+                    <Link
+                      href={`/admin/events/checkin?eventId=${evt.id}`}
+                      className="px-2 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 text-[11px] font-semibold flex items-center justify-center gap-1 border border-amber-200 transition-colors shadow-2xs"
                     >
-                      <Edit3 className="w-3 h-3 text-slate-500" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(evt.id, evt.title)}
-                      disabled={isDeleting}
-                      className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
-                      title="Delete Event"
-                    >
-                      {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" /> : <Trash2 className="w-3.5 h-3.5" />}
-                    </button>
+                      <QrCode className="w-3 h-3 text-amber-700" />
+                      <span>Gate Scan</span>
+                    </Link>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Gate PIN: <strong>{evt.gatePin || '2026'}</strong>
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditModal(evt)}
+                        className="px-2 py-0.5 rounded bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-slate-200"
+                      >
+                        <Edit3 className="w-3 h-3 text-slate-500" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(evt.id, evt.title)}
+                        disabled={isDeleting}
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Delete Event"
+                      >
+                        {isDeleting ? <Loader2 className="w-3 h-3 animate-spin text-rose-600" /> : <Trash2 className="w-3 h-3" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -546,6 +616,75 @@ export default function AdminEventsPage() {
                     value={maxCapacity ?? ''}
                     onChange={(e) => setMaxCapacity(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Ticketing, Subaccounts & Gate Security */}
+              <div className="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-900 block flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-[#821124]" />
+                      <span>Direct Online Ticket Payment (Paystack)</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Enable dedicated checkout page on website via M-Pesa &amp; Cards.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={paymentEnabled}
+                    onChange={(e) => setPaymentEnabled(e.target.checked)}
+                    className="w-4 h-4 accent-[#821124] rounded cursor-pointer"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-amber-200/60">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
+                      Paystack Subaccount (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ACCT_xxxx (or blank for brand default)"
+                      value={subaccountCode}
+                      onChange={(e) => setSubaccountCode(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Directs payment to this unit's bank account.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
+                      Gate Check-In PIN (4 Digits)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="2026"
+                      maxLength={6}
+                      value={gatePin}
+                      onChange={(e) => setGatePin(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-mono font-bold"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Door security entrance PIN for check-in staff.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
+                    External Ticket Link (If not using Paystack)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://ticketsasa.com/..."
+                    value={externalTicketUrl}
+                    onChange={(e) => setExternalTicketUrl(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
               </div>

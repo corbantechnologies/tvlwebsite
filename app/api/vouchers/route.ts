@@ -14,7 +14,11 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code")?.trim().toUpperCase();
     const amountStr = searchParams.get("amount");
+    const amountKesStr = searchParams.get("amountKes");
+    const scopeParam = searchParams.get("scope"); // 'apartment' | 'event'
+    const eventIdParam = searchParams.get("eventId");
     const subtotalUsd = amountStr ? parseFloat(amountStr) : 0;
+    const subtotalKes = amountKesStr ? parseFloat(amountKesStr) : (subtotalUsd * 130);
 
     // Validate a specific code for checkout
     if (code) {
@@ -56,28 +60,66 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (voucher.minSpendUsd && subtotalUsd < voucher.minSpendUsd) {
+      // Check scope compatibility
+      const voucherScope = voucher.scope || "all";
+      if (scopeParam === "event" && voucherScope === "apartment") {
         return NextResponse.json({
           valid: false,
-          error: `Minimum stay total of $${voucher.minSpendUsd} USD required for this promo code.`,
+          error: "This voucher is only applicable to apartment bookings.",
+        });
+      }
+      if (scopeParam === "apartment" && voucherScope === "event") {
+        return NextResponse.json({
+          valid: false,
+          error: "This voucher is only applicable to event tickets.",
         });
       }
 
-      // Calculate discount amount in USD
+      // Check specific event eligibility
+      if (
+        scopeParam === "event" &&
+        voucher.applicableEventIds &&
+        Array.isArray(voucher.applicableEventIds) &&
+        voucher.applicableEventIds.length > 0
+      ) {
+        if (!eventIdParam || !voucher.applicableEventIds.includes(eventIdParam)) {
+          return NextResponse.json({
+            valid: false,
+            error: "This promo code is not applicable to this specific event.",
+          });
+        }
+      }
+
+      if (voucher.minSpendUsd && subtotalUsd < voucher.minSpendUsd) {
+        return NextResponse.json({
+          valid: false,
+          error: `Minimum total of $${voucher.minSpendUsd} USD required for this promo code.`,
+        });
+      }
+
+      // Calculate discount amount in USD and KES
       let discountAmountUsd = 0;
+      let discountAmountKes = 0;
+
       if (voucher.discountType === "percentage") {
         discountAmountUsd = (subtotalUsd * voucher.discountValue) / 100;
         if (voucher.maxDiscountUsd && discountAmountUsd > voucher.maxDiscountUsd) {
           discountAmountUsd = voucher.maxDiscountUsd;
         }
+        discountAmountKes = (subtotalKes * voucher.discountValue) / 100;
+        if (voucher.maxDiscountUsd) {
+          discountAmountKes = Math.min(discountAmountKes, voucher.maxDiscountUsd * 130);
+        }
       } else if (voucher.discountType === "fixed_usd") {
         discountAmountUsd = Math.min(voucher.discountValue, subtotalUsd);
+        discountAmountKes = Math.min(voucher.discountValue * 130, subtotalKes);
       } else if (voucher.discountType === "fixed_kes") {
-        const usdEquivalent = voucher.discountValue / 130;
-        discountAmountUsd = Math.min(usdEquivalent, subtotalUsd);
+        discountAmountKes = Math.min(voucher.discountValue, subtotalKes);
+        discountAmountUsd = Math.min(voucher.discountValue / 130, subtotalUsd);
       }
 
       discountAmountUsd = Math.round(discountAmountUsd * 100) / 100;
+      discountAmountKes = Math.round(discountAmountKes);
 
       return NextResponse.json({
         valid: true,
@@ -88,7 +130,8 @@ export async function GET(req: NextRequest) {
           discountType: voucher.discountType,
           discountValue: voucher.discountValue,
           discountAmountUsd,
-          discountAmountKes: Math.round(discountAmountUsd * 130),
+          discountAmountKes,
+          scope: voucher.scope || "all",
         },
       });
     }
@@ -150,6 +193,8 @@ export async function POST(req: NextRequest) {
       validUntil: body.validUntil || null,
       usageLimit: body.usageLimit ? Number(body.usageLimit) : null,
       usedCount: 0,
+      scope: body.scope || "all",
+      applicableEventIds: body.applicableEventIds || [],
       isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

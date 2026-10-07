@@ -157,6 +157,54 @@ export const events = pgTable("events", {
   paymentEnabled: boolean("payment_enabled").notNull().default(false), // disabled until explicitly approved
   isFeatured: boolean("is_featured").default(false),
   isActive: boolean("is_active").default(true),
+  gatePin: text("gate_pin").notNull().default("2026"), // 4-digit entrance check-in PIN
+  subaccountCode: text("subaccount_code"), // optional Paystack subaccount override
+  createdAt: text("created_at").notNull(),
+});
+
+// ============================================================
+// EVENT TICKETS (E-Ticket ledger & gate check-ins)
+// ============================================================
+
+export const eventTickets = pgTable("event_tickets", {
+  id: text("id").primaryKey(),                     // e.g. "tkt_172824982"
+  ticketReference: text("ticket_reference").notNull().unique(), // e.g. "TKT-82914"
+  eventId: text("event_id").notNull(),            // references events.id
+  eventTitle: text("event_title").notNull(),       // denormalized for fast display
+  brand: text("brand").notNull(),                 // 'tamarind_restaurant', 'tamarind_dhow', etc.
+  venue: text("venue").notNull(),
+  eventDate: text("event_date").notNull(),
+  
+  // Attendee Info
+  guestName: text("guest_name").notNull(),
+  guestEmail: text("guest_email").notNull(),
+  guestPhone: text("guest_phone").notNull(),
+  ticketCount: integer("ticket_count").notNull().default(1),
+  
+  // Pricing Snapshot
+  unitPriceKes: integer("unit_price_kes").notNull().default(0),
+  unitPriceUsd: integer("unit_price_usd").default(0),
+  totalAmountKes: integer("total_amount_kes").notNull(),
+  totalAmountUsd: integer("total_amount_usd").default(0),
+  currency: text("currency").notNull().default("KES"),
+  discountAmountKes: integer("discount_amount_kes").default(0),
+  voucherCode: text("voucher_code"),
+  
+  // Payment
+  paymentStatus: text("payment_status").notNull().default("paid"), // 'paid' | 'comp' | 'refunded'
+  paymentMethod: text("payment_method").default("paystack"),
+  paymentReference: text("payment_reference").notNull(),
+  subaccountCode: text("subaccount_code"),
+  
+  // Day-of-Event Door Check-In Status
+  checkInStatus: text("check_in_status").notNull().default("pending"), // 'pending' | 'checked_in'
+  checkedInAt: text("checked_in_at"),             // timestamp of gate entry
+  checkedInBy: text("checked_in_by"),             // staff member name who scanned
+  
+  // Notes & Extras
+  dietaryRequirements: text("dietary_requirements"),
+  specialRequests: text("special_requests"),
+  ticketQrToken: text("ticket_qr_token").notNull().unique(), // secure token for QR verification
   createdAt: text("created_at").notNull(),
 });
 
@@ -362,6 +410,8 @@ export const vouchers = pgTable("vouchers", {
   validUntil: text("valid_until"), // YYYY-MM-DD
   usageLimit: integer("usage_limit"), // null = unlimited
   usedCount: integer("used_count").default(0),
+  scope: text("scope").notNull().default("all"), // "all" | "apartment" | "event"
+  applicableEventIds: jsonb("applicable_event_ids").$type<string[]>().default([]),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at"),

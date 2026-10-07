@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, Clock, MapPin, Ticket, Ship, Sparkles, ArrowRight, Filter, ExternalLink, Lock, CheckCircle2 } from 'lucide-react';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import BookingModal from '@/components/BookingModal';
+import EventTicketModal from '@/components/EventTicketModal';
 import { DEFAULT_EVENTS } from '@/lib/data';
 
 interface EventItem {
@@ -30,6 +31,7 @@ interface EventItem {
   capacity?: number;
   paymentEnabled?: boolean;
   externalTicketUrl?: string | null;
+  subaccountCode?: string | null;
   isActive?: boolean;
 }
 
@@ -65,6 +67,8 @@ export default function EventsPage() {
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedEventForModal, setSelectedEventForModal] = useState<EventItem | null>(null);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [ticketEventForModal, setTicketEventForModal] = useState<EventItem | null>(null);
 
   useEffect(() => {
     fetch('/api/events')
@@ -85,6 +89,11 @@ export default function EventsPage() {
   const handleAction = (evt: EventItem) => {
     if (evt.externalTicketUrl) {
       window.open(evt.externalTicketUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (evt.paymentEnabled) {
+      setTicketEventForModal(evt);
+      setIsTicketModalOpen(true);
       return;
     }
     setSelectedEventForModal(evt);
@@ -272,6 +281,15 @@ export default function EventsPage() {
           setIsBookingOpen(false);
           setSelectedEventForModal(null);
         }}
+      />
+
+      <EventTicketModal
+        isOpen={isTicketModalOpen}
+        onClose={() => {
+          setIsTicketModalOpen(false);
+          setTicketEventForModal(null);
+        }}
+        event={ticketEventForModal}
       />
     </div>
   );
