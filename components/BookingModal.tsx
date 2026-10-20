@@ -143,11 +143,85 @@ export default function BookingModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [confirmedData, setConfirmedData] = useState<any | null>(null);
+  const [rateOverride, setRateOverride] = useState<{
+    id: string;
+    rateUsd?: number | null;
+    rateKes?: number | null;
+    minNights: number;
+    label?: string | null;
+  } | null>(null);
+  const [effectiveRoomRateUsd, setEffectiveRoomRateUsd] = useState<number | null>(null);
+  const [minNightsRequired, setMinNightsRequired] = useState<number>(1);
+  const [isAvailableForDates, setIsAvailableForDates] = useState<boolean>(true);
+  const [availabilityNotice, setAvailabilityNotice] = useState<string | null>(null);
+
   const discountPct = selectedApartment?.discountPercentage || 0;
   const originalRoomRate = selectedApartment?.pricePerNight || 120;
   const livePrice = discountPct > 0
     ? Math.round(originalRoomRate * (1 - discountPct / 100))
     : originalRoomRate;
+  const activeNightlyRate = (rateOverride && rateOverride.rateUsd != null)
+    ? rateOverride.rateUsd
+    : (effectiveRoomRateUsd ?? livePrice);
+
+  // Check rate override and availability whenever dates or apartment change
+  useEffect(() => {
+    if (!checkIn || !checkOut || !apartmentId) {
+      setRateOverride(null);
+      setEffectiveRoomRateUsd(null);
+      setMinNightsRequired(1);
+      setIsAvailableForDates(true);
+      setAvailabilityNotice(null);
+      return;
+    }
+
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    if (start >= end) return;
+
+    let isMounted = true;
+    fetch(`/api/availability?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}&apartmentId=${encodeURIComponent(apartmentId)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!isMounted) return;
+        if (data.available === false && data.message) {
+          setIsAvailableForDates(false);
+          setAvailabilityNotice(data.message);
+          return;
+        }
+        const aptMatch = Array.isArray(data.apartments)
+          ? data.apartments.find((a: any) => a.apartmentId === apartmentId)
+          : null;
+
+        if (aptMatch) {
+          if (aptMatch.rateOverride) {
+            setRateOverride(aptMatch.rateOverride);
+            if (aptMatch.effectiveRateUsd != null) {
+              setEffectiveRoomRateUsd(aptMatch.effectiveRateUsd);
+            }
+          } else {
+            setRateOverride(null);
+            setEffectiveRoomRateUsd(null);
+          }
+          setMinNightsRequired(aptMatch.minNights || 1);
+          if (aptMatch.availableUnits <= 0) {
+            setIsAvailableForDates(false);
+            setAvailabilityNotice("Selected apartment type is fully booked for these dates.");
+          } else if (!aptMatch.meetsMinNights) {
+            setIsAvailableForDates(false);
+            setAvailabilityNotice(`A minimum stay of ${aptMatch.minNights} nights is required for this seasonal period.`);
+          } else {
+            setIsAvailableForDates(true);
+            setAvailabilityNotice(null);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [checkIn, checkOut, apartmentId]);
 
   // Fetch meal plans, extras, and booking conditions on open
   useEffect(() => {
@@ -253,10 +327,12 @@ export default function BookingModal({
     const nights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
     const totalGuests = adults + children;
 
-    // Room cost
+    // Room cost: apply active seasonal rate override if configured
+    const isOverrideActive = Boolean(rateOverride && rateOverride.rateUsd != null);
+    const effectiveNightlyRate = activeNightlyRate;
     const originalBaseRoomUsd = originalRoomRate * nights;
-    const baseRoomUsd = livePrice * nights;
-    const apartmentDiscountSavingsUsd = (originalRoomRate - livePrice) * nights;
+    const baseRoomUsd = effectiveNightlyRate * nights;
+    const apartmentDiscountSavingsUsd = isOverrideActive ? 0 : ((originalRoomRate - livePrice) * nights);
 
     // Meal plan cost: (rate × total guests × nights)
     const activeMealPlan = mealPlans.find(m => m.id === mealPlanId) || mealPlans[0];
@@ -301,7 +377,9 @@ export default function BookingModal({
       totalGuests,
       originalRoomRate,
       originalBaseRoomUsd,
-      apartmentDiscountPct: discountPct,
+      activeNightlyRate: effectiveNightlyRate,
+      rateOverride,
+      apartmentDiscountPct: isOverrideActive ? 0 : discountPct,
       apartmentDiscountSavingsUsd,
       baseRoomUsd,
       mealPlanName: activeMealPlan?.name || "Room Only",
@@ -364,6 +442,14 @@ export default function BookingModal({
       toast.error("Please select both check-in and check-out dates.");
       return;
     }
+    if (!isAvailableForDates) {
+      toast.error(availabilityNotice || "The selected apartment is unavailable for these dates.");
+      return;
+    }
+    if (breakdown && breakdown.nights < minNightsRequired) {
+      toast.error(`This seasonal period requires a minimum stay of ${minNightsRequired} nights.`);
+      return;
+    }
     if (conditions.some((c) => c.isMandatory) && !agreeTerms) {
       toast.error("Please agree to the booking conditions and policies to proceed.");
       return;
@@ -398,8 +484,8 @@ export default function BookingModal({
       }),
       specialRequests,
       promocode: promocode || undefined,
-      totalCostUsd: breakdown?.totalUsd || selectedApartment.pricePerNight,
-      totalCostKes: breakdown?.totalKes || (selectedApartment.pricePerNight * 130),
+      totalCostUsd: breakdown?.totalUsd || (activeNightlyRate * (breakdown?.nights || 1)),
+      totalCostKes: breakdown?.totalKes || Math.round((breakdown?.totalUsd || activeNightlyRate) * 130),
       currency: "USD",
     };
 
@@ -409,7 +495,7 @@ export default function BookingModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          amount: breakdown?.totalUsd || selectedApartment.pricePerNight,
+          amount: breakdown?.totalUsd || (activeNightlyRate * (breakdown?.nights || 1)),
           currency: "USD",
           reference: `TVL-${Date.now()}`,
           metadata: {
@@ -420,10 +506,12 @@ export default function BookingModal({
             apartmentId: selectedApartment.id,
             apartmentName: selectedApartment.name,
             nights: breakdown?.nights || 1,
-            roomRateUsd: livePrice,
-            totalRoomUsd: breakdown?.baseRoomUsd || livePrice,
+            roomRateUsd: activeNightlyRate,
+            totalRoomUsd: breakdown?.baseRoomUsd || (activeNightlyRate * (breakdown?.nights || 1)),
             totalMealPlanUsd: breakdown?.mealPlanTotalUsd || 0,
             totalExtrasUsd: breakdown?.extrasTotalUsd || 0,
+            rateOverrideApplied: Boolean(rateOverride?.rateUsd),
+            rateOverrideLabel: rateOverride?.label || null,
           },
         }),
       });
@@ -1060,12 +1148,16 @@ export default function BookingModal({
                       <div className="space-y-2.5 text-xs text-stone-600">
                         <div className="flex justify-between items-center">
                           <span className="flex items-center gap-1.5 flex-wrap">
-                            <span>Suite Base ({breakdown.nights} nights x ${livePrice})</span>
-                            {breakdown.apartmentDiscountPct > 0 && (
+                            <span>Suite Base ({breakdown.nights} nights x ${breakdown.activeNightlyRate})</span>
+                            {breakdown.rateOverride ? (
+                              <span className="text-[10px] font-bold text-[#821124] bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-none uppercase">
+                                {breakdown.rateOverride.label || 'Seasonal Override'}
+                              </span>
+                            ) : breakdown.apartmentDiscountPct > 0 ? (
                               <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-none uppercase">
                                 {breakdown.apartmentDiscountPct}% OFF
                               </span>
-                            )}
+                            ) : null}
                           </span>
                           <div className="text-right">
                             {breakdown.apartmentDiscountPct > 0 && (
@@ -1146,13 +1238,19 @@ export default function BookingModal({
                       </div>
                     )}
 
+                    {availabilityNotice && (
+                      <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+                        {availabilityNotice}
+                      </div>
+                    )}
+
                     {/* Payment CTA Button */}
                     <div className="space-y-3 pt-2">
                       <button
                         type="submit"
-                        disabled={isSubmitting || !checkIn || !checkOut}
+                        disabled={isSubmitting || !checkIn || !checkOut || !isAvailableForDates}
                         className={`w-full py-4 font-bold text-xs uppercase tracking-widest transition-colors duration-200 shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                          !checkIn || !checkOut || isSubmitting
+                          !checkIn || !checkOut || !isAvailableForDates || isSubmitting
                             ? "bg-stone-300 text-stone-500 cursor-not-allowed"
                             : "bg-[#821124] text-white hover:bg-[#680e1c]"
                         }`}

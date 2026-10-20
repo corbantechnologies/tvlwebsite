@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Users, ShieldCheck, Plus, Trash2, Key, RotateCw, UserPlus, CheckCircle2, ShieldAlert, Loader2, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,8 @@ interface StaffUser {
 }
 
 export default function AdminTeamPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [checkingClearance, setCheckingClearance] = useState(true);
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,6 +36,8 @@ export default function AdminTeamPage() {
       const data = await res.json();
       if (data.staff) {
         setStaff(data.staff);
+      } else if (data.error) {
+        toast.error(data.error);
       }
     } catch {
       toast.error('Failed to load staff list');
@@ -42,7 +47,23 @@ export default function AdminTeamPage() {
   };
 
   useEffect(() => {
-    loadStaff();
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setCurrentUser(d.user);
+          const role = (d.user.role || '').toLowerCase();
+          if (role === 'admin' || role === 'gm') {
+            loadStaff();
+          } else {
+            setLoading(false);
+          }
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => setLoading(false))
+      .finally(() => setCheckingClearance(false));
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -105,6 +126,45 @@ export default function AdminTeamPage() {
       setDeletingId(null);
     }
   };
+
+  const userRole = (currentUser?.role || '').toLowerCase();
+  const isAuthorized = userRole === 'admin' || userRole === 'gm';
+
+  if (checkingClearance) {
+    return (
+      <div className="py-24 text-center text-slate-500 text-xs">
+        <RotateCw className="w-6 h-6 animate-spin mx-auto text-[#821124] mb-2" />
+        Verifying administrative credentials...
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 text-center">
+        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-xs space-y-4">
+          <div className="w-14 h-14 bg-rose-50 text-[#821124] rounded-2xl flex items-center justify-center mx-auto border border-rose-100">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-slate-900">Access Restricted</h2>
+          <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+            Staff account provisioning and team clearance management requires <strong>Master Administrator</strong> or <strong>General Manager</strong> clearance.
+          </p>
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 font-mono inline-block">
+            Your Active Role Clearance: <span className="font-bold text-[#821124] uppercase">{currentUser?.role || 'Staff'}</span>
+          </div>
+          <div className="pt-2">
+            <Link
+              href="/admin/frontdesk"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#821124] hover:bg-[#680e1c] text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer shadow-xs"
+            >
+              <span>Return to Front Desk</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12 px-2 sm:px-4">

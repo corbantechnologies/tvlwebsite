@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       rows = rows.filter((r) => r.startDate < endDate && r.endDate > startDate);
     }
 
-    return NextResponse.json({ success: true, rateOverrides: rows });
+    return NextResponse.json({ success: true, rateOverrides: rows, rates: rows });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

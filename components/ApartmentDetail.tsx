@@ -48,6 +48,47 @@ export default function ApartmentDetail({
   const [checkOut, setCheckOut] = useState<string>("");
   const [guestCount, setGuestCount] = useState<number>(apartment.maxGuests);
 
+  const [rateOverride, setRateOverride] = useState<any>(null);
+  const [effectiveNightlyRate, setEffectiveNightlyRate] = useState<number | null>(null);
+  const [availabilityNotice, setAvailabilityNotice] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!checkIn || !checkOut || !apartment?.id) {
+      setRateOverride(null);
+      setEffectiveNightlyRate(null);
+      setAvailabilityNotice(null);
+      return;
+    }
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    if (start >= end) return;
+
+    fetch(`/api/availability?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}&apartmentId=${encodeURIComponent(apartment.id)}`)
+      .then(r => r.json())
+      .then(data => {
+        const match = data.apartments?.find((a: any) => a.apartmentId === apartment.id);
+        if (match) {
+          if (match.rateOverride) {
+            setRateOverride(match.rateOverride);
+            if (match.effectiveRateUsd != null) {
+              setEffectiveNightlyRate(match.effectiveRateUsd);
+            }
+          } else {
+            setRateOverride(null);
+            setEffectiveNightlyRate(null);
+          }
+          if (match.availableUnits <= 0) {
+            setAvailabilityNotice("Fully booked for selected dates");
+          } else if (!match.meetsMinNights) {
+            setAvailabilityNotice(`Minimum stay: ${match.minNights} nights for this period`);
+          } else {
+            setAvailabilityNotice(null);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [checkIn, checkOut, apartment?.id]);
+
   const [mealPlansList, setMealPlansList] = useState<PackageType[]>(PACKAGES);
 
   React.useEffect(() => {
@@ -122,7 +163,10 @@ export default function ApartmentDetail({
     if (timeDiff <= 0) return null;
     
     const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    const basePrice = livePrice * nights;
+    const activeNightly = (rateOverride && rateOverride.rateUsd != null)
+      ? rateOverride.rateUsd
+      : (effectiveNightlyRate ?? livePrice);
+    const basePrice = activeNightly * nights;
     
     const packageRate = livePackageRate;
     const packagePrice = packageRate * guestCount * nights;
@@ -132,6 +176,8 @@ export default function ApartmentDetail({
     
     return {
       nights,
+      activeNightly,
+      rateOverride,
       basePrice,
       packagePrice,
       total
@@ -523,20 +569,24 @@ export default function ApartmentDetail({
                     id="cost-breakdown-panel"
                   >
                     <div className="flex justify-between text-stone-600">
-                      <span className="flex items-center gap-1">
-                        Apartment Base ({cost.nights} nights x ${livePrice})
-                        {discount > 0 && (
+                      <span className="flex items-center gap-1 flex-wrap">
+                        Apartment Base ({cost.nights} nights x ${cost.activeNightly})
+                        {cost.rateOverride ? (
+                          <span className="text-[10px] text-[#821124] font-bold bg-rose-50 px-1 py-0.5 border border-rose-200 uppercase">
+                            {cost.rateOverride.label || 'Seasonal Override'}
+                          </span>
+                        ) : discount > 0 ? (
                           <span className="text-[10px] text-amber-700 font-bold">({discount}% off)</span>
-                        )}
+                        ) : null}
                       </span>
                       <div className="text-right">
-                        {discount > 0 && (
+                        {!cost.rateOverride && discount > 0 && (
                           <span className="text-[11px] line-through text-stone-400 mr-1.5">${originalPrice * cost.nights}</span>
                         )}
                         <span className="font-semibold text-stone-800">${cost.basePrice}</span>
                       </div>
                     </div>
-                    {discount > 0 && (
+                    {!cost.rateOverride && discount > 0 && (
                       <div className="flex justify-between text-amber-800 bg-amber-50/80 px-2 py-1 border border-amber-200/60 text-[11px] font-medium">
                         <span>Promotional Savings ({discount}% off):</span>
                         <span className="font-semibold">-${(originalPrice - livePrice) * cost.nights} USD</span>

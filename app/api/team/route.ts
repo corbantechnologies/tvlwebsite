@@ -6,8 +6,14 @@ import { eq, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 
 // GET /api/team — Return all real staff members
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    const role = (session?.role || "").toLowerCase();
+    if (!session || (role !== "admin" && role !== "gm")) {
+      return NextResponse.json({ error: "Access denied. High-clearance Admin role required." }, { status: 403 });
+    }
+
     const db = getDb();
     const staffList = await db
       .select({
@@ -32,8 +38,9 @@ export async function GET() {
 // POST /api/team — Provision a new staff user
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getSession(req);
+    const sessionRole = (session?.role || "").toLowerCase();
+    if (!session || (sessionRole !== "admin" && sessionRole !== "gm")) {
       return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
     }
 
@@ -101,8 +108,9 @@ export async function POST(req: NextRequest) {
 // DELETE /api/team — Remove a staff member
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getSession(req);
+    const role = (session?.role || "").toLowerCase();
+    if (!session || (role !== "admin" && role !== "gm")) {
       return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
     }
 

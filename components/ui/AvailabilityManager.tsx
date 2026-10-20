@@ -189,7 +189,8 @@ export default function AvailabilityManager({ apartments: propApartments, curren
         setEditingInv(map);
       }
       if (blkData.blocks) setBlocks(blkData.blocks);
-      if (ratData.rates) setRateOverridesList(ratData.rates);
+      const fetchedRates = ratData.rateOverrides || ratData.rates || [];
+      setRateOverridesList(fetchedRates);
       if (bkgData.bookings) setBookingsList(bkgData.bookings);
     } catch {
       toast.error('Failed to load live availability data');

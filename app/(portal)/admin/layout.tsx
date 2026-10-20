@@ -66,49 +66,65 @@ export default function AdminPortalLayout({
     icon: any;
     badge?: string;
     highlight?: boolean;
+    roles?: string[];
   }
   interface NavSection {
     title: string;
     items: NavItem[];
   }
+
+  const allStaff = ['admin', 'gm', 'manager', 'reservations', 'reservationist', 'reception', 'frontdesk'];
+
   const navSections: NavSection[] = [
     {
       title: 'Operations',
       items: [
-        { label: 'Front Desk Hub', href: '/admin/frontdesk', icon: Hotel, badge: 'Live' },
-        { label: 'Bookings Ledger', href: '/admin/bookings', icon: Calendar },
-        { label: 'Guest Inquiries', href: '/admin/inquiries', icon: Bell, badge: 'Inbox' },
-        { label: 'Availability & Blocks', href: '/admin/availability', icon: Clock },
+        { label: 'Front Desk Hub', href: '/admin/frontdesk', icon: Hotel, badge: 'Live', roles: allStaff },
+        { label: 'Bookings Ledger', href: '/admin/bookings', icon: Calendar, roles: allStaff },
+        { label: 'Guest Inquiries', href: '/admin/inquiries', icon: Bell, badge: 'Inbox', roles: allStaff },
+        { label: 'Availability & Blocks', href: '/admin/availability', icon: Clock, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
       ],
     },
     {
       title: 'Resort & Lifestyle Engine',
       items: [
-        { label: 'Apartments & Suites', href: '/admin/apartments', icon: Building2 },
-        { label: 'Dining & Dhow', href: '/admin/dining', icon: UtensilsCrossed },
-        { label: 'Events & Experiences', href: '/admin/events', icon: Sparkles, highlight: true },
-        { label: 'Event Tickets Ledger', href: '/admin/events/ledger', icon: ClipboardList, badge: 'Desk' },
-        { label: 'Gate Entrance Scan', href: '/admin/events/checkin', icon: QrCode },
-        { label: 'Meal Plans', href: '/admin/packages', icon: Tag, highlight: true },
-        { label: 'Extras & Add-ons', href: '/admin/extras', icon: Sparkles },
-        { label: 'Vouchers & Promos', href: '/admin/vouchers', icon: Ticket, badge: 'New', highlight: true },
-        { label: 'VIP Transfers', href: '/admin/transfers', icon: Car },
-        { label: 'Resort Facilities', href: '/admin/facilities', icon: Compass },
+        { label: 'Apartments & Suites', href: '/admin/apartments', icon: Building2, roles: ['admin', 'gm', 'manager'] },
+        { label: 'Dining & Dhow', href: '/admin/dining', icon: UtensilsCrossed, roles: ['admin', 'gm', 'manager'] },
+        { label: 'Events & Experiences', href: '/admin/events', icon: Sparkles, highlight: true, roles: ['admin', 'gm', 'manager'] },
+        { label: 'Event Tickets Ledger', href: '/admin/events/ledger', icon: ClipboardList, badge: 'Desk', roles: allStaff },
+        { label: 'Gate Entrance Scan', href: '/admin/events/checkin', icon: QrCode, roles: ['admin', 'gm', 'manager', 'reception', 'frontdesk', 'security', 'scanner'] },
+        { label: 'Meal Plans', href: '/admin/packages', icon: Tag, highlight: true, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
+        { label: 'Extras & Add-ons', href: '/admin/extras', icon: Sparkles, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
+        { label: 'Vouchers & Promos', href: '/admin/vouchers', icon: Ticket, badge: 'New', highlight: true, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
+        { label: 'VIP Transfers', href: '/admin/transfers', icon: Car, roles: allStaff },
+        { label: 'Resort Facilities', href: '/admin/facilities', icon: Compass, roles: ['admin', 'gm', 'manager'] },
       ],
     },
     {
       title: 'Management & Control',
       items: [
-        { label: 'Booking Conditions', href: '/admin/policies', icon: ShieldCheck, badge: 'Guest' },
-        { label: 'Hero & Announcements', href: '/admin/hero', icon: Layers },
-        { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3 },
-        { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign },
-        { label: 'Staff Team', href: '/admin/team', icon: Users },
-        { label: 'Audit Logs', href: '/admin/logs', icon: Activity },
+        { label: 'Booking Conditions', href: '/admin/policies', icon: ShieldCheck, badge: 'Guest', roles: ['admin', 'gm', 'manager'] },
+        { label: 'Hero & Announcements', href: '/admin/hero', icon: Layers, roles: ['admin', 'gm', 'manager'] },
+        { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3, roles: ['admin', 'gm', 'manager'] },
+        { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign, roles: ['admin', 'gm', 'manager'] },
+        { label: 'Staff Team', href: '/admin/team', icon: Users, roles: ['admin', 'gm'] },
+        { label: 'Audit Logs', href: '/admin/logs', icon: Activity, roles: ['admin', 'gm'] },
         { label: 'Admin User Guide', href: '/admin/guide', icon: BookOpen, badge: 'Guide' },
       ],
     },
   ];
+
+  const userRole = (currentUser?.role || '').toLowerCase();
+  const filteredNavSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (!item.roles) return true;
+        if (userRole === 'admin' || userRole === 'gm') return true;
+        return item.roles.map((r) => r.toLowerCase()).includes(userRole);
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-slate-900 flex">
@@ -150,7 +166,7 @@ export default function AdminPortalLayout({
 
         {/* Scrollable Navigation Links (Middle Section) */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-5 scrollbar-thin">
-          {navSections.map((section, idx) => (
+          {filteredNavSections.map((section, idx) => (
             <div key={idx} className="space-y-1">
               {!isCollapsed && (
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1.5">
@@ -294,7 +310,7 @@ export default function AdminPortalLayout({
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-5">
-              {navSections.map((section, idx) => (
+              {filteredNavSections.map((section, idx) => (
                 <div key={idx} className="space-y-1">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-2">
                     {section.title}
