@@ -8,6 +8,20 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "tamarind.co.ke" },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/booking/confirmation",
+        destination: "/booking-confirmed",
+        permanent: true,
+      },
+      {
+        source: "/booking/confirmed",
+        destination: "/booking-confirmed",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

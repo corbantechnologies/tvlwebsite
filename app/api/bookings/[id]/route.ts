@@ -40,6 +40,24 @@ export async function PATCH(
     const current = existing[0];
     const updatePayload: Record<string, any> = {};
 
+    // General stay and guest detail updates
+    if (body.checkIn) updatePayload.checkIn = body.checkIn;
+    if (body.checkOut) updatePayload.checkOut = body.checkOut;
+    if (body.nights !== undefined) updatePayload.nights = Number(body.nights);
+    if (body.guestName) updatePayload.guestName = body.guestName;
+    if (body.guestEmail) updatePayload.guestEmail = body.guestEmail;
+    if (body.guestPhone !== undefined) updatePayload.guestPhone = body.guestPhone;
+    if (body.apartmentId) updatePayload.apartmentId = body.apartmentId;
+    if (body.apartmentName) updatePayload.apartmentName = body.apartmentName;
+    if (body.allocatedUnit !== undefined) updatePayload.allocatedUnit = body.allocatedUnit;
+    if (body.mealPlanId !== undefined) updatePayload.mealPlanId = body.mealPlanId;
+    if (body.mealPlanName !== undefined) updatePayload.mealPlanName = body.mealPlanName;
+    if (body.adults !== undefined) updatePayload.adults = Number(body.adults);
+    if (body.children !== undefined) updatePayload.children = Number(body.children);
+    if (body.specialRequests !== undefined) updatePayload.specialRequests = body.specialRequests;
+    if (body.totalAmount !== undefined) updatePayload.totalAmount = Number(body.totalAmount);
+    if (body.currency) updatePayload.currency = body.currency;
+
     // Status transitions driven by action shortcuts
     if (action === "check-in") {
       updatePayload.bookingStatus = "in_house";

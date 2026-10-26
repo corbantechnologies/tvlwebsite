@@ -5,6 +5,7 @@ import { bookings, eventTickets, events, auditLogs } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { sendTicketConfirmationEmail, notifyStaffNewTicket } from "@/lib/eventTicketEmail";
+import { fulfillApartmentBooking } from "@/lib/bookingPaymentService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -121,26 +122,8 @@ export async function POST(req: NextRequest) {
         }
       } else {
         // Apartment Booking Webhook confirmation
-        const existingBooking = await db
-          .select()
-          .from(bookings)
-          .where(eq(bookings.bookingReference, reference))
-          .limit(1);
-
-        if (existingBooking.length > 0) {
-          const b = existingBooking[0];
-          if (b.paymentStatus !== "paid") {
-            await db
-              .update(bookings)
-              .set({
-                paymentStatus: "paid",
-                paymentMethod: txData.channel || "paystack",
-                paymentReference: reference,
-                bookingStatus: "confirmed",
-              })
-              .where(eq(bookings.id, b.id));
-          }
-        }
+        console.log(`[Paystack Webhook] Processing apartment booking fulfillment for ref: ${reference}`);
+        await fulfillApartmentBooking(reference, txData);
       }
     }
 

@@ -55,10 +55,12 @@ export async function POST(req: NextRequest) {
     const isEventTicket = metadata?.type === "event_ticket";
     
     let defaultCallbackPath = isEventTicket ? "/events/ticket-confirmed" : "/booking-confirmed";
-    const callbackUrl = explicitCallbackUrl || 
+    const rawCallbackUrl = explicitCallbackUrl || 
       (process.env.PAYSTACK_CALLBACK_URL && !isEventTicket && (!process.env.PAYSTACK_CALLBACK_URL.includes("localhost") || origin.includes("localhost"))
         ? process.env.PAYSTACK_CALLBACK_URL
         : `${origin}${defaultCallbackPath}`);
+    // Normalize any legacy or erroneous /booking/confirmation path to the actual /booking-confirmed route
+    const callbackUrl = rawCallbackUrl.replace(/\/booking\/confirmation\/?$/, "/booking-confirmed");
 
     const paystackRef = reference || (isEventTicket ? `TKT-${Date.now()}` : `TVL-${Date.now()}`);
 
