@@ -90,7 +90,7 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
           <div>
             <h4 className="font-serif text-lg text-white mb-1">Prime Oceanfront Location</h4>
             <p className="text-stone-400 text-xs font-light leading-relaxed">
-              Nestled right on Tudor Creek’s edge, facing Mombasa's historic Old Town. Pristine harbor and pool views.
+              Nestled right on Tudor Creek’s edge, facing Mombasa&apos;s historic Old Town. Pristine harbor and pool views.
             </p>
           </div>
         </div>

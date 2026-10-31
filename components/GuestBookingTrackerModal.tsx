@@ -13,7 +13,8 @@ import {
   Key,
   AlertTriangle,
 } from "lucide-react";
-;
+import GuestStayTools from "@/components/GuestStayTools";
+import { freeCancellationHours } from "@/lib/contact";
 
 interface GuestBookingTrackerModalProps {
   isOpen: boolean;
@@ -47,20 +48,12 @@ export default function GuestBookingTrackerModal({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  // Paystack online payment
+  // Paystack online payment (USD card, or KES for M-Pesa)
   const [initiatingPay, setInitiatingPay] = useState(false);
+  const [payCurrency, setPayCurrency] = useState<"USD" | "KES">("USD");
 
   // Copy feedback
   const [copiedLink, setCopiedLink] = useState(false);
-
-  // Load record whenever initialToken changes or is set
-  useEffect(() => {
-    if (initialToken) {
-      setTokenInput(initialToken);
-      setActiveToken(initialToken);
-      fetchBookingDetails(initialToken);
-    }
-  }, [initialToken]);
 
   const fetchBookingDetails = async (tokenToFetch: string) => {
     if (!tokenToFetch.trim()) return;
@@ -109,6 +102,15 @@ export default function GuestBookingTrackerModal({
       setLoading(false);
     }
   };
+
+  // Load record whenever initialToken changes or is set
+  useEffect(() => {
+    if (initialToken) {
+      setTokenInput(initialToken);
+      setActiveToken(initialToken);
+      fetchBookingDetails(initialToken);
+    }
+  }, [initialToken]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +161,8 @@ export default function GuestBookingTrackerModal({
       });
 
       if (res.ok) {
-        toast.success("Reservation cancelled. A confirmation has been sent to your email.");
+        const d = await res.json().catch(() => ({}));
+        toast.success(d.message || "Reservation cancelled. A confirmation has been sent to your email.", { duration: 6000 });
         setShowCancelConfirm(false);
         fetchBookingDetails(activeToken);
       } else {
@@ -182,7 +185,7 @@ export default function GuestBookingTrackerModal({
       const res = await fetch("/api/guest/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: record.guestToken || activeToken }),
+        body: JSON.stringify({ token: record.guestToken || activeToken, payCurrency }),
       });
 
       const data = await res.json();
@@ -364,6 +367,17 @@ export default function GuestBookingTrackerModal({
                   </div>
                 </div>
 
+                {recordType === 'booking' && paymentStatus !== 'paid' && !isCancelled && Number(totalAmount) > 0 && currency === 'USD' && (
+                  <select
+                    value={payCurrency}
+                    onChange={(e) => setPayCurrency(e.target.value as "USD" | "KES")}
+                    aria-label="Payment currency"
+                    className="bg-black/40 border border-white/15 rounded-xl px-2 py-2 text-xs text-white"
+                  >
+                    <option value="USD">Pay in USD (card)</option>
+                    <option value="KES">Pay in KES (M-Pesa / card)</option>
+                  </select>
+                )}
                 {recordType === 'booking' && paymentStatus !== 'paid' && !isCancelled && Number(totalAmount) > 0 && (
                   <button
                     onClick={handlePayNow}
@@ -375,6 +389,10 @@ export default function GuestBookingTrackerModal({
                   </button>
                 )}
               </div>
+
+              {recordType === 'booking' && (
+                <GuestStayTools booking={record} token={record.guestToken || activeToken} onUpdated={setRecord} />
+              )}
 
               {/* Special Requests Section */}
               <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-3">
@@ -461,7 +479,7 @@ export default function GuestBookingTrackerModal({
               </div>
 
               {/* Cancellation Option */}
-              {!isCancelled && (
+              {!isCancelled && !(record?.changeRequest?.type === 'cancel' && record?.changeRequest?.status === 'open') && (
                 <div className="pt-2 border-t border-white/10">
                   {!showCancelConfirm ? (
                     <div className="flex items-center justify-between">
@@ -483,7 +501,7 @@ export default function GuestBookingTrackerModal({
                         <span>Are you sure you want to cancel this reservation?</span>
                       </div>
                       <p className="text-[11px] text-white/70 leading-relaxed">
-                        Direct website reservations may be cancelled without penalty up to 48 hours prior to scheduled check-in. Upon cancellation, your reserved apartment will be released and a cancellation receipt will be emailed to <strong className="text-white">{guestEmail}</strong>.
+                        Direct website reservations can be cancelled for a full refund up to {freeCancellationHours()} hours before check-in (2 pm). Closer to arrival, your request goes to our team to review. A confirmation will be emailed to <strong className="text-white">{guestEmail}</strong>.
                       </p>
                       <div className="flex justify-end gap-2 pt-1">
                         <button

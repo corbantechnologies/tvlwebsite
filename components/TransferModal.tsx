@@ -15,6 +15,7 @@ interface TransferModalProps {
 
 export default function TransferModal({ isOpen, onClose, vehiclesList }: TransferModalProps) {
   const [vehicles, setVehicles] = useState<TransferVehicle[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
 
   useEffect(() => {
     async function loadVehicles() {
@@ -63,7 +64,6 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
 
   const [terminal, setTerminal] = useState<"moi-airport" | "miritini-sgr" | "vipingo-airstrip">("moi-airport");
   const [transferType, setTransferType] = useState<"one-way-arrival" | "one-way-departure" | "round-trip">("one-way-arrival");
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
   
   const [passengers, setPassengers] = useState<number>(2);
   const [luggageCount, setLuggageCount] = useState<number>(2);
@@ -193,7 +193,7 @@ export default function TransferModal({ isOpen, onClose, vehiclesList }: Transfe
                       <span className="text-[10px] font-mono text-stone-400">~30 mins drive</span>
                     </div>
                     <div>
-                      <p className="font-serif text-sm font-bold block">Moi Int'l Airport (MBA)</p>
+                      <p className="font-serif text-sm font-bold block">Moi Int&apos;l Airport (MBA)</p>
                       <p className="text-[11px] text-stone-500 font-light mt-0.5">Mombasa Airport Terminals</p>
                     </div>
                   </button>

@@ -1,12 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminLoginPage() {
+  // useSearchParams needs a Suspense boundary in the App Router.
+  return (
+    <Suspense fallback={null}>
+      <LoginCard />
+    </Suspense>
+  );
+}
+
+function LoginCard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetToken = searchParams.get('reset');
+  const [mode, setMode] = useState<'login' | 'forgot' | 'reset'>(resetToken ? 'reset' : 'login');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [notice, setNotice] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,7 +45,8 @@ export default function AdminLoginPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(`Welcome back, ${data.user.name}!`);
-        router.push('/admin/frontdesk');
+        const callbackUrl = searchParams.get('callbackUrl');
+        router.push(callbackUrl && callbackUrl.startsWith('/admin') ? callbackUrl : '/admin/frontdesk');
         router.refresh();
       } else {
         toast.error(data.error || 'Invalid credentials.');
@@ -41,10 +58,57 @@ export default function AdminLoginPage() {
     }
   };
 
-  const quickFill = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed.');
+      setNotice(data.message);
+    } catch (err: any) {
+      toast.error(err.message || 'Could not send the reset link.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error('The two passwords do not match.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: resetToken, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Reset failed.');
+      toast.success(data.message);
+      setMode('login');
+      setNewPassword('');
+      setConfirmPassword('');
+      router.replace('/admin/login');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not reset the password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputCls =
+    'w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#C59B27] transition-colors';
+  const labelCls = 'block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1';
+  const buttonCls =
+    'w-full py-3.5 rounded-xl bg-[#821124] hover:bg-[#680e1c] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer mt-2';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#16100F] via-[#1F1615] to-black flex items-center justify-center p-4">
@@ -70,7 +134,57 @@ export default function AdminLoginPage() {
           </div>
         </div>
 
+        {mode === 'forgot' && (
+          <form onSubmit={handleForgot} className="space-y-4">
+            <p className="text-xs text-white/70 leading-relaxed">
+              Enter your staff email. If it belongs to an active account, we will email you a link to choose a new password.
+            </p>
+            <div>
+              <label className={labelCls}>Staff Email Address</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-white/40 absolute left-3.5 top-3.5" />
+                <input type="email" required placeholder="name@tamarind.co.ke" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            {notice && <p className="text-xs text-emerald-300 bg-emerald-900/30 border border-emerald-700/40 rounded-lg p-3">{notice}</p>}
+            <button type="submit" disabled={loading} className={buttonCls}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+              <span>Email me a reset link</span>
+            </button>
+            <button type="button" onClick={() => { setMode('login'); setNotice(''); }} className="w-full text-[11px] text-white/60 hover:text-white underline cursor-pointer">
+              Back to sign in
+            </button>
+          </form>
+        )}
+
+        {mode === 'reset' && (
+          <form onSubmit={handleReset} className="space-y-4">
+            <p className="text-xs text-white/70 leading-relaxed">
+              Choose a new password: at least 10 characters, with a letter and a number.
+            </p>
+            <div>
+              <label className={labelCls}>New Password</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-white/40 absolute left-3.5 top-3.5" />
+                <input type="password" required minLength={10} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Confirm New Password</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-white/40 absolute left-3.5 top-3.5" />
+                <input type="password" required minLength={10} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            <button type="submit" disabled={loading} className={buttonCls}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              <span>Save new password</span>
+            </button>
+          </form>
+        )}
+
         {/* Form */}
+        {mode === 'login' && (
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#C59B27] mb-1">
@@ -124,51 +238,12 @@ export default function AdminLoginPage() {
               </>
             )}
           </button>
+          <button type="button" onClick={() => setMode('forgot')} className="w-full text-[11px] text-white/60 hover:text-white underline cursor-pointer">
+            Forgot your password?
+          </button>
         </form>
+        )}
 
-        {/* Demo Fast Login Buttons */}
-        <div className="mt-8 pt-6 border-t border-white/10 space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 block text-center">
-            Quick Fast-Access Test Profiles:
-          </span>
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <button
-              type="button"
-              onClick={() => quickFill('admin@tamarind.co.ke', 'admin123')}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white transition-colors cursor-pointer text-left"
-            >
-              <span className="font-bold block text-[#C59B27]">System Admin</span>
-              <span className="text-[10px] text-white/50 truncate block">admin@tamarind.co.ke</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => quickFill('frontdesk@tamarind.co.ke', 'desk123')}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white transition-colors cursor-pointer text-left"
-            >
-              <span className="font-bold block text-emerald-400">Front Desk</span>
-              <span className="text-[10px] text-white/50 truncate block">frontdesk@tamarind.co.ke</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => quickFill('reservations@tamarind.co.ke', 'res123')}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white transition-colors cursor-pointer text-left"
-            >
-              <span className="font-bold block text-blue-400">Reservations</span>
-              <span className="text-[10px] text-white/50 truncate block">reservations@tamarind.co.ke</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => quickFill('gm@tamarind.co.ke', 'gm123')}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white transition-colors cursor-pointer text-left"
-            >
-              <span className="font-bold block text-purple-400">General Manager</span>
-              <span className="text-[10px] text-white/50 truncate block">gm@tamarind.co.ke</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

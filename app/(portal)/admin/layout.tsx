@@ -32,6 +32,7 @@ import {
   QrCode,
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
+import { canViewPage } from '@/lib/auth/roles';
 
 export default function AdminPortalLayout({
   children,
@@ -86,49 +87,46 @@ export default function AdminPortalLayout({
     icon: any;
     badge?: string;
     highlight?: boolean;
-    roles?: string[];
   }
   interface NavSection {
     title: string;
     items: NavItem[];
   }
 
-  const allStaff = ['admin', 'gm', 'manager', 'reservations', 'reservationist', 'reception', 'frontdesk'];
-
   const navSections: NavSection[] = [
     {
       title: 'Operations',
       items: [
-        { label: 'Front Desk Hub', href: '/admin/frontdesk', icon: Hotel, badge: 'Live', roles: allStaff },
-        { label: 'Bookings Ledger', href: '/admin/bookings', icon: Calendar, roles: allStaff },
-        { label: 'Guest Inquiries', href: '/admin/inquiries', icon: Bell, badge: 'Inbox', roles: allStaff },
-        { label: 'Availability & Blocks', href: '/admin/availability', icon: Clock, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
+        { label: 'Front Desk Hub', href: '/admin/frontdesk', icon: Hotel, badge: 'Live' },
+        { label: 'Bookings Ledger', href: '/admin/bookings', icon: Calendar },
+        { label: 'Guest Inquiries', href: '/admin/inquiries', icon: Bell, badge: 'Inbox' },
+        { label: 'Availability & Blocks', href: '/admin/availability', icon: Clock },
       ],
     },
     {
       title: 'Resort & Lifestyle Engine',
       items: [
-        { label: 'Apartments & Suites', href: '/admin/apartments', icon: Building2, roles: ['admin', 'gm', 'manager'] },
-        { label: 'Dining & Dhow', href: '/admin/dining', icon: UtensilsCrossed, roles: ['admin', 'gm', 'manager'] },
-        { label: 'Events & Experiences', href: '/admin/events', icon: Sparkles, highlight: true, roles: ['admin', 'gm', 'manager'] },
-        { label: 'Event Tickets Ledger', href: '/admin/events/ledger', icon: ClipboardList, badge: 'Desk', roles: allStaff },
-        { label: 'Gate Entrance Scan', href: '/admin/events/checkin', icon: QrCode, roles: ['admin', 'gm', 'manager', 'reception', 'frontdesk', 'security', 'scanner'] },
-        { label: 'Meal Plans', href: '/admin/packages', icon: Tag, highlight: true, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
-        { label: 'Extras & Add-ons', href: '/admin/extras', icon: Sparkles, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
-        { label: 'Vouchers & Promos', href: '/admin/vouchers', icon: Ticket, badge: 'New', highlight: true, roles: ['admin', 'gm', 'manager', 'reservations', 'reservationist'] },
-        { label: 'VIP Transfers', href: '/admin/transfers', icon: Car, roles: allStaff },
-        { label: 'Resort Facilities', href: '/admin/facilities', icon: Compass, roles: ['admin', 'gm', 'manager'] },
+        { label: 'Apartments & Suites', href: '/admin/apartments', icon: Building2 },
+        { label: 'Dining & Dhow', href: '/admin/dining', icon: UtensilsCrossed },
+        { label: 'Events & Experiences', href: '/admin/events', icon: Sparkles, highlight: true },
+        { label: 'Event Tickets Ledger', href: '/admin/events/ledger', icon: ClipboardList, badge: 'Desk' },
+        { label: 'Gate Entrance Scan', href: '/admin/events/checkin', icon: QrCode },
+        { label: 'Meal Plans', href: '/admin/packages', icon: Tag, highlight: true },
+        { label: 'Extras & Add-ons', href: '/admin/extras', icon: Sparkles },
+        { label: 'Vouchers & Promos', href: '/admin/vouchers', icon: Ticket, badge: 'New', highlight: true },
+        { label: 'VIP Transfers', href: '/admin/transfers', icon: Car },
+        { label: 'Resort Facilities', href: '/admin/facilities', icon: Compass },
       ],
     },
     {
       title: 'Management & Control',
       items: [
-        { label: 'Booking Conditions', href: '/admin/policies', icon: ShieldCheck, badge: 'Guest', roles: ['admin', 'gm', 'manager'] },
-        { label: 'Hero & Announcements', href: '/admin/hero', icon: Layers, roles: ['admin', 'gm', 'manager'] },
-        { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3, roles: ['admin', 'gm', 'manager'] },
-        { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign, roles: ['admin', 'gm', 'manager'] },
-        { label: 'Staff Team', href: '/admin/team', icon: Users, roles: ['admin', 'gm'] },
-        { label: 'Audit Logs', href: '/admin/logs', icon: Activity, roles: ['admin', 'gm'] },
+        { label: 'Booking Conditions', href: '/admin/policies', icon: ShieldCheck, badge: 'Guest' },
+        { label: 'Hero & Announcements', href: '/admin/hero', icon: Layers },
+        { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3 },
+        { label: 'Revenue & Pricing', href: '/admin/pricing', icon: DollarSign },
+        { label: 'Staff Team', href: '/admin/team', icon: Users },
+        { label: 'Audit Logs', href: '/admin/logs', icon: Activity },
         { label: 'Admin User Guide', href: '/admin/guide', icon: BookOpen, badge: 'Guide' },
       ],
     },
@@ -138,11 +136,8 @@ export default function AdminPortalLayout({
   const filteredNavSections = navSections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => {
-        if (!item.roles) return true;
-        if (userRole === 'admin' || userRole === 'gm') return true;
-        return item.roles.map((r) => r.toLowerCase()).includes(userRole);
-      }),
+      // Same rules the server enforces in proxy.ts (lib/auth/roles.ts).
+      items: section.items.filter((item) => canViewPage(userRole, item.href)),
     }))
     .filter((section) => section.items.length > 0);
 

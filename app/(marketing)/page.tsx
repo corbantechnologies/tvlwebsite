@@ -93,6 +93,25 @@ export default function App() {
     type: "success" | "error" | "info";
   } | null>(null);
 
+  // Declared before the effects below that use them.
+  const [transferVehiclesList, setTransferVehiclesList] = useState(() => loadTransferVehicles());
+  const [eventPackagesList, setEventPackagesList] = useState(() => loadEventPackages());
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>(() => loadStaffUsers());
+  const [isStaffPinModalOpen, setIsStaffPinModalOpen] = useState(false);
+
+  // Staff editing controls show only for a real signed-in staff session
+  // (checked below), never from a URL flag or saved browser state.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.user) setIsAdmin(true);
+      })
+      .catch(() => {});
+  }, []);
+
   const triggerNotification = (title: string, message: string, type: "success" | "error" | "info" = "success") => {
     setSecurityNotification({ show: true, title, message, type });
     // Auto-dismiss after 5 seconds
@@ -176,15 +195,9 @@ export default function App() {
         if (typedKeys.length > 10) {
           typedKeys = typedKeys.slice(-10);
         }
-        if (typedKeys === "1977197700" || typedKeys === "1234567890") {
-          setIsAdmin(true);
-          try {
-            localStorage.setItem("tamarind_staff_unlocked", "true");
-          } catch (err) {
-            console.error(err);
-          }
-          setIsCustomizerOpen(true);
-          triggerNotification("Security Clearance Granted", "Tamarind Staff Dashboard unlocked! Controls are active.");
+        if (typedKeys === "1977197700") {
+          // Shortcut to the staff sign-in form; it no longer unlocks anything by itself.
+          setIsStaffPinModalOpen(true);
           typedKeys = "";
         }
       } else {
@@ -232,8 +245,6 @@ export default function App() {
   const displayDining = diningOptions && diningOptions.length > 0 ? diningOptions : DINING;
 
   // Dynamic state for extras (Transfers & Events)
-  const [transferVehiclesList, setTransferVehiclesList] = useState(() => loadTransferVehicles());
-  const [eventPackagesList, setEventPackagesList] = useState(() => loadEventPackages());
 
   const defaultHeroImages = [
     "https://media.tamarind.co.ke/tvl-website-assets/tamarind.drone--14.jpg", // Pool luxury overlooking sea
@@ -264,26 +275,13 @@ export default function App() {
   });
 
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
-  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const [newUrlInput, setNewUrlInput] = useState("");
   const [pasteListInput, setPasteListInput] = useState("");
   const [urlError, setUrlError] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(() => {
-    try {
-      const saved = localStorage.getItem("tamarind_staff_unlocked");
-      if (saved === "true") return true;
-      const params = new URLSearchParams(window.location.search);
-      return params.get("admin") === "true" || params.get("staff") === "true";
-    } catch (e) {
-      return false;
-    }
-  });
 
-  const [staffUsers, setStaffUsers] = useState<StaffUser[]>(() => loadStaffUsers());
   const [currentStaffUser, setCurrentStaffUserState] = useState<StaffUser | null>(() => getCurrentStaffUser());
 
-  const [isStaffPinModalOpen, setIsStaffPinModalOpen] = useState(false);
   const [staffAuthMode, setStaffAuthMode] = useState<"login" | "forgot" | "reset">("login");
   const [staffEmailInput, setStaffEmailInput] = useState("");
   const [staffPasswordInput, setStaffPasswordInput] = useState("");
@@ -769,7 +767,7 @@ export default function App() {
                       <span className="text-white ml-2">5-Star Luxury</span>
                     </div>
                     <p className="text-stone-300 text-xs leading-relaxed font-light">
-                      "An exceptional oasis in Mombasa. Combining room-service convenience from Tamarind Restaurant with the vast spatial comfort of our own high-ceiling Swahili residence."
+                      &quot;An exceptional oasis in Mombasa. Combining room-service convenience from Tamarind Restaurant with the vast spatial comfort of our own high-ceiling Swahili residence.&quot;
                     </p>
                     <div className="border-t border-stone-800 pt-3 flex justify-between text-[10px] text-stone-400 font-semibold uppercase">
                       <span>Nyali Coastline</span>
@@ -1037,7 +1035,7 @@ export default function App() {
                               </p>
 
                               <div className="space-y-3 mb-8">
-                                <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">What's Included:</span>
+                                <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">What&apos;s Included:</span>
                                 {(pkg.highlights || []).map((highlight: string, idx: number) => (
                                   <div key={idx} className="flex gap-2.5 items-start text-xs text-stone-300">
                                     <CheckCircle2 className="w-4 h-4 text-brand-teal flex-shrink-0 mt-0.5" />
@@ -1268,7 +1266,7 @@ export default function App() {
                   <div className="bg-gradient-to-r from-[#2a2624] to-[#1c1918] border border-stone-800 p-8 sm:p-12 relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-8 shadow-xl">
                     <div className="max-w-2xl space-y-4 text-center lg:text-left">
                       <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-brand-gold text-xs font-mono font-bold uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5"><Plane className="w-4 h-4" /> Moi Int'l Airport (MBA)</span>
+                        <span className="flex items-center gap-1.5"><Plane className="w-4 h-4" /> Moi Int&apos;l Airport (MBA)</span>
                         <span className="text-stone-600">•</span>
                         <span className="flex items-center gap-1.5"><Train className="w-4 h-4" /> Miritini SGR Terminus</span>
                       </div>

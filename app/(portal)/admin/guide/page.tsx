@@ -175,7 +175,7 @@ export default function AdminGuidePage() {
 
             <ol className="space-y-3 text-xs text-slate-700 list-decimal list-inside leading-relaxed">
               <li>
-                <strong className="text-slate-900">Reviewing Today's Arrivals:</strong> Switch between the <em>Arrivals</em>, <em>Departures</em>, and <em>In-House</em> tabs to see guest arrivals, flight tracking, and assigned suites.
+                <strong className="text-slate-900">Reviewing Today&apos;s Arrivals:</strong> Switch between the <em>Arrivals</em>, <em>Departures</em>, and <em>In-House</em> tabs to see guest arrivals, flight tracking, and assigned suites.
               </li>
               <li>
                 <strong className="text-slate-900">Confirming Check-In:</strong> Click <code className="bg-emerald-50 text-emerald-700 px-1 py-0.5 rounded border border-emerald-200">Confirm Check-In</code> to update the room status and assign active keycards.

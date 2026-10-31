@@ -320,9 +320,11 @@ export default function AdminTeamPage() {
                 onChange={(e) => setNewRole(e.target.value as any)}
                 className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#821124]"
               >
+                <option value="security">Gate / Security (Event Check-In Only)</option>
                 <option value="reception">Reception / Front Desk (Arrivals &amp; Keys)</option>
                 <option value="reservations">Reservations Desk (Bookings &amp; Inquiries)</option>
                 <option value="manager">Resort Manager (Pricing, Content, Dining)</option>
+                <option value="gm">General Manager (Full Control)</option>
                 <option value="admin">System Administrator (Full Control)</option>
               </select>
             </div>

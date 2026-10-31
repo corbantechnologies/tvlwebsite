@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { Analytics } from "@vercel/analytics/next"
+import { hotelJsonLd, jsonLdScript } from "@/lib/seo";
 
 const playfair = Playfair_Display({
   variable: '--font-serif',
@@ -16,6 +17,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://tamarindvillage.co.ke'),
   title: 'Tamarind Village Mombasa | Luxury Coastal Suites, Dining & Dhow Cruises',
   description: 'The quintessential coastal sanctuary overlooking Mombasa Old Harbour. Featuring luxury self-catering apartments, world-renowned seafood at Tamarind Restaurant, and unforgettable sunset cruises on the Tamarind Dhow.',
   keywords: [
@@ -54,6 +56,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${jakarta.variable} scroll-smooth`}>
       <body className="min-h-screen bg-[#FAF6F0] text-[#1F1615] antialiased selection:bg-[#821124] selection:text-white">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(hotelJsonLd()) }} />
         {children}
         <Analytics />
       </body>
