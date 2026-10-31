@@ -3,7 +3,10 @@ import { vouchers } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { propertyToday } from "@/lib/availability";
 
-export const USD_TO_KES = 130;
+import { usdToKesRate } from "@/lib/fx";
+
+/** KES per USD (NEXT_PUBLIC_USD_TO_KES_RATE env, default 130). */
+export const USD_TO_KES = usdToKesRate();
 
 export type VoucherScope = "apartment" | "event";
 

@@ -4,6 +4,8 @@ import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { fulfillApartmentBooking } from "@/lib/bookingPaymentService";
 import { fulfillEventTicket, isEventTicketPayment } from "@/lib/eventTicketService";
 import { writeAuditLog } from "@/lib/audit";
+import { opsAlert } from "@/lib/opsAlert";
+import { applyRefundEvent } from "@/lib/refunds";
 
 // ============================================================
 // POST /api/paystack/webhook
@@ -38,6 +40,18 @@ export async function POST(req: NextRequest) {
   }
 
   const txData = payload.data;
+
+  // Refund status updates for refunds staff started from the admin.
+  if (typeof payload.event === "string" && payload.event.startsWith("refund.")) {
+    try {
+      await ensureDatabaseSeeded();
+      await applyRefundEvent(payload.event, txData);
+    } catch (err: any) {
+      console.error("[Paystack Webhook] Refund event failed:", err.message);
+    }
+    return NextResponse.json({ received: true });
+  }
+
   if (payload.event !== "charge.success" || !txData?.reference) {
     return NextResponse.json({ received: true });
   }
@@ -62,6 +76,11 @@ export async function POST(req: NextRequest) {
       targetId: reference,
       metadata: { reference, error: err.message },
     });
+    await opsAlert(
+      "Paystack payment not recorded",
+      `Payment ${reference} (${txData.currency} ${txData.amount / 100}) reached the website but could not be saved. Paystack will retry; if this repeats, check the booking manually.`,
+      { key: `webhook:${reference}`, context: { reference, error: err.message, email: txData.customer?.email } }
+    );
     return NextResponse.json({ error: "Fulfillment failed" }, { status: 500 });
   }
 }

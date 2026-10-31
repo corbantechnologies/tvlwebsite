@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/db";
 import { bookings, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { newId } from "@/lib/ids";
+import { staffFromRequest } from "@/lib/auth/staffHeaders";
 
 // GET /api/bookings/[id] — fetch a single booking
 export async function GET(
@@ -30,7 +31,11 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { action, bookingStatus, note, paymentStatus, paymentReference, actor, actorRole } = body;
+    const { action, bookingStatus, note, paymentStatus, paymentReference } = body;
+    // Who did it comes from the verified session, not from the request body.
+    const staff = staffFromRequest(req);
+    const actor = staff.name;
+    const actorRole = staff.role;
 
     const db = getDb();
     const existing = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
@@ -72,6 +77,11 @@ export async function PATCH(
       updatePayload.bookingStatus = "no_show";
     } else if (bookingStatus) {
       updatePayload.bookingStatus = bookingStatus;
+    }
+
+    // Guest change / cancellation request handled by staff
+    if (body.changeRequestStatus && current.changeRequest && ["done", "declined"].includes(body.changeRequestStatus)) {
+      updatePayload.changeRequest = { ...current.changeRequest, status: body.changeRequestStatus };
     }
 
     // Payment updates

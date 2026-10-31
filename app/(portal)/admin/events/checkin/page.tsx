@@ -307,7 +307,7 @@ function GateCheckInContent() {
                 Ready to Scan QR Code or Ticket Reference
               </h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                Point handheld scanner at guest's phone, or type in Ticket Code (e.g. <strong>TKT-10294</strong>) / Security Token and press Enter.
+                Point handheld scanner at guest&apos;s phone, or type in Ticket Code (e.g. <strong>TKT-10294</strong>) / Security Token and press Enter.
               </p>
             </div>
 

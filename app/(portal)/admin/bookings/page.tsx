@@ -10,8 +10,10 @@ import {
   Loader2,
   Check,
   Edit3,
+  PanelRightOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import BookingDetailsPanel from '@/components/admin/BookingDetailsPanel';
 
 export default function BookingsLedgerPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,6 +51,12 @@ export default function BookingsLedgerPage() {
   });
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
+  // Details side panel
+  const [detailsId, setDetailsId] = useState<string | null>(null);
+  const [staffRole, setStaffRole] = useState('');
+  const detailsBooking = bookings.find((x) => x.id === detailsId) || null;
+  const replaceBooking = (updated: any) => setBookings((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
+
   const loadLiveBookings = async () => {
     setIsLoading(true);
     try {
@@ -67,6 +75,10 @@ export default function BookingsLedgerPage() {
 
   useEffect(() => {
     loadLiveBookings();
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((d) => setStaffRole(d.user?.role || ''))
+      .catch(() => {});
   }, []);
 
   const openAllocateModal = (booking: any) => {
@@ -273,6 +285,22 @@ export default function BookingsLedgerPage() {
                       <td className="p-4">
                         <div className="font-bold text-slate-900">{b.guestName}</div>
                         <div className="text-[11px] text-slate-500">{b.guestPhone || b.guestEmail}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {b.checkInDetails && (
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Checked in online</span>
+                          )}
+                          {b.changeRequest?.status === 'open' && (
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300">
+                              {b.changeRequest.type === 'cancel' ? 'Cancel request' : 'Date change request'}
+                            </span>
+                          )}
+                          {b.refundStatus && (
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">Refund {b.refundStatus}</span>
+                          )}
+                          {Array.isArray(b.staffNotes) && b.staffNotes.some((n: any) => String(n.text).startsWith('ACTION NEEDED')) && (
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-rose-600 text-white">Action needed</span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <div className="font-semibold text-slate-900">{b.apartmentName || b.apartmentId}</div>
@@ -304,6 +332,9 @@ export default function BookingsLedgerPage() {
                       </td>
                       <td className="p-4 font-mono font-bold text-slate-900">
                         {b.currency === 'KES' ? 'KES ' : '$'}{Number(b.totalAmount || 0).toLocaleString()}
+                        {b.chargeCurrency && b.chargeCurrency !== b.currency && b.paymentStatus === 'paid' && (
+                          <div className="text-[10px] font-normal text-slate-500">paid {b.chargeCurrency} {Number(b.amountPaid ?? b.chargeAmount ?? 0).toLocaleString()}</div>
+                        )}
                       </td>
                       <td className="p-4">
                         <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${
@@ -325,6 +356,14 @@ export default function BookingsLedgerPage() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setDetailsId(b.id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 hover:text-[#821124] text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 border border-slate-200 shadow-2xs"
+                            title="Guest details, online check-in, payment, refund and notes"
+                          >
+                            <PanelRightOpen className="w-3 h-3 text-slate-500" />
+                            <span>Details</span>
+                          </button>
                           <button
                             onClick={() => openEditModal(b)}
                             className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 hover:text-[#821124] text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1 border border-slate-200 shadow-2xs"
@@ -350,6 +389,15 @@ export default function BookingsLedgerPage() {
           </div>
         )}
       </div>
+
+      {detailsBooking && (
+        <BookingDetailsPanel
+          booking={detailsBooking}
+          staffRole={staffRole}
+          onClose={() => setDetailsId(null)}
+          onUpdated={replaceBooking}
+        />
+      )}
 
       {/* Allocate Unit Modal */}
       {allocatingBooking && (

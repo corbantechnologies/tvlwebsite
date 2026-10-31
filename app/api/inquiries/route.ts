@@ -5,28 +5,13 @@ import { desc } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { Resend } from "resend";
 import { newId } from "@/lib/ids";
+import { staffInboxFor } from "@/lib/staffInboxes";
 
 // ============================================================
 // Venue → staff email routing
 // ============================================================
 function getStaffEmailForVenue(venue: string, brand?: string): string {
-  const effectiveKey = (brand || venue).toLowerCase().replace(/-/g, "_");
-  const map: Record<string, string | undefined> = {
-    village_apartment: process.env.EMAIL_VILLAGE,
-    tamarind_village: process.env.EMAIL_VILLAGE,
-    village: process.env.EMAIL_VILLAGE,
-    restaurant: process.env.EMAIL_RESTAURANT,
-    tamarind_restaurant: process.env.EMAIL_RESTAURANT,
-    dhow: process.env.EMAIL_DHOW,
-    tamarind_dhow: process.env.EMAIL_DHOW,
-    dawa_terrace: process.env.EMAIL_DAWA,
-    dawa: process.env.EMAIL_DAWA,
-    golden_key: process.env.EMAIL_GOLDEN_KEY,
-    golden_key_casino: process.env.EMAIL_GOLDEN_KEY,
-    event: process.env.EMAIL_VILLAGE,
-    general: process.env.EMAIL_VILLAGE,
-  };
-  return map[effectiveKey] || map[venue] || process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke";
+  return staffInboxFor(venue, brand);
 }
 
 function getVenueDisplayName(venue: string, brand?: string): string {

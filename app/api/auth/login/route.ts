@@ -6,8 +6,11 @@ import { eq } from "drizzle-orm";
 import { createSessionToken, COOKIE_NAME } from "@/lib/auth/session";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { newId } from "@/lib/ids";
+import { rateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req, RATE_LIMITS.login);
+  if (limited) return limited;
   try {
     await ensureDatabaseSeeded();
     const body = await req.json();

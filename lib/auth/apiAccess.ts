@@ -8,7 +8,9 @@ type Rule = { methods: string[]; pattern: RegExp };
 
 const PUBLIC_API_RULES: Rule[] = [
   // Auth
-  { methods: ["POST"], pattern: /^\/api\/auth\/(login|logout)$/ },
+  { methods: ["POST"], pattern: /^\/api\/auth\/(login|logout|forgot-password|reset-password)$/ },
+  { methods: ["GET"], pattern: /^\/api\/health$/ },
+  { methods: ["GET"], pattern: /^\/api\/cron\/[a-z-]+$/ }, // authorised by CRON_SECRET in the route
   { methods: ["GET"], pattern: /^\/api\/auth\/session$/ },
 
   // Public website content (read-only)
@@ -31,6 +33,8 @@ const PUBLIC_API_RULES: Rule[] = [
   { methods: ["POST"], pattern: /^\/api\/guest\/pay$/ },
   { methods: ["GET", "PATCH", "DELETE"], pattern: /^\/api\/guest\/inquiry\/[^/]+$/ }, // authorised by guest token
   { methods: ["GET"], pattern: /^\/api\/track$/ },
+  { methods: ["GET"], pattern: /^\/api\/guest\/booking\/[^/]+\/pdf$/ }, // authorised by guest token
+  { methods: ["POST"], pattern: /^\/api\/guest\/booking\/[^/]+\/(checkin|change)$/ }, // authorised by guest token
 
   // Payments
   { methods: ["POST"], pattern: /^\/api\/paystack\/webhook$/ }, // authorised by HMAC signature

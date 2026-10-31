@@ -77,7 +77,7 @@ export default function ApartmentsIndexPage() {
               Our Luxury Serviced Residences
             </h1>
             <p className="text-stone-600 font-light mt-4 text-sm sm:text-base leading-relaxed">
-              Explore our collection of spacious, fully serviced ocean-view apartments perched on Nyali's coral cliff overlooking Tudor Creek.
+              Explore our collection of spacious, fully serviced ocean-view apartments perched on Nyali&apos;s coral cliff overlooking Tudor Creek.
             </p>
           </div>
 

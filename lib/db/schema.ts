@@ -266,8 +266,47 @@ export const bookings = pgTable("bookings", {
   specialRequests: text("special_requests"),
   staffNotes: jsonb("staff_notes").$type<any[]>(),
   guestToken: text("guest_token").unique(),         // secure no-login link for guest portal
+  // What Paystack was asked to charge (the guest may pay in KES for a USD-priced stay)
+  chargeCurrency: text("charge_currency"),
+  chargeAmount: doublePrecision("charge_amount"),
+  fxRate: doublePrecision("fx_rate"),               // KES per USD used at checkout
+  amountPaid: doublePrecision("amount_paid"),       // in chargeCurrency, as confirmed by Paystack
+  paidAt: text("paid_at"),
+  // Refunds (issued by staff from the admin)
+  refundStatus: text("refund_status"),              // null | 'due' | 'processing' | 'refunded' | 'failed'
+  refundAmount: doublePrecision("refund_amount"),
+  refundReference: text("refund_reference"),
+  // Guest self-service
+  changeRequest: jsonb("change_request").$type<BookingChangeRequest | null>(),
+  checkInDetails: jsonb("check_in_details").$type<OnlineCheckIn | null>(),
+  // Follow-up flags
+  reviewRequestedAt: text("review_requested_at"),
+  abandonedNotifiedAt: text("abandoned_notified_at"),
   createdAt: text("created_at").notNull(),
 });
+
+export type BookingChangeRequest = {
+  type: "change_dates" | "cancel";
+  newCheckIn?: string;
+  newCheckOut?: string;
+  message?: string;
+  requestedAt: string;
+  status: "open" | "done" | "declined";
+};
+
+export type OnlineCheckIn = {
+  submittedAt: string;
+  fullName: string;
+  nationality: string;
+  idType: "passport" | "national_id" | "alien_id" | "other";
+  idNumber: string;
+  arrivalTime?: string;
+  arrivalBy?: string; // flight / train / car
+  flightOrTrain?: string;
+  otherGuests?: string;
+  carRegistration?: string;
+  notes?: string;
+};
 
 // ============================================================
 // AVAILABILITY: Inventory (unit counts per apartment type)
