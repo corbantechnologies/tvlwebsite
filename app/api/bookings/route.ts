@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { bookings, auditLogs } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { Resend } from "resend";
+import { newId } from "@/lib/ids";
 
 // GET /api/bookings — list all bookings (newest first)
 export async function GET() {
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     const guestToken = body.guestToken || `TVL-${rawToken}`;
 
     const newBooking = {
-      id: "bkg_" + Date.now(),
+      id: newId("bkg"),
       bookingReference: body.bookingReference || "BK-" + new Date().getFullYear() + "-" + Math.floor(1000 + Math.random() * 9000),
       inquiryId: body.inquiryId || null,
       apartmentId: body.apartmentId || "1-bedroom",
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
     await db.insert(bookings).values(newBooking);
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: body.actor || "Staff",
       actorRole: body.actorRole || "reservations",

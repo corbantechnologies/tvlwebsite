@@ -2,10 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Sparkles, Calendar, Clock, MapPin, Ticket, Plus, Trash2, Edit3, 
-  Save, X, RotateCw, ExternalLink, ShieldAlert, CheckCircle2, Lock, Loader2, Check,
-  QrCode, ClipboardList, CreditCard
+import {
+  Sparkles,
+  Calendar,
+  Clock,
+  MapPin,
+  Plus,
+  Trash2,
+  Edit3,
+  X,
+  RotateCw,
+  Loader2,
+  Check,
+  QrCode,
+  ClipboardList,
+  CreditCard,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';

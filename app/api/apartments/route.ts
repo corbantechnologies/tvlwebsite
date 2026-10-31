@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
-import { apartments } from "@/lib/db/schema";
+import { apartments, apartmentInventory } from "@/lib/db/schema";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { eq, asc } from "drizzle-orm";
+import { newId } from "@/lib/ids";
 
 export async function GET(req: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     const db = getDb();
     const body = await req.json();
     const newApt = {
-      id: body.id || "apt_" + Date.now(),
+      id: body.id || newId("apt"),
       name: body.name,
       description: body.description || "",
       size: body.size || "85 m²",
@@ -48,6 +49,16 @@ export async function POST(req: NextRequest) {
       discountPercentage: Number(body.discountPercentage || 0),
     };
     await db.insert(apartments).values(newApt as any);
+    // Every bookable suite needs an inventory row so availability and blocks apply to it.
+    await db
+      .insert(apartmentInventory)
+      .values({
+        id: newApt.id,
+        totalUnits: Math.max(1, Number(body.totalUnits) || 1),
+        notes: "Created with suite",
+        updatedAt: new Date().toISOString(),
+      })
+      .onConflictDoNothing();
     return NextResponse.json({ success: true, apartment: newApt });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to create suite" }, { status: 500 });

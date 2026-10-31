@@ -4,6 +4,7 @@ import { eventTickets, events, auditLogs } from "@/lib/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { sendTicketConfirmationEmail, notifyStaffNewTicket } from "@/lib/eventTicketEmail";
+import { newId } from "@/lib/ids";
 
 // GET /api/events/tickets — list all tickets (or filter by eventId)
 export async function GET(req: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId");
 
-    let query = db.select().from(eventTickets).orderBy(desc(eventTickets.createdAt));
+    const query = db.select().from(eventTickets).orderBy(desc(eventTickets.createdAt));
     let records = [];
 
     if (eventId) {
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
       Date.now().toString(36).substring(4).toUpperCase();
 
     const newTicket = {
-      id: "tkt_" + Date.now(),
+      id: newId("tkt"),
       ticketReference: ticketRef,
       eventId,
       eventTitle: eventTitle || "Resort Special Event",
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
     }
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: issuedBy || "Staff Admin",
       actorRole: "reservations",

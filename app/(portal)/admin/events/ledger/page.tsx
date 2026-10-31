@@ -4,10 +4,8 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Sparkles,
   ClipboardList,
   Search,
-  Filter,
   Download,
   Plus,
   QrCode,
@@ -16,14 +14,13 @@ import {
   UserCheck,
   RotateCw,
   ArrowLeft,
-  Calendar,
   Ticket,
   DollarSign,
   AlertCircle,
   X,
   Check,
   Loader2,
-  Users
+  Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { EventTicketType, ResortEvent } from '@/types';

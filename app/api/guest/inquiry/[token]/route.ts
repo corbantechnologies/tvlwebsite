@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { inquiries, bookings, auditLogs } from "@/lib/db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Resend } from "resend";
+import { newId } from "@/lib/ids";
 
 // Venue → staff email mapping
 function getVenueEmail(venue: string): string {
@@ -97,7 +98,7 @@ export async function PATCH(
       notifyStaffOfGuestUpdate(current, updatedPayload, "Special requests updated by guest").catch(() => { });
 
       await db.insert(auditLogs).values({
-        id: "log_" + Date.now(),
+        id: newId("log"),
         timestamp: new Date().toISOString(),
         actor: currentPayload.name || "Guest",
         actorRole: "guest",
@@ -179,7 +180,7 @@ export async function DELETE(
       ).catch(() => { });
 
       await db.insert(auditLogs).values({
-        id: "log_" + Date.now(),
+        id: newId("log"),
         timestamp: new Date().toISOString(),
         actor: payload.name || "Guest",
         actorRole: "guest",
@@ -215,7 +216,7 @@ export async function DELETE(
       ).catch(() => { });
 
       await db.insert(auditLogs).values({
-        id: "log_" + Date.now(),
+        id: newId("log"),
         timestamp: new Date().toISOString(),
         actor: current.guestName,
         actorRole: "guest",

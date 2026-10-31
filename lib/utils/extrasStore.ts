@@ -101,6 +101,7 @@ const LOCAL_STORAGE_VEHICLES_KEY = "tamarind_transfer_vehicles_v2";
 const LOCAL_STORAGE_EVENTS_KEY = "tamarind_event_packages_v2";
 
 export function loadTransferVehicles(): TransferVehicle[] {
+  if (typeof window === "undefined") return DEFAULT_TRANSFER_VEHICLES;
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_VEHICLES_KEY);
     if (saved) {
@@ -114,6 +115,7 @@ export function loadTransferVehicles(): TransferVehicle[] {
 }
 
 export function saveTransferVehicles(vehicles: TransferVehicle[]) {
+  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LOCAL_STORAGE_VEHICLES_KEY, JSON.stringify(vehicles));
   } catch (e) {
@@ -122,6 +124,7 @@ export function saveTransferVehicles(vehicles: TransferVehicle[]) {
 }
 
 export function loadEventPackages(): EventPackage[] {
+  if (typeof window === "undefined") return DEFAULT_EVENT_PACKAGES;
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_EVENTS_KEY);
     if (saved) {
@@ -135,6 +138,7 @@ export function loadEventPackages(): EventPackage[] {
 }
 
 export function saveEventPackages(events: EventPackage[]) {
+  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LOCAL_STORAGE_EVENTS_KEY, JSON.stringify(events));
   } catch (e) {

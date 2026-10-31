@@ -1,10 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Bell, Search, CheckCircle2, Clock, Mail, Phone, MessageSquare, 
-  ArrowRight, Filter, Calendar, Building2, CreditCard, DollarSign, 
-  UserCheck, ShieldCheck, X, RotateCw, ExternalLink, Copy, Check, Loader2, Trash2 
+import {
+  Bell,
+  Search,
+  CheckCircle2,
+  Clock,
+  MessageSquare,
+  UserCheck,
+  ShieldCheck,
+  X,
+  RotateCw,
+  Copy,
+  Loader2,
+  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

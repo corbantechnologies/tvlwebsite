@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { extras, auditLogs } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+;
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 // GET /api/extras — public + admin: list all active extras
 export async function GET(req: NextRequest) {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newExtra = {
-      id: "ext_" + Date.now(),
+      id: newId("ext"),
       name: body.name,
       description: body.description || "",
       category: body.category, // "transfer" | "amenity" | "excursion" | "fnb" | "experience"
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     await db.insert(extras).values(newExtra);
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: body.actor || "Admin",
       actorRole: body.actorRole || "admin",

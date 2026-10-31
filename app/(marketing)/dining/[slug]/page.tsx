@@ -3,7 +3,7 @@
 import React, { useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { DINING } from '@/data';
+import { DINING } from '@/lib/data';
 import { DiningExperience } from '@/types';
 import DiningDetail from '@/components/DiningDetail';
 import BookingModal from '@/components/BookingModal';

@@ -1,11 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Building2, Sparkles, Plus, Trash2, Edit, Save, X, 
-  RotateCw, ShieldCheck, Check, Layers, Users, Maximize2, 
-  DollarSign, CheckCircle2, AlertCircle, ExternalLink, Loader2,
-  Image as ImageIcon
+import {
+  Building2,
+  Plus,
+  Trash2,
+  Edit,
+  Save,
+  X,
+  RotateCw,
+  Check,
+  ExternalLink,
+  Loader2,
+  Image as ImageIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';

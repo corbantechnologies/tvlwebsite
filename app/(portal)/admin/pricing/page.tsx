@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  DollarSign, Save, Percent, RefreshCw, Calendar, Tag, 
-  TrendingUp, Plus, Trash2, ShieldCheck, CheckCircle2, Loader2, Info
+import {
+  Save,
+  RefreshCw,
+  TrendingUp,
+  Plus,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

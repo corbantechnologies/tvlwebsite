@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Lock, Mail, ArrowRight, Loader2, Sparkles, Key } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminLoginPage() {

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Ship, Utensils, Sparkles, Clock, MapPin, Users, Phone, ArrowRight } from 'lucide-react';
+import { Utensils, ArrowRight } from 'lucide-react';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-import DiningInquiryModal from '@/components/marketing/DiningInquiryModal';
+import DiningInquiryModal from '@/components/DiningInquiryModal';
 import { DINING } from '@/lib/data';
 
 export default function DiningPage() {

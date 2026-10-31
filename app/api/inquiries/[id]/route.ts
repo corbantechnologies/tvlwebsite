@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/db";
 import { inquiries, bookings, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Resend } from "resend";
+import { newId } from "@/lib/ids";
 
 // Shared handler for PUT and PATCH
 async function handleUpdate(req: NextRequest, params: Promise<{ id: string }>) {
@@ -65,7 +66,7 @@ async function handleUpdate(req: NextRequest, params: Promise<{ id: string }>) {
         const guestToken = `TVL-${rawToken}`;
 
         generatedBooking = {
-          id: "bkg_" + Date.now(),
+          id: newId("bkg"),
           bookingReference: reference,
           inquiryId: id,
           apartmentId: body.apartmentId || updatedPayload.apartmentId ||
@@ -112,7 +113,7 @@ async function handleUpdate(req: NextRequest, params: Promise<{ id: string }>) {
         if (body.paymentReference) updatedPayload.paymentReference = body.paymentReference;
 
         await db.insert(auditLogs).values({
-          id: "log_" + Date.now(),
+          id: newId("log"),
           timestamp: new Date().toISOString(),
           actor: body.actor || "Reservations Staff",
           actorRole: body.actorRole || "reservations",

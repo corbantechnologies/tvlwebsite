@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { X, Plane, Train, Car, Calendar, Clock, Users, Luggage, CheckCircle2, ShieldCheck, Sparkles, ArrowRight, Phone, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Plane, Train, Car, Users, Luggage, CheckCircle2, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { loadTransferVehicles, TransferVehicle } from "@/utils/extrasStore";
+import { loadTransferVehicles, TransferVehicle } from "@/lib/utils/extrasStore";
 import OptimizedImage from "./OptimizedImage";
 
 interface TransferModalProps {

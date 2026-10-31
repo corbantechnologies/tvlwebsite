@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Calendar, Clock, MapPin, Ticket, Ship, Sparkles, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, Ticket, Sparkles, ArrowRight } from 'lucide-react';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import { ResortEvent } from '@/types';
 

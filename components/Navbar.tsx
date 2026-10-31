@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { Menu, X, Waves, MapPin, Phone, Car } from "lucide-react";
+import { Menu, X, MapPin, Phone, Car } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface NavbarProps {

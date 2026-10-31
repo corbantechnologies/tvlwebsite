@@ -5,6 +5,7 @@ import { users, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { createSessionToken, COOKIE_NAME } from "@/lib/auth/session";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     // Audit log
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: "staff",
       actorRole: user.role,

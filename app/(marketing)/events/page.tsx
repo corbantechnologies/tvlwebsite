@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, Clock, MapPin, Ticket, Ship, Sparkles, ArrowRight, Filter, ExternalLink, Lock, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Ticket, Sparkles, ArrowRight, ExternalLink } from 'lucide-react';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import BookingModal from '@/components/BookingModal';
 import EventTicketModal from '@/components/EventTicketModal';
-import { DEFAULT_EVENTS } from '@/lib/data';
+;
 
 interface EventItem {
   id: string;

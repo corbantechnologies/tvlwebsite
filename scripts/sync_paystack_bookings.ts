@@ -1,88 +1,140 @@
-import { getDb } from "../lib/db/db";
-import { bookings } from "../lib/db/schema";
-import { eq } from "drizzle-orm";
-import { fulfillApartmentBooking } from "../lib/bookingPaymentService";
+/**
+ * Recovers paid Paystack transactions that have no booking / ticket in the database.
+ *
+ * Usage (from the repo root, with DATABASE_URL and PAYSTACK_SECRET_KEY set, e.g. in .env.local):
+ *   npx tsx scripts/sync_paystack_bookings.ts            # dry run: lists what is missing
+ *   npx tsx scripts/sync_paystack_bookings.ts --apply    # records the missing bookings/tickets
+ *   npx tsx scripts/sync_paystack_bookings.ts --apply --from=2026-01-01
+ *
+ * Guests are NEVER emailed by this script. Staff get the normal internal
+ * notification for each recovered booking unless --no-staff-email is passed.
+ */
 import fs from "fs";
 
-// Ensure env variables are loaded if running standalone
-if (!process.env.DATABASE_URL) {
-  try {
-    const envContent = fs.readFileSync(".env.local", "utf-8");
-    for (const line of envContent.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const idx = trimmed.indexOf("=");
-      if (idx !== -1) {
-        const key = trimmed.substring(0, idx).trim();
-        let val = trimmed.substring(idx + 1).trim();
-        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-          val = val.substring(1, val.length - 1);
-        }
-        if (!process.env[key]) {
-          process.env[key] = val;
-        }
-      }
+function loadEnvFile(path: string) {
+  if (!fs.existsSync(path)) return;
+  for (const line of fs.readFileSync(path, "utf-8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const idx = trimmed.indexOf("=");
+    if (idx === -1) continue;
+    const key = trimmed.substring(0, idx).trim();
+    let val = trimmed.substring(idx + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.substring(1, val.length - 1);
     }
-  } catch (err: any) {
-    console.error("Could not read .env.local:", err.message);
+    if (!process.env[key]) process.env[key] = val;
   }
 }
-async function sync() {
-  const secret = process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_LIVE_KEY || "";
-  if (!secret) {
-    console.error("Missing PAYSTACK_SECRET_KEY in environment");
+
+async function main() {
+  loadEnvFile(".env.local");
+  loadEnvFile(".env");
+
+  const args = process.argv.slice(2);
+  const apply = args.includes("--apply");
+  const notifyStaff = !args.includes("--no-staff-email");
+  const fromArg = args.find((a) => a.startsWith("--from="))?.split("=")[1];
+
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  if (!secret || !process.env.DATABASE_URL) {
+    console.error("PAYSTACK_SECRET_KEY and DATABASE_URL must be set.");
     process.exit(1);
   }
 
-  const res = await fetch("https://api.paystack.co/transaction?perPage=50", {
-    headers: { Authorization: `Bearer ${secret}` },
-  });
-  const data = await res.json();
-
-  if (!data.status || !Array.isArray(data.data)) {
-    console.error("Failed to fetch Paystack transactions:", data.message);
-    process.exit(1);
-  }
+  // Imported after env is loaded so the DB client picks up DATABASE_URL.
+  const { getDb, getClient } = await import("../lib/db/db");
+  const { bookings, eventTickets } = await import("../lib/db/schema");
+  const { eq, or } = await import("drizzle-orm");
+  const { fulfillApartmentBooking } = await import("../lib/bookingPaymentService");
+  const { fulfillEventTicket, isEventTicketPayment } = await import("../lib/eventTicketService");
 
   const db = getDb();
-  const successful = data.data.filter((t: any) => t.status === "success");
-  console.log(`Found ${successful.length} successful transactions on Paystack.\n`);
+  let page = 1;
+  let scanned = 0;
+  const missing: any[] = [];
 
-  let recoveredCount = 0;
+  // Page through every successful transaction.
+  for (;;) {
+    const url = new URL("https://api.paystack.co/transaction");
+    url.searchParams.set("status", "success");
+    url.searchParams.set("perPage", "100");
+    url.searchParams.set("page", String(page));
+    if (fromArg) url.searchParams.set("from", fromArg);
 
-  for (const tx of successful) {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${secret}` } });
+    const body: any = await res.json();
+    if (!body.status || !Array.isArray(body.data)) {
+      console.error(`Failed to fetch page ${page}:`, body.message);
+      process.exit(1);
+    }
+
+    for (const tx of body.data) {
+      scanned++;
+      const ref: string = tx.reference;
+      if (isEventTicketPayment(ref, tx.metadata)) {
+        const [t] = await db.select({ id: eventTickets.id }).from(eventTickets).where(eq(eventTickets.ticketReference, ref)).limit(1);
+        if (!t) missing.push(tx);
+      } else {
+        const [b] = await db
+          .select({ id: bookings.id, paymentStatus: bookings.paymentStatus })
+          .from(bookings)
+          .where(or(eq(bookings.bookingReference, ref), eq(bookings.paymentReference, ref)))
+          .limit(1);
+        if (!b || b.paymentStatus !== "paid") missing.push(tx);
+      }
+    }
+
+    const pageCount = body.meta?.pageCount ?? page;
+    if (page >= pageCount || body.data.length === 0) break;
+    page++;
+  }
+
+  console.log(`Scanned ${scanned} successful Paystack transactions; ${missing.length} not recorded as paid.\n`);
+
+  let recovered = 0;
+  let failed = 0;
+  for (const tx of missing) {
     const ref = tx.reference;
-    const isTicket = tx.metadata?.type === "event_ticket" || ref.startsWith("TKT-");
-    if (isTicket) continue; // skip event tickets
+    const m = tx.metadata || {};
+    const label = isEventTicketPayment(ref, m) ? "TICKET " : "BOOKING";
+    console.log(
+      `${label} ${ref} · ${tx.currency} ${tx.amount / 100} · ${m.guestName || tx.customer?.email} · ${m.apartmentName || m.eventTitle || "?"} · ${m.checkIn || m.eventDate || ""}${m.checkOut ? " → " + m.checkOut : ""}`
+    );
+    if (!apply) continue;
 
-    // Check if in database
-    const existing = await db
-      .select()
-      .from(bookings)
-      .where(eq(bookings.bookingReference, ref))
-      .limit(1);
-
-    if (existing.length === 0) {
-      console.log(`[RECOVERING MISSING BOOKING]`);
-      console.log(`- Reference: ${ref}`);
-      console.log(`- Guest: ${tx.metadata?.guestName || tx.customer?.first_name} (${tx.customer?.email})`);
-      console.log(`- Amount: ${tx.currency} ${tx.amount / 100}`);
-      console.log(`- Suite: ${tx.metadata?.apartmentName || tx.metadata?.apartmentId}`);
-      console.log(`- Dates: ${tx.metadata?.checkIn} to ${tx.metadata?.checkOut}`);
-
-      const result = await fulfillApartmentBooking(ref, tx);
-      console.log(`  -> Recovered successfully! Booking ID: ${result.booking.id}, Token: ${result.booking.guestToken}`);
-      recoveredCount++;
-    } else {
-      console.log(`[OK] Booking already in DB: ${ref} (${existing[0].guestName}) - Status: ${existing[0].paymentStatus}`);
+    try {
+      if (isEventTicketPayment(ref, m)) {
+        await fulfillEventTicket(ref, tx, { notifyGuest: false, actor: "Paystack Sync Script" });
+      } else {
+        const result = await fulfillApartmentBooking(ref, tx, {
+          notifyGuest: false,
+          notifyStaff,
+          actor: "Paystack Sync Script",
+        });
+        if (result.unmatched) {
+          console.log("   -> skipped: no apartment details in metadata (logged for staff review)");
+          continue;
+        }
+        if (result.needsReview) console.log("   -> recorded, NEEDS REVIEW (dates conflict or underpaid)");
+      }
+      recovered++;
+      console.log("   -> recorded");
+    } catch (err: any) {
+      failed++;
+      console.error(`   -> FAILED: ${err.message}`);
     }
   }
 
-  console.log(`\nSync complete. Total recovered: ${recoveredCount}`);
-  process.exit(0);
+  console.log(
+    apply
+      ? `\nDone. Recorded ${recovered}, failed ${failed}.`
+      : `\nDry run only. Re-run with --apply to record these ${missing.length} payments (guests will not be emailed).`
+  );
+  await getClient().end();
 }
 
-sync().catch((e) => {
+main().catch((e) => {
   console.error("Sync error:", e);
   process.exit(1);
 });

@@ -1,9 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, TrendingUp, Users, Calendar, DollarSign, 
-  CheckCircle2, Bell, Hotel, Clock, ArrowUpRight, RotateCw, Filter, Loader2 
+import {
+  BarChart3,
+  TrendingUp,
+  DollarSign,
+  CheckCircle2,
+  Bell,
+  Hotel,
+  RotateCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

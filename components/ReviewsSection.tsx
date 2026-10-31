@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from "react";
-import { Star, Quote, CheckCircle2, Award, ThumbsUp, ExternalLink } from "lucide-react";
+import { Star, Quote, CheckCircle2, Award } from "lucide-react";
 
 export default function ReviewsSection() {
   const [activeFilter, setActiveFilter] = useState<string>("all");

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { getOptimizedImageUrl, getOriginalFallbackUrl, PresetName, ImagePresetOptions } from "@/utils/media";
+import { getOptimizedImageUrl, getOriginalFallbackUrl, PresetName, ImagePresetOptions } from "@/lib/utils/media";
 
 export interface OptimizedImageProps {
   src: string;

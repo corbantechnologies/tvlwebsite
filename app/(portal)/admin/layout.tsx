@@ -3,13 +3,33 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  BookOpen, Building2, Users, Calendar, Ship, Sparkles, Tag, Car, 
-  HelpCircle, Settings, ShieldAlert, LogOut, ChevronLeft, 
-  ChevronRight, ExternalLink, Menu, X, Bell, Layers,
-  Compass, BarChart3, Clock, CheckCircle2, DollarSign,
-  UtensilsCrossed, Hotel, Activity, ShieldCheck, Ticket,
-  ClipboardList, QrCode
+import {
+  BookOpen,
+  Building2,
+  Users,
+  Calendar,
+  Sparkles,
+  Tag,
+  Car,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Menu,
+  X,
+  Bell,
+  Layers,
+  Compass,
+  BarChart3,
+  Clock,
+  DollarSign,
+  UtensilsCrossed,
+  Hotel,
+  Activity,
+  ShieldCheck,
+  Ticket,
+  ClipboardList,
+  QrCode,
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 

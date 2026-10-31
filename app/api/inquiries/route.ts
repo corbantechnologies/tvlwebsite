@@ -4,6 +4,7 @@ import { inquiries, auditLogs } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { Resend } from "resend";
+import { newId } from "@/lib/ids";
 
 // ============================================================
 // Venue → staff email routing
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     const venue = body.venue || "village_apartment";
 
     const newInquiry = {
-      id: "inq_" + Date.now(),
+      id: newId("inq"),
       type: body.type || "general",
       venue,
       guestToken,
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     // Audit log
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: "guest",
       actorRole: "guest",

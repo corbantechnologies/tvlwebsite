@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { diningOptions } from "@/lib/db/schema";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     const db = getDb();
     const body = await req.json();
     const newVenue = {
-      id: body.id || "venue_" + Date.now(),
+      id: body.id || newId("venue"),
       name: body.name || body.title,
       description: body.description || "",
       highlights: body.highlights || [],

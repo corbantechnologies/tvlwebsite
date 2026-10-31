@@ -23,6 +23,7 @@ export function getDb() {
       max: isServerless ? 3 : 10,
       idle_timeout: 30,
       connect_timeout: 10,
+      onnotice: () => {}, // silence "already exists, skipping" notices from idempotent schema setup
       ssl: isLocal ? false : { rejectUnauthorized: false }
     });
 

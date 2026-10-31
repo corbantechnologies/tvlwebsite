@@ -4,7 +4,7 @@ import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import GuestBookingTrackerModal from '@/components/GuestBookingTrackerModal';
 import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, Hotel, Key } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 function TrackContent() {
   const searchParams = useSearchParams();

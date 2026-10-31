@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { events } from "@/lib/db/schema";
-import { DEFAULT_EVENTS } from "@/lib/data";
+;
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 export async function GET() {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const slug = body.slug || body.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const newEvent = {
-      id: body.id || "evt_" + Date.now(),
+      id: body.id || newId("evt"),
       title: body.title,
       slug,
       description: body.description || "",

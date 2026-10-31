@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Sparkles, Ship, Heart, Briefcase, CheckCircle2, ArrowRight, FileText, ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { loadEventPackages, EventPackage } from "@/utils/extrasStore";
+import { loadEventPackages, EventPackage } from "@/lib/utils/extrasStore";
 import OptimizedImage from "./OptimizedImage";
 
 interface EventsAndChartersSectionProps {

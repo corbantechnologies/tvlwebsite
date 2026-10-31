@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Check, ArrowRight, Utensils, Coffee, Heart, ShieldCheck, Tag } from 'lucide-react';
+import { Check, ArrowRight, Tag } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
 
 interface MealPlan {

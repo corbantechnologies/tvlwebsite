@@ -3,12 +3,17 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import {
-  Calendar, Users, MapPin, Phone, Mail, ShieldCheck, CheckCircle2,
-  Clock, AlertCircle, ArrowRight, Copy, Check, MessageSquare, CreditCard,
-  RefreshCw, X, ChevronRight, Download, DollarSign, Utensils, Sparkles,
-  Maximize2, Minimize2, Trash2, Key, AlertTriangle, Send
+  AlertCircle,
+  Copy,
+  Check,
+  CreditCard,
+  RefreshCw,
+  X,
+  Sparkles,
+  Key,
+  AlertTriangle,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+;
 
 interface GuestBookingTrackerModalProps {
   isOpen: boolean;
@@ -170,27 +175,14 @@ export default function GuestBookingTrackerModal({
 
   // Pay online with Paystack
   const handlePayNow = async () => {
-    if (!record) return;
+    if (!record || recordType !== "booking") return;
     setInitiatingPay(true);
-    const p = record.payload || {};
-    const amount = record.totalAmount || p.totalCostUsd || p.totalCost || 160;
-    const email = record.guestEmail || p.email;
-
     try {
-      const res = await fetch("/api/paystack/initialize", {
+      // Pays this booking for its stored total; the server sets the amount.
+      const res = await fetch("/api/guest/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          amount,
-          currency: record.currency || "USD",
-          reference: `TVL-${Date.now()}`,
-          metadata: {
-            inquiryId: record.id,
-            guestToken: activeToken,
-            apartmentName: record.apartmentName || p.apartmentName,
-          },
-        }),
+        body: JSON.stringify({ token: record.guestToken || activeToken }),
       });
 
       const data = await res.json();
@@ -372,7 +364,7 @@ export default function GuestBookingTrackerModal({
                   </div>
                 </div>
 
-                {paymentStatus !== 'paid' && !isCancelled && (
+                {recordType === 'booking' && paymentStatus !== 'paid' && !isCancelled && Number(totalAmount) > 0 && (
                   <button
                     onClick={handlePayNow}
                     disabled={initiatingPay}

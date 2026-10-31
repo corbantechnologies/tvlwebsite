@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db/db";
 import { users, auditLogs } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
+import { newId } from "@/lib/ids";
 
 // GET /api/team — Return all real staff members
 export async function GET(req: NextRequest) {
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     const rawPassword = password || "Tamarind@" + new Date().getFullYear();
     const passwordHash = bcrypt.hashSync(rawPassword, 10);
-    const userId = "usr_" + Date.now();
+    const userId = newId("usr");
     const now = new Date().toISOString();
 
     await db.insert(users).values({
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     // Audit log
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: now,
       actor: session.name || "Admin",
       actorRole: session.role || "admin",

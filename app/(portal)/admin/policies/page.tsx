@@ -1,10 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, 
-  X, Save, RotateCw, FileText, Clock, Users, Ban, CreditCard, 
-  Check, Eye, EyeOff, Sparkles, MoveVertical
+import {
+  ShieldCheck,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Save,
+  RotateCw,
+  FileText,
+  Clock,
+  Users,
+  Ban,
+  CreditCard,
+  Check,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

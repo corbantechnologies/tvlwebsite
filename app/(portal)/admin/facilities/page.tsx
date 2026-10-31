@@ -1,10 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Compass, Waves, Users, Dumbbell, Coffee, Sparkles, Plus, 
-  Edit3, Trash2, Check, X, RotateCw, Image as ImageIcon, 
-  CheckCircle2, AlertTriangle, Clock, ShieldCheck, Loader2 
+import {
+  Compass,
+  Waves,
+  Users,
+  Dumbbell,
+  Coffee,
+  Plus,
+  Edit3,
+  Trash2,
+  Check,
+  X,
+  RotateCw,
+  Image as ImageIcon,
+  CheckCircle2,
+  Clock,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
