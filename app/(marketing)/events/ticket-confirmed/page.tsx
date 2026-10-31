@@ -5,20 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   CheckCircle2,
-  Calendar,
-  Ticket,
-  Clock,
   Printer,
   Download,
   ArrowRight,
-  ShieldCheck,
   Phone,
   Mail,
-  MapPin,
   Loader2,
   AlertCircle,
-  Sparkles,
-  QrCode
+  QrCode,
 } from 'lucide-react';
 import { EventTicketType } from '@/types';
 

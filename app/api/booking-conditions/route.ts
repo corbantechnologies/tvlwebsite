@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { bookingConditions, auditLogs } from "@/lib/db/schema";
 import { asc } from "drizzle-orm";
+import { newId } from "@/lib/ids";
 
 // GET /api/booking-conditions — list conditions (active only for public, all for admin)
 export async function GET(req: NextRequest) {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newCondition = {
-      id: "cond_" + Date.now(),
+      id: newId("cond"),
       title: body.title.trim(),
       type: body.type || "cancellation", // "cancellation" | "check_in_out" | "house_rules" | "payment" | "occupancy" | "general"
       summary: body.summary.trim(),
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     await db.insert(bookingConditions).values(newCondition);
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: body.actor || "Admin",
       actorRole: body.actorRole || "admin",

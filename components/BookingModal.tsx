@@ -2,25 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  X, 
-  Calendar, 
-  Users, 
-  ShieldCheck, 
-  CheckCircle, 
-  Sparkles, 
-  ArrowRight, 
+import {
+  Calendar,
+  Users,
+  ShieldCheck,
+  CheckCircle,
+  Sparkles,
+  ArrowRight,
   ArrowLeft,
-  Lock, 
-  Check, 
-  HelpCircle,
-  Clock,
+  Lock,
+  Check,
   Download,
   Printer,
-  ChevronDown,
   Building,
-  Info,
-  Ticket
+  Ticket,
 } from "lucide-react";
 import { APARTMENTS } from "@/lib/data";
 import toast from "react-hot-toast";
@@ -135,6 +130,7 @@ export default function BookingModal({
     discountType: string;
     discountValue: number;
     discountAmountUsd: number;
+    maxDiscountUsd?: number | null;
   } | null>(null);
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [voucherError, setVoucherError] = useState("");
@@ -154,6 +150,7 @@ export default function BookingModal({
   const [minNightsRequired, setMinNightsRequired] = useState<number>(1);
   const [isAvailableForDates, setIsAvailableForDates] = useState<boolean>(true);
   const [availabilityNotice, setAvailabilityNotice] = useState<string | null>(null);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
 
   const discountPct = selectedApartment?.discountPercentage || 0;
   const originalRoomRate = selectedApartment?.pricePerNight || 120;
@@ -175,48 +172,57 @@ export default function BookingModal({
       return;
     }
 
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    if (start >= end) return;
+    if (checkIn >= checkOut) {
+      setIsAvailableForDates(false);
+      setAvailabilityNotice("Check-out must be after check-in.");
+      return;
+    }
 
     let isMounted = true;
+    // Fail closed: dates count as unavailable until the server says otherwise.
+    setIsCheckingAvailability(true);
+    setIsAvailableForDates(false);
+    setAvailabilityNotice(null);
     fetch(`/api/availability?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}&apartmentId=${encodeURIComponent(apartmentId)}`)
       .then(r => r.json())
       .then(data => {
         if (!isMounted) return;
-        if (data.available === false && data.message) {
-          setIsAvailableForDates(false);
-          setAvailabilityNotice(data.message);
-          return;
-        }
         const aptMatch = Array.isArray(data.apartments)
           ? data.apartments.find((a: any) => a.apartmentId === apartmentId)
           : null;
 
-        if (aptMatch) {
-          if (aptMatch.rateOverride) {
-            setRateOverride(aptMatch.rateOverride);
-            if (aptMatch.effectiveRateUsd != null) {
-              setEffectiveRoomRateUsd(aptMatch.effectiveRateUsd);
-            }
-          } else {
-            setRateOverride(null);
-            setEffectiveRoomRateUsd(null);
+        if (!aptMatch) {
+          setIsAvailableForDates(false);
+          setAvailabilityNotice(data.message || "We couldn't confirm availability for these dates. Please try again.");
+          return;
+        }
+
+        if (aptMatch.rateOverride) {
+          setRateOverride(aptMatch.rateOverride);
+          if (aptMatch.effectiveRateUsd != null) {
+            setEffectiveRoomRateUsd(aptMatch.effectiveRateUsd);
           }
-          setMinNightsRequired(aptMatch.minNights || 1);
-          if (aptMatch.availableUnits <= 0) {
-            setIsAvailableForDates(false);
-            setAvailabilityNotice("Selected apartment type is fully booked for these dates.");
-          } else if (!aptMatch.meetsMinNights) {
-            setIsAvailableForDates(false);
-            setAvailabilityNotice(`A minimum stay of ${aptMatch.minNights} nights is required for this seasonal period.`);
-          } else {
-            setIsAvailableForDates(true);
-            setAvailabilityNotice(null);
-          }
+        } else {
+          setRateOverride(null);
+          setEffectiveRoomRateUsd(null);
+        }
+        setMinNightsRequired(aptMatch.minNights || 1);
+        if (aptMatch.available) {
+          setIsAvailableForDates(true);
+          setAvailabilityNotice(null);
+        } else {
+          setIsAvailableForDates(false);
+          setAvailabilityNotice(aptMatch.reason || data.message || "The selected apartment is unavailable for these dates.");
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!isMounted) return;
+        setIsAvailableForDates(false);
+        setAvailabilityNotice("We couldn't check availability right now. Please try again in a moment.");
+      })
+      .finally(() => {
+        if (isMounted) setIsCheckingAvailability(false);
+      });
 
     return () => {
       isMounted = false;
@@ -364,6 +370,7 @@ export default function BookingModal({
     if (appliedVoucher) {
       if (appliedVoucher.discountType === "percentage") {
         discountUsd = (subtotal * appliedVoucher.discountValue) / 100;
+        if (appliedVoucher.maxDiscountUsd) discountUsd = Math.min(discountUsd, appliedVoucher.maxDiscountUsd);
       } else {
         discountUsd = Math.min(appliedVoucher.discountAmountUsd, subtotal);
       }
@@ -406,7 +413,7 @@ export default function BookingModal({
     setVoucherError("");
     try {
       const currentSubtotal = breakdown ? (breakdown.baseRoomUsd + breakdown.mealPlanTotalUsd + breakdown.extrasTotalUsd) : livePrice;
-      const res = await fetch(`/api/vouchers?code=${encodeURIComponent(promocode.trim())}&amount=${currentSubtotal}`);
+      const res = await fetch(`/api/vouchers?code=${encodeURIComponent(promocode.trim())}&amount=${currentSubtotal}&scope=apartment`);
       const data = await res.json();
       if (!res.ok || !data.valid) {
         setVoucherError(data.error || "Invalid promo code.");
@@ -442,6 +449,10 @@ export default function BookingModal({
       toast.error("Please select both check-in and check-out dates.");
       return;
     }
+    if (isCheckingAvailability) {
+      toast.error("Still checking availability for your dates. Please wait a moment.");
+      return;
+    }
     if (!isAvailableForDates) {
       toast.error(availabilityNotice || "The selected apartment is unavailable for these dates.");
       return;
@@ -458,61 +469,25 @@ export default function BookingModal({
     setIsSubmitting(true);
     setSubmitError("");
 
-    const activeMealPlan = mealPlans.find(m => m.id === mealPlanId) || mealPlans[0];
-
-    const payload = {
-      name,
-      email,
-      phone,
-      checkIn,
-      checkOut,
-      adults,
-      children,
-      apartmentId: selectedApartment.id,
-      apartmentName: selectedApartment.name,
-      mealPlanId: activeMealPlan.id,
-      mealPlanName: activeMealPlan.name,
-      mealPlanRateUsd: activeMealPlan.pricePerPersonPerDayUsd,
-      selectedExtras: Object.entries(selectedExtras).map(([extraId, quantity]) => {
-        const extra = availableExtras.find(e => e.id === extraId);
-        return {
-          extraId,
-          name: extra?.name || extraId,
-          priceUsd: extra?.priceUsd || 0,
-          quantity,
-        };
-      }),
-      specialRequests,
-      promocode: promocode || undefined,
-      totalCostUsd: breakdown?.totalUsd || (activeNightlyRate * (breakdown?.nights || 1)),
-      totalCostKes: breakdown?.totalKes || Math.round((breakdown?.totalUsd || activeNightlyRate) * 130),
-      currency: "USD",
-    };
-
     try {
-      const payRes = await fetch("/api/paystack/initialize", {
+      // The server re-checks availability, recalculates the price and saves a
+      // pending booking before handing over to Paystack.
+      const payRes = await fetch("/api/bookings/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name,
           email,
-          amount: breakdown?.totalUsd || (activeNightlyRate * (breakdown?.nights || 1)),
-          currency: "USD",
-          reference: `TVL-${Date.now()}`,
-          metadata: {
-            ...payload,
-            guestName: name,
-            guestEmail: email,
-            guestPhone: phone,
-            apartmentId: selectedApartment.id,
-            apartmentName: selectedApartment.name,
-            nights: breakdown?.nights || 1,
-            roomRateUsd: activeNightlyRate,
-            totalRoomUsd: breakdown?.baseRoomUsd || (activeNightlyRate * (breakdown?.nights || 1)),
-            totalMealPlanUsd: breakdown?.mealPlanTotalUsd || 0,
-            totalExtrasUsd: breakdown?.extrasTotalUsd || 0,
-            rateOverrideApplied: Boolean(rateOverride?.rateUsd),
-            rateOverrideLabel: rateOverride?.label || null,
-          },
+          phone,
+          checkIn,
+          checkOut,
+          adults,
+          children,
+          apartmentId: selectedApartment.id,
+          mealPlanId,
+          selectedExtras: Object.entries(selectedExtras).map(([extraId, quantity]) => ({ extraId, quantity })),
+          specialRequests,
+          promocode: appliedVoucher?.code || undefined,
         }),
       });
 
@@ -1248,9 +1223,9 @@ export default function BookingModal({
                     <div className="space-y-3 pt-2">
                       <button
                         type="submit"
-                        disabled={isSubmitting || !checkIn || !checkOut || !isAvailableForDates}
+                        disabled={isSubmitting || isCheckingAvailability || !checkIn || !checkOut || !isAvailableForDates}
                         className={`w-full py-4 font-bold text-xs uppercase tracking-widest transition-colors duration-200 shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                          !checkIn || !checkOut || !isAvailableForDates || isSubmitting
+                          !checkIn || !checkOut || !isAvailableForDates || isSubmitting || isCheckingAvailability
                             ? "bg-stone-300 text-stone-500 cursor-not-allowed"
                             : "bg-[#821124] text-white hover:bg-[#680e1c]"
                         }`}
@@ -1258,7 +1233,11 @@ export default function BookingModal({
                       >
                         <Lock className="w-3.5 h-3.5" />
                         <span>
-                          {isSubmitting ? "Connecting to Secure Gateway..." : "Proceed to Payment"}
+                          {isSubmitting
+                            ? "Connecting to Secure Gateway..."
+                            : isCheckingAvailability
+                            ? "Checking Availability..."
+                            : "Proceed to Payment"}
                         </span>
                         <ArrowRight className="w-4 h-4" />
                       </button>

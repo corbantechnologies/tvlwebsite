@@ -1,4 +1,4 @@
-import { pgTable, text, integer, doublePrecision, jsonb, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, doublePrecision, jsonb, boolean } from "drizzle-orm/pg-core";
 
 // ============================================================
 // AUTH & USERS

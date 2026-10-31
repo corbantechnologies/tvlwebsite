@@ -2,8 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Utensils, Ship, Clock, Users, Sparkles, Plus, Trash2, Edit, Save, X,
-  RotateCw, ExternalLink, Mail, Shield, Info, Loader2, Check
+  Utensils,
+  Plus,
+  Trash2,
+  Edit,
+  Save,
+  X,
+  RotateCw,
+  Mail,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';

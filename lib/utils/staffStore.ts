@@ -120,7 +120,7 @@ export function saveSystemAuditLogs(logs: SystemAuditLog[]): void {
 export function ensureInquiryAuditTrail(inq: any): any {
   if (!inq) return inq;
   const payload = inq.payload || {};
-  let auditTrail: any[] = Array.isArray(payload.auditTrail) ? [...payload.auditTrail] : [];
+  const auditTrail: any[] = Array.isArray(payload.auditTrail) ? [...payload.auditTrail] : [];
 
   if (auditTrail.length === 0) {
     // 1. Initial creation entry

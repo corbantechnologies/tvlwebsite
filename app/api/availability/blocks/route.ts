@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/db";
 import { availabilityBlocks, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 // GET /api/availability/blocks — list all blocks
 export async function GET() {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
     const newBlock = {
-      id: "blk_" + Date.now(),
+      id: newId("blk"),
       apartmentId,
       startDate,
       endDate,
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     await db.insert(availabilityBlocks).values(newBlock);
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: blockedBy || "Admin",
       actorRole: "admin",
@@ -83,7 +84,7 @@ export async function DELETE(req: NextRequest) {
     await db.delete(availabilityBlocks).where(eq(availabilityBlocks.id, id));
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: "Admin",
       actorRole: "admin",

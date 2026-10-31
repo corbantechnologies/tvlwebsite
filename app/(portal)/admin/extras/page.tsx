@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Sparkles, Plus, Edit3, Trash2, Check, X, RotateCw, 
-  DollarSign, Tag, Car, Gift, Wine, Compass, Eye, EyeOff,
-  Image as ImageIcon, Filter, CheckCircle2, Loader2
+import {
+  Sparkles,
+  Plus,
+  Edit3,
+  Trash2,
+  Check,
+  X,
+  RotateCw,
+  Car,
+  Gift,
+  Wine,
+  Compass,
+  Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';

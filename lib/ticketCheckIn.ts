@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db/db";
 import { eventTickets, events, auditLogs } from "@/lib/db/schema";
 import { eq, or } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 export async function executeCheckIn({
   identifier,
@@ -111,7 +112,7 @@ export async function executeCheckIn({
     .where(eq(eventTickets.id, ticket.id));
 
   await db.insert(auditLogs).values({
-    id: "log_" + Date.now(),
+    id: newId("log"),
     timestamp: checkInTime,
     actor: staffName,
     actorRole: "gate_checkin",

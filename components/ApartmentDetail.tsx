@@ -3,10 +3,22 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { ApartmentType, PackageType } from "@/types";
-import { PACKAGES } from "@/data";
-import { 
-  ArrowLeft, Maximize2, Users, Bed, Bath, Eye, CheckCircle2, 
-  Wifi, Wind, ChefHat, Tv, Lock, Coffee, Sparkles, Calendar, ArrowRight 
+import { PACKAGES } from "@/lib/data";
+import {
+  ArrowLeft,
+  Maximize2,
+  Users,
+  Bed,
+  Eye,
+  CheckCircle2,
+  Wifi,
+  Wind,
+  ChefHat,
+  Tv,
+  Lock,
+  Coffee,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { motion } from "motion/react";
 import OptimizedImage from "./OptimizedImage";
@@ -19,14 +31,10 @@ interface ApartmentDetailProps {
   onBookNow: (data: any, packageId?: string) => void;
 }
 
-export default function ApartmentDetail({ 
-  apartment, 
-  onBack, 
-  onSelectApartment, 
-  allApartments,
-  onBookNow 
-}: ApartmentDetailProps) {
-  if (!apartment) {
+export default function ApartmentDetail(props: ApartmentDetailProps) {
+  // Render the fallback in a separate component so hooks below always run in the same order.
+  if (!props.apartment) {
+    const { onBack } = props;
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center p-12 text-center bg-stone-50 border border-stone-200">
         <p className="text-stone-500 font-light text-sm">Residence details are temporarily unavailable. Please try again later.</p>
@@ -36,6 +44,16 @@ export default function ApartmentDetail({
       </div>
     );
   }
+  return <ApartmentDetailContent {...props} />;
+}
+
+function ApartmentDetailContent({ 
+  apartment, 
+  onBack, 
+  onSelectApartment, 
+  allApartments,
+  onBookNow 
+}: ApartmentDetailProps) {
 
   const discount = apartment.discountPercentage || 0;
   const originalPrice = apartment.pricePerNight;

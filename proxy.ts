@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, COOKIE_NAME } from "@/lib/auth/session";
+import { isPublicApiRequest } from "@/lib/auth/apiAccess";
 
 export async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
 
-  // 1. Guard all /admin routes except /admin/login
+  // 1. Guard staff-only API routes. Public endpoints are listed in lib/auth/apiAccess.ts.
+  if (pathname.startsWith("/api/")) {
+    if (isPublicApiRequest(req.method, pathname, searchParams)) {
+      return NextResponse.next();
+    }
+    const token = req.cookies.get(COOKIE_NAME)?.value;
+    const user = token ? await verifySessionToken(token) : null;
+    if (!user) {
+      return NextResponse.json({ error: "Staff sign-in required." }, { status: 401 });
+    }
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-staff-id", user.id);
+    requestHeaders.set("x-staff-name", encodeURIComponent(user.name));
+    requestHeaders.set("x-staff-role", user.role);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  // 2. Guard all /admin pages except /admin/login
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     const token = req.cookies.get(COOKIE_NAME)?.value;
     const user = token ? await verifySessionToken(token) : null;
@@ -21,14 +39,10 @@ export async function proxy(req: NextRequest) {
     requestHeaders.set("x-staff-name", encodeURIComponent(user.name));
     requestHeaders.set("x-staff-role", user.role);
 
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // 2. If logged in and visiting /admin/login, redirect to /admin/frontdesk
+  // 3. If logged in and visiting /admin/login, redirect to /admin/frontdesk
   if (pathname === "/admin/login") {
     const token = req.cookies.get(COOKIE_NAME)?.value;
     const user = token ? await verifySessionToken(token) : null;
@@ -40,5 +54,8 @@ export async function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const edgeProxy = proxy;
+export const config = {
+  matcher: ["/api/:path*", "/admin/:path*"],
+};
+
 export default proxy;

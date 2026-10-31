@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Hotel, Users, Calendar, Clock, CheckCircle2, 
-  ArrowRight, ShieldCheck, Key, AlertCircle, Phone, Mail, RotateCw, Plus, Loader2 
+import {
+  Hotel,
+  CheckCircle2,
+  Key,
+  RotateCw,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -37,7 +40,7 @@ export default function FrontDeskPage() {
   const handleAction = async (guestId: string, actionType: 'check-in' | 'check-out' | 'log-note') => {
     setIsProcessing(guestId);
     try {
-      let payload: Record<string, any> = { id: guestId, action: actionType };
+      const payload: Record<string, any> = { id: guestId, action: actionType };
 
       if (actionType === 'log-note') {
         const note = window.prompt('Enter VIP / Service Note for this guest:');

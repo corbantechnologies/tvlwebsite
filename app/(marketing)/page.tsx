@@ -10,24 +10,35 @@ import DiningDetail from "@/components/DiningDetail";
 import BookingModal from "@/components/BookingModal";
 import TransferModal from "@/components/TransferModal";
 import EventsAndChartersSection from "@/components/EventsAndChartersSection";
-import EventsHighlight from "@/components/marketing/EventsHighlight";
+import EventsHighlight from "@/components/EventsHighlight";
 
 import DirectPerksBanner from "@/components/DirectPerksBanner";
 import ReviewsSection from "@/components/ReviewsSection";
 import MobileBookingBar from "@/components/MobileBookingBar";
 import GuestBookingTrackerModal from "@/components/GuestBookingTrackerModal";
 import OptimizedImage from "@/components/OptimizedImage";
-import { getOptimizedImageUrl } from "@/utils/media";
-import { loadTransferVehicles, loadEventPackages, saveTransferVehicles, saveEventPackages } from "@/utils/extrasStore";
+import { getOptimizedImageUrl } from "@/lib/utils/media";
+import { loadTransferVehicles, loadEventPackages, saveTransferVehicles, saveEventPackages } from "@/lib/utils/extrasStore";
 import { StaffUser } from "@/types";
-import { loadStaffUsers, saveStaffUsers, getCurrentStaffUser, setCurrentStaffUser } from "@/utils/staffStore";
-import { APARTMENTS, PACKAGES, DINING, FACILITIES } from "@/data";
+import { loadStaffUsers, saveStaffUsers, getCurrentStaffUser, setCurrentStaffUser } from "@/lib/utils/staffStore";
+import { PACKAGES, DINING, FACILITIES } from "@/lib/data";
 import {
-  Waves, Users, Maximize2, Coffee, Utensils, Ship,
-  MapPin, Phone, Mail, Sparkles, ArrowRight, Clock, ChevronRight,
-  ShieldCheck, HelpCircle, CheckCircle2, Star, Calendar, MessageSquare,
-  ChevronLeft, Image as ImageIcon, Settings, Plus, Trash2, RotateCcw, Check,
-  Car, Plane, Train, Key, UserCheck, Eye, EyeOff, Lock, ArrowLeft
+  Users,
+  Maximize2,
+  Coffee,
+  Utensils,
+  Sparkles,
+  ArrowRight,
+  ChevronRight,
+  ShieldCheck,
+  CheckCircle2,
+  Star,
+  MessageSquare,
+  ChevronLeft,
+  Settings,
+  Car,
+  Plane,
+  Train,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 

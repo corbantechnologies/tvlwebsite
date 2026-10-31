@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Car, Plane, Train, Sparkles, ShieldCheck, Check, ArrowRight } from 'lucide-react';
-import BookingModal from '@/components/marketing/BookingModal';
+import { Car, Check } from 'lucide-react';
+import BookingModal from '@/components/BookingModal';
 
 export default function TransfersPage() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);

@@ -1,23 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Ticket, 
-  Plus, 
-  Trash2, 
-  Edit, 
-  RotateCw, 
-  CheckCircle2, 
-  X, 
-  Calendar, 
-  DollarSign, 
-  Percent, 
-  Tag, 
-  Copy, 
-  Check, 
-  AlertCircle,
-  Clock,
-  Users
+import {
+  Ticket,
+  Plus,
+  Trash2,
+  Edit,
+  RotateCw,
+  CheckCircle2,
+  X,
+  Calendar,
+  Copy,
+  Check,
+  Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

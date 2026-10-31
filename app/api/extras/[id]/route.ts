@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { extras, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { newId } from "@/lib/ids";
 
 // PATCH /api/extras/[id] — update an extra
 export async function PATCH(
@@ -33,7 +34,7 @@ export async function PATCH(
     await db.update(extras).set(updatePayload).where(eq(extras.id, id));
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: body.actor || "Admin",
       actorRole: body.actorRole || "admin",
@@ -76,7 +77,7 @@ export async function DELETE(
     }
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: "Admin",
       actorRole: "admin",

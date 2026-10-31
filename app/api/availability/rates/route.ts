@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { rateOverrides, auditLogs } from "@/lib/db/schema";
-import { and, eq, gte, lte, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 // ============================================================
 // GET /api/availability/rates
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newOverride = {
-      id: "ro_" + Date.now(),
+      id: newId("ro"),
       apartmentId: body.apartmentId,
       startDate: body.startDate,
       endDate: body.endDate,
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
     await db.insert(rateOverrides).values(newOverride);
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: body.createdBy || "Admin",
       actorRole: "admin",
@@ -127,7 +128,7 @@ export async function DELETE(req: NextRequest) {
     await db.delete(rateOverrides).where(eq(rateOverrides.id, id));
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: "Admin",
       actorRole: "admin",

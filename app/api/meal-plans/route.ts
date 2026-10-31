@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { mealPlans, auditLogs } from "@/lib/db/schema";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 // GET /api/meal-plans — list all meal plans (active-only by default)
 export async function GET(req: NextRequest) {
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     await db.insert(mealPlans).values(newPlan);
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: body.actor || "Admin",
       actorRole: body.actorRole || "admin",

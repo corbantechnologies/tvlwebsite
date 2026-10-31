@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/db";
 import { globalSettings, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 // Hero/site settings are stored as key-value rows in global_settings.
 // The following keys are used:
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       await Promise.all(keys.map((k) => upsertSetting(k, body.settings[k])));
 
       await db.insert(auditLogs).values({
-        id: "log_" + Date.now(),
+        id: newId("log"),
         timestamp: new Date().toISOString(),
         actor: body.actor || "Admin",
         actorRole: body.actorRole || "admin",
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
       await upsertSetting(body.key, body.value);
 
       await db.insert(auditLogs).values({
-        id: "log_" + Date.now(),
+        id: newId("log"),
         timestamp: new Date().toISOString(),
         actor: body.actor || "Admin",
         actorRole: body.actorRole || "admin",

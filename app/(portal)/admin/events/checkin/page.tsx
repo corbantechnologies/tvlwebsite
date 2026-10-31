@@ -5,22 +5,16 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   QrCode,
-  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
   XCircle,
   Search,
   Lock,
   Unlock,
-  RotateCw,
   ArrowLeft,
-  Users,
   Clock,
-  Sparkles,
-  Camera,
   Loader2,
-  Check,
-  ClipboardList
+  ClipboardList,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { EventTicketType, ResortEvent } from '@/types';

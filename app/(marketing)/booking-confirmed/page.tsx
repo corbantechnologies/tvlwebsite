@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   CheckCircle2,
   Calendar,
-  Users,
   Hotel,
   CreditCard,
   Utensils,
@@ -19,7 +18,6 @@ import {
   MapPin,
   Loader2,
   AlertCircle,
-  Sparkles
 } from 'lucide-react';
 
 interface ConfirmedBooking {

@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/db";
 import { transfers, bookings, auditLogs } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
+import { newId } from "@/lib/ids";
 
 export async function GET() {
   try {
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const transferId = "tr_" + Date.now();
+    const transferId = newId("tr");
     const now = new Date().toISOString();
 
     const newTransfer = {
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest) {
 
     // Audit log
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: now,
       actor: "staff",
       actorRole: "concierge",

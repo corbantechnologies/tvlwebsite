@@ -4,11 +4,19 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import {
-  Clock, Calendar, Users, ArrowLeft, Utensils, CheckCircle2,
-  MapPin, Sparkles, Wine, Compass, Sunset, Anchor, ArrowRight,
-  Info, Star, GlassWater, ChefHat, AlertCircle, RefreshCw, Ticket
+  Clock,
+  Calendar,
+  ArrowLeft,
+  Utensils,
+  CheckCircle2,
+  Sparkles,
+  Wine,
+  ArrowRight,
+  Star,
+  GlassWater,
+  ChefHat,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { DiningExperience } from "@/types";
 import OptimizedImage from "./OptimizedImage";
 
@@ -19,8 +27,10 @@ interface DiningDetailProps {
   allDinings: DiningExperience[];
 }
 
-export default function DiningDetail({ dining, onBack, onSelectDining, allDinings }: DiningDetailProps) {
-  if (!dining) {
+export default function DiningDetail(props: DiningDetailProps) {
+  // Render the fallback in a separate component so hooks below always run in the same order.
+  if (!props.dining) {
+    const { onBack } = props;
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center p-12 text-center bg-stone-50 border border-stone-200">
         <p className="text-stone-500 font-light text-sm">Dining experience details are temporarily unavailable. Please try again later.</p>
@@ -30,6 +40,10 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
       </div>
     );
   }
+  return <DiningDetailContent {...props} />;
+}
+
+function DiningDetailContent({ dining, onBack, onSelectDining, allDinings }: DiningDetailProps) {
 
   // Gallery images based on dining ID to make it extremely immersive
   const getDiningGallery = (id: string) => {
@@ -142,7 +156,6 @@ export default function DiningDetail({ dining, onBack, onSelectDining, allDining
   };
 
   const specials = getDiningSpecials(dining.id);
-
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

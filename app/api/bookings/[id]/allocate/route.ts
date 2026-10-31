@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { bookings, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { newId } from "@/lib/ids";
 
 // ============================================================
 // POST /api/bookings/[id]/allocate
@@ -54,7 +55,7 @@ export async function POST(
       .where(eq(bookings.id, id));
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: actor || "Reservations",
       actorRole: actorRole || "reservations",

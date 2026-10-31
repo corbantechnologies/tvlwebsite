@@ -2,6 +2,11 @@ import { SignJWT, jwtVerify } from "jose";
 import { StaffUser } from "@/types";
 import { NextRequest } from "next/server";
 
+if (!process.env.SESSION_SECRET && !process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === "production") {
+  // The fallback below is public in the repository: anyone could forge a staff session with it.
+  console.error("[Auth] SESSION_SECRET is not set. Set it in Vercel → Settings → Environment Variables.");
+}
+
 const JWT_SECRET = new TextEncoder().encode(
   process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET || "tamarind-mombasa-luxury-executive-secret-2026"
 );

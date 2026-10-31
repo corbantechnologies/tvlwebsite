@@ -3,9 +3,7 @@
 import React, { useState } from 'react';
 import {
   X,
-  Ticket,
   Calendar,
-  Clock,
   MapPin,
   Sparkles,
   ShieldCheck,
@@ -14,7 +12,7 @@ import {
   Loader2,
   CreditCard,
   Tag,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -110,36 +108,18 @@ export default function EventTicketModal({ isOpen, onClose, event }: EventTicket
     setLoading(true);
 
     try {
-      const reference = `TKT-${Math.floor(100000 + Math.random() * 900000)}`;
-
-      const res = await fetch('/api/paystack/initialize', {
+      // The server prices the order from the event record and checks capacity.
+      const res = await fetch('/api/events/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: guestEmail.trim(),
-          amount: totalAmountKes,
-          currency: 'KES',
-          reference,
-          subaccount: event.subaccountCode || undefined,
-          metadata: {
-            type: 'event_ticket',
-            eventId: event.id,
-            eventTitle: event.title,
-            brand: event.brand || 'tamarind_village',
-            venue: event.venue,
-            eventDate: event.startDate || event.eventDate || '',
-            guestName: guestName.trim(),
-            guestEmail: guestEmail.trim(),
-            guestPhone: guestPhone.trim(),
-            ticketCount,
-            unitPriceKes,
-            unitPriceUsd,
-            totalAmountKes,
-            discountAmountKes: discountKes,
-            voucherCode: appliedVoucher?.code || null,
-            dietaryRequirements: dietaryRequirements.trim() || null,
-            subaccountCode: event.subaccountCode || null,
-          },
+          eventId: event.id,
+          ticketCount,
+          guestName: guestName.trim(),
+          guestEmail: guestEmail.trim(),
+          guestPhone: guestPhone.trim(),
+          dietaryRequirements: dietaryRequirements.trim() || null,
+          voucherCode: appliedVoucher?.code || null,
         }),
       });
 

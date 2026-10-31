@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, ShieldCheck, Plus, Trash2, Key, RotateCw, UserPlus, CheckCircle2, ShieldAlert, Loader2, Check } from 'lucide-react';
+import { Users, Plus, Trash2, RotateCw, UserPlus, CheckCircle2, ShieldAlert, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface StaffUser {

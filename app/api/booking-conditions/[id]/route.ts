@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { bookingConditions, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { newId } from "@/lib/ids";
 
 // PATCH /api/booking-conditions/[id] — update a booking condition
 export async function PATCH(
@@ -53,7 +54,7 @@ export async function PATCH(
     await db.update(bookingConditions).set(updatePayload).where(eq(bookingConditions.id, id));
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: body.actor || "Admin",
       actorRole: body.actorRole || "admin",
@@ -98,7 +99,7 @@ export async function DELETE(
     await db.delete(bookingConditions).where(eq(bookingConditions.id, id));
 
     await db.insert(auditLogs).values({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       timestamp: new Date().toISOString(),
       actor: "Admin",
       actorRole: "admin",

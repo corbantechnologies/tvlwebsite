@@ -2,12 +2,20 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  BookOpen, Hotel, Calendar, Bell, Building2, UtensilsCrossed, 
-  Sparkles, Tag, Car, DollarSign, Users, Activity, Layers, 
-  ArrowRight, CheckCircle2, ShieldCheck, Key, Compass, Search,
-  ExternalLink, HelpCircle, ChevronRight, Info,
-  QrCode, ClipboardList, Ticket, Lock, CreditCard
+import {
+  BookOpen,
+  Hotel,
+  Activity,
+  ArrowRight,
+  CheckCircle2,
+  ShieldCheck,
+  Compass,
+  Info,
+  QrCode,
+  ClipboardList,
+  Ticket,
+  Lock,
+  CreditCard,
 } from 'lucide-react';
 
 export default function AdminGuidePage() {

@@ -2,9 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Building2, Users, Calendar, Sparkles, Tag, DollarSign, 
-  ArrowRight, ShieldCheck, CheckCircle2, Clock, Bell, Hotel, Car, Layers 
+import {
+  Building2,
+  Sparkles,
+  Tag,
+  ArrowRight,
+  CheckCircle2,
+  Bell,
+  Car,
+  Layers,
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {

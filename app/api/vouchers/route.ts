@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { vouchers } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { evaluateVoucher } from "@/lib/vouchers";
+import { newId } from "@/lib/ids";
 
 // ============================================================
 // GET /api/vouchers
@@ -22,105 +24,16 @@ export async function GET(req: NextRequest) {
 
     // Validate a specific code for checkout
     if (code) {
-      const [voucher] = await db
-        .select()
-        .from(vouchers)
-        .where(eq(vouchers.code, code))
-        .limit(1);
-
-      if (!voucher || !voucher.isActive) {
-        return NextResponse.json({
-          valid: false,
-          error: "Invalid or inactive promo code.",
-        });
+      const result = await evaluateVoucher(code, {
+        scope: scopeParam === "event" || scopeParam === "apartment" ? scopeParam : null,
+        eventId: eventIdParam,
+        subtotalUsd,
+        subtotalKes,
+      });
+      if (!result.valid) {
+        return NextResponse.json({ valid: false, error: result.error });
       }
-
-      const today = new Date().toISOString().split("T")[0];
-
-      if (voucher.validFrom && today < voucher.validFrom) {
-        return NextResponse.json({
-          valid: false,
-          error: `This promo code is not active until ${voucher.validFrom}.`,
-        });
-      }
-
-      if (voucher.validUntil && today > voucher.validUntil) {
-        return NextResponse.json({
-          valid: false,
-          error: `This promo code expired on ${voucher.validUntil}.`,
-        });
-      }
-
-      if (voucher.usageLimit !== null && voucher.usageLimit !== undefined) {
-        if ((voucher.usedCount || 0) >= voucher.usageLimit) {
-          return NextResponse.json({
-            valid: false,
-            error: "This promo code has reached its maximum redemption limit.",
-          });
-        }
-      }
-
-      // Check scope compatibility
-      const voucherScope = voucher.scope || "all";
-      if (scopeParam === "event" && voucherScope === "apartment") {
-        return NextResponse.json({
-          valid: false,
-          error: "This voucher is only applicable to apartment bookings.",
-        });
-      }
-      if (scopeParam === "apartment" && voucherScope === "event") {
-        return NextResponse.json({
-          valid: false,
-          error: "This voucher is only applicable to event tickets.",
-        });
-      }
-
-      // Check specific event eligibility
-      if (
-        scopeParam === "event" &&
-        voucher.applicableEventIds &&
-        Array.isArray(voucher.applicableEventIds) &&
-        voucher.applicableEventIds.length > 0
-      ) {
-        if (!eventIdParam || !voucher.applicableEventIds.includes(eventIdParam)) {
-          return NextResponse.json({
-            valid: false,
-            error: "This promo code is not applicable to this specific event.",
-          });
-        }
-      }
-
-      if (voucher.minSpendUsd && subtotalUsd < voucher.minSpendUsd) {
-        return NextResponse.json({
-          valid: false,
-          error: `Minimum total of $${voucher.minSpendUsd} USD required for this promo code.`,
-        });
-      }
-
-      // Calculate discount amount in USD and KES
-      let discountAmountUsd = 0;
-      let discountAmountKes = 0;
-
-      if (voucher.discountType === "percentage") {
-        discountAmountUsd = (subtotalUsd * voucher.discountValue) / 100;
-        if (voucher.maxDiscountUsd && discountAmountUsd > voucher.maxDiscountUsd) {
-          discountAmountUsd = voucher.maxDiscountUsd;
-        }
-        discountAmountKes = (subtotalKes * voucher.discountValue) / 100;
-        if (voucher.maxDiscountUsd) {
-          discountAmountKes = Math.min(discountAmountKes, voucher.maxDiscountUsd * 130);
-        }
-      } else if (voucher.discountType === "fixed_usd") {
-        discountAmountUsd = Math.min(voucher.discountValue, subtotalUsd);
-        discountAmountKes = Math.min(voucher.discountValue * 130, subtotalKes);
-      } else if (voucher.discountType === "fixed_kes") {
-        discountAmountKes = Math.min(voucher.discountValue, subtotalKes);
-        discountAmountUsd = Math.min(voucher.discountValue / 130, subtotalUsd);
-      }
-
-      discountAmountUsd = Math.round(discountAmountUsd * 100) / 100;
-      discountAmountKes = Math.round(discountAmountKes);
-
+      const voucher = result.voucher;
       return NextResponse.json({
         valid: true,
         voucher: {
@@ -129,8 +42,9 @@ export async function GET(req: NextRequest) {
           description: voucher.description,
           discountType: voucher.discountType,
           discountValue: voucher.discountValue,
-          discountAmountUsd,
-          discountAmountKes,
+          maxDiscountUsd: voucher.maxDiscountUsd,
+          discountAmountUsd: result.discountAmountUsd,
+          discountAmountKes: result.discountAmountKes,
           scope: voucher.scope || "all",
         },
       });
@@ -182,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newVoucher = {
-      id: "vouch_" + Date.now(),
+      id: newId("vouch"),
       code: cleanCode,
       description: body.description || "",
       discountType: body.discountType || "percentage",

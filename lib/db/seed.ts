@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { sql, eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import {
   users,
@@ -9,7 +9,6 @@ import {
   diningOptions,
   globalSettings,
   mealPlans,
-  extras,
 } from "./schema";
 
 // Seeding guard — only run once per process lifecycle
@@ -253,6 +252,27 @@ async function createTables(db: ReturnType<typeof getDb>): Promise<void> {
       created_at TEXT NOT NULL
     );
 
+    -- Bring older live bookings tables up to the current schema
+    -- (CREATE TABLE IF NOT EXISTS never adds columns to an existing table).
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS allocated_unit TEXT;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS meal_plan_id TEXT;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS meal_plan_name TEXT;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS meal_plan_price_per_person_usd DOUBLE PRECISION DEFAULT 0;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS meal_plan_price_per_person_kes DOUBLE PRECISION DEFAULT 0;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS room_rate_usd DOUBLE PRECISION DEFAULT 0;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS room_rate_kes DOUBLE PRECISION DEFAULT 0;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS nights INTEGER DEFAULT 1;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS total_room_usd DOUBLE PRECISION DEFAULT 0;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS total_meal_plan_usd DOUBLE PRECISION DEFAULT 0;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS total_extras_usd DOUBLE PRECISION DEFAULT 0;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method TEXT;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_reference TEXT;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS inquiry_source TEXT DEFAULT 'village_apartment';
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS special_requests TEXT;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS staff_notes JSONB;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guest_token TEXT;
+    CREATE INDEX IF NOT EXISTS bookings_payment_reference_idx ON bookings (payment_reference);
+
     CREATE TABLE IF NOT EXISTS apartment_inventory (
       id TEXT PRIMARY KEY,
       total_units INTEGER NOT NULL DEFAULT 1,
@@ -389,6 +409,18 @@ async function seedRequiredDefaults(db: ReturnType<typeof getDb>): Promise<void>
   await seedDining(db);
   await seedFacilities(db);
   await seedMealPlans(db);
+  await backfillInventory(db);
+}
+
+// Every suite needs an inventory row so availability, blocks and the admin
+// calendar apply to it (suites created before this fix had none).
+async function backfillInventory(db: ReturnType<typeof getDb>): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO apartment_inventory (id, total_units, notes, updated_at)
+    SELECT id, 1, 'Backfilled: please confirm unit count', ${new Date().toISOString()}
+    FROM apartments
+    ON CONFLICT (id) DO NOTHING
+  `);
 }
 
 // ---------------------------------------------------------------
@@ -807,6 +839,4 @@ async function seedMealPlans(db: ReturnType<typeof getDb>): Promise<void> {
 
   console.log("[Seed] Official Boarding Packages seeded (RO: $0, BB: $21, HB: $41).");
 }
-
-
 
