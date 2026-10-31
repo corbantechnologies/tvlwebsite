@@ -20,7 +20,9 @@ Tables are created and seeded automatically on the first API request (`lib/db/se
 | `SESSION_SECRET` | **Required in production.** Signs staff login sessions. Use a long random string. |
 | `PAYSTACK_SECRET_KEY` | Paystack secret key (live key in production) |
 | `PAYSTACK_SUBACCOUNT_*` | Optional subaccounts per brand (`RESTAURANT`, `DHOW`, `DAWA`, `CASINO`, `VILLAGE`) |
-| `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_VILLAGE` | Transactional email |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Transactional email (Resend; `EMAIL_FROM` must be on a verified domain) |
+| `EMAIL_VILLAGE` | Village reservations inbox: apartment bookings, payment alerts, Village events |
+| `EMAIL_RESTAURANT`, `EMAIL_DHOW`, `EMAIL_DAWA`, `EMAIL_GOLDEN_KEY` | Each brand's inbox: its event ticket sales and inquiries (`lib/staffInboxes.ts`) |
 | `NEXT_PUBLIC_SITE_URL` | Public site URL, used in emails |
 | `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD` | First admin account (only used on an empty database) |
 

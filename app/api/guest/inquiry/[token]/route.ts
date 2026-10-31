@@ -4,17 +4,10 @@ import { inquiries, bookings, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Resend } from "resend";
 import { newId } from "@/lib/ids";
+import { staffInboxFor } from "@/lib/staffInboxes";
 
-// Venue → staff email mapping
 function getVenueEmail(venue: string): string {
-  const map: Record<string, string> = {
-    village_apartment: process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke",
-    restaurant: process.env.EMAIL_RESTAURANT || "restaurant@tamarind.co.ke",
-    dhow: process.env.EMAIL_DHOW || "dhow@tamarind.co.ke",
-    dawa_terrace: process.env.EMAIL_DAWA || "reservations.mombasa@tamarind.co.ke",
-    golden_key: process.env.EMAIL_GOLDEN_KEY || "goldenkey.casino@tamarind.co.ke",
-  };
-  return map[venue] || map.village_apartment;
+  return staffInboxFor(venue);
 }
 
 async function findByToken(token: string) {
