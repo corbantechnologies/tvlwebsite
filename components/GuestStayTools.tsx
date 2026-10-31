@@ -88,7 +88,7 @@ export default function GuestStayTools({ booking, token, onUpdated }: Props) {
   return (
     <div className="space-y-3">
       {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2">
         {paid && (
           <a
             href={`/reservation/${tokenPath}`}

@@ -245,6 +245,11 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
                 Resident Swimming Pools (In-House Guests Only)
               </button>
             </li>
+            <li>
+              <Link href="/guide" className="hover:text-brand-gold transition-colors">
+                Guest Guide: Booking, Check-In &amp; Cancellations
+              </Link>
+            </li>
             {onOpenTracking && (
               <li>
                 <button onClick={onOpenTracking} className="hover:text-brand-gold text-brand-gold/90 transition-colors cursor-pointer text-left font-medium">
@@ -327,6 +332,9 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
             <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap text-stone-400 mt-2 text-[11px]">
               <Link href="/track" className="hover:text-brand-gold underline underline-offset-4 transition-colors">
                 Guest Management Portal
+              </Link>
+              <Link href="/guide" className="hover:text-brand-gold underline underline-offset-4 transition-colors">
+                Guest Guide &amp; Help
               </Link>
             </div>
           </div>

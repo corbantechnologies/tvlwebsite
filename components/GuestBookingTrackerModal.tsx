@@ -357,6 +357,11 @@ export default function GuestBookingTrackerModal({
                   <span className="text-[10px] text-white/50 uppercase font-bold block">Billing Status</span>
                   <div className="text-sm font-mono font-bold text-white">
                     {currency} {Number(totalAmount).toLocaleString()}
+                    {record?.chargeCurrency && record.chargeCurrency !== currency && paymentStatus === 'paid' && (
+                      <span className="ml-1 text-xs font-normal text-white/60">
+                        (paid {record.chargeCurrency} {Number(record.amountPaid ?? record.chargeAmount ?? 0).toLocaleString()})
+                      </span>
+                    )}
                     <span className={`ml-2 text-xs uppercase px-2 py-0.5 rounded font-sans font-bold ${
                       paymentStatus === 'paid' || paymentStatus === 'fully_paid'
                         ? 'text-emerald-400 bg-emerald-950/60'
