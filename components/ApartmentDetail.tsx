@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import OptimizedImage from "./OptimizedImage";
+import AvailabilityStatus from "./AvailabilityStatus";
+import { propertyToday } from "@/lib/dates";
 
 interface ApartmentDetailProps {
   apartment: ApartmentType;
@@ -69,42 +71,63 @@ function ApartmentDetailContent({
   const [rateOverride, setRateOverride] = useState<any>(null);
   const [effectiveNightlyRate, setEffectiveNightlyRate] = useState<number | null>(null);
   const [availabilityNotice, setAvailabilityNotice] = useState<string | null>(null);
+  const [isAvailable, setIsAvailable] = useState<boolean>(true);
+  const [checkingAvailability, setCheckingAvailability] = useState<boolean>(false);
+  const today = propertyToday();
 
+  // Check availability as soon as both dates are picked, so guests know before continuing.
   React.useEffect(() => {
     if (!checkIn || !checkOut || !apartment?.id) {
       setRateOverride(null);
       setEffectiveNightlyRate(null);
       setAvailabilityNotice(null);
+      setIsAvailable(true);
+      setCheckingAvailability(false);
       return;
     }
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    if (start >= end) return;
+    if (checkIn >= checkOut) {
+      setIsAvailable(false);
+      setAvailabilityNotice("Check-out must be after check-in.");
+      setCheckingAvailability(false);
+      return;
+    }
 
+    let isMounted = true;
+    setCheckingAvailability(true);
+    setIsAvailable(false);
+    setAvailabilityNotice(null);
     fetch(`/api/availability?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}&apartmentId=${encodeURIComponent(apartment.id)}`)
       .then(r => r.json())
       .then(data => {
+        if (!isMounted) return;
         const match = data.apartments?.find((a: any) => a.apartmentId === apartment.id);
-        if (match) {
-          if (match.rateOverride) {
-            setRateOverride(match.rateOverride);
-            if (match.effectiveRateUsd != null) {
-              setEffectiveNightlyRate(match.effectiveRateUsd);
-            }
-          } else {
-            setRateOverride(null);
-            setEffectiveNightlyRate(null);
-          }
-          if (match.availableUnits <= 0) {
-            setAvailabilityNotice("Fully booked for selected dates");
-          } else if (!match.meetsMinNights) {
-            setAvailabilityNotice(`Minimum stay: ${match.minNights} nights for this period`);
-          } else {
-            setAvailabilityNotice(null);
-          }
+        if (!match) {
+          setIsAvailable(false);
+          setAvailabilityNotice(data.message || "We couldn't confirm availability for these dates.");
+          return;
         }
+        if (match.rateOverride) {
+          setRateOverride(match.rateOverride);
+          if (match.effectiveRateUsd != null) setEffectiveNightlyRate(match.effectiveRateUsd);
+        } else {
+          setRateOverride(null);
+          setEffectiveNightlyRate(null);
+        }
+        setIsAvailable(Boolean(match.available));
+        setAvailabilityNotice(match.available ? null : match.reason || data.message || "Not available for the selected dates.");
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!isMounted) return;
+        setIsAvailable(false);
+        setAvailabilityNotice("We couldn't check availability right now. Please try again in a moment.");
+      })
+      .finally(() => {
+        if (isMounted) setCheckingAvailability(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [checkIn, checkOut, apartment?.id]);
 
   const [mealPlansList, setMealPlansList] = useState<PackageType[]>(PACKAGES);
@@ -147,6 +170,14 @@ function ApartmentDetailContent({
     e.preventDefault();
     if (!checkIn || !checkOut) {
       toast.error("Please select both Check-In and Check-Out dates first.");
+      return;
+    }
+    if (checkingAvailability) {
+      toast.error("Still checking availability for your dates. Please wait a moment.");
+      return;
+    }
+    if (!isAvailable) {
+      toast.error(availabilityNotice || "This apartment is not available for the selected dates.");
       return;
     }
     const normalizedPkg = selectedPackage === "ro" ? "room-only" : selectedPackage === "bb" ? "bed-breakfast" : selectedPackage === "hb" ? "half-board" : selectedPackage;
@@ -499,7 +530,7 @@ function ApartmentDetailContent({
                       <input 
                         type="date" 
                         required
-                        min="2026-06-29"
+                        min={today}
                         value={checkIn}
                         onChange={(e) => setCheckIn(e.target.value)}
                         className="w-full text-xs px-3 py-2 border border-stone-300 rounded-none text-stone-800 bg-stone-50/50 focus:outline-none focus:border-brand-teal"
@@ -513,7 +544,7 @@ function ApartmentDetailContent({
                       <input 
                         type="date" 
                         required
-                        min={checkIn || "2026-06-29"}
+                        min={checkIn || today}
                         value={checkOut}
                         onChange={(e) => setCheckOut(e.target.value)}
                         className="w-full text-xs px-3 py-2 border border-stone-300 rounded-none text-stone-800 bg-stone-50/50 focus:outline-none focus:border-brand-teal"
@@ -522,6 +553,13 @@ function ApartmentDetailContent({
                     </div>
                   </div>
                 </div>
+
+                <AvailabilityStatus
+                  hasDates={Boolean(checkIn && checkOut)}
+                  checking={checkingAvailability}
+                  available={isAvailable}
+                  notice={availabilityNotice}
+                />
 
                 {/* Package Option */}
                 <div>
@@ -691,9 +729,9 @@ function ApartmentDetailContent({
                     <button
                       type="button"
                       onClick={handleDirectBook}
-                      disabled={!checkIn || !checkOut}
+                      disabled={!checkIn || !checkOut || checkingAvailability || !isAvailable}
                       className={`w-full py-3.5 font-bold rounded-none text-xs uppercase tracking-widest transition-colors duration-200 cursor-pointer text-center flex items-center justify-center gap-2 ${
-                        checkIn && checkOut 
+                        checkIn && checkOut && !checkingAvailability && isAvailable 
                           ? "bg-[#821124] text-white hover:bg-[#680e1c] shadow-md" 
                           : "bg-stone-200 text-stone-400 cursor-not-allowed"
                       }`}

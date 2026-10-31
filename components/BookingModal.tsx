@@ -18,6 +18,8 @@ import {
   Ticket,
 } from "lucide-react";
 import { APARTMENTS } from "@/lib/data";
+import AvailabilityStatus from "@/components/AvailabilityStatus";
+import { propertyToday } from "@/lib/dates";
 import toast from "react-hot-toast";
 
 interface BookingModalProps {
@@ -645,6 +647,12 @@ export default function BookingModal({
                           </p>
                         </div>
                       </div>
+                      <AvailabilityStatus
+                        hasDates={Boolean(checkIn && checkOut)}
+                        checking={isCheckingAvailability}
+                        available={isAvailableForDates}
+                        notice={availabilityNotice}
+                      />
                     </div>
                   ) : (
                     <div className="bg-white border border-stone-200 p-6 rounded-none shadow-xs space-y-5">
@@ -691,6 +699,7 @@ export default function BookingModal({
                           <input
                             type="date"
                             required
+                            min={propertyToday()}
                             value={checkIn}
                             onChange={(e) => setCheckIn(e.target.value)}
                             className="w-full bg-stone-50 border border-stone-300 rounded-none px-3 py-2 text-xs text-stone-800 focus:outline-none focus:border-[#821124] focus:bg-white"
@@ -711,6 +720,13 @@ export default function BookingModal({
                           />
                         </div>
                       </div>
+
+                      <AvailabilityStatus
+                        hasDates={Boolean(checkIn && checkOut)}
+                        checking={isCheckingAvailability}
+                        available={isAvailableForDates}
+                        notice={availabilityNotice}
+                      />
 
                       {/* Guest counter */}
                       <div className="grid grid-cols-2 gap-4 bg-stone-50 p-4 border border-stone-200">
