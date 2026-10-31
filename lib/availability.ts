@@ -62,10 +62,7 @@ export function isIsoDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(new Date(value).getTime());
 }
 
-/** Today's date at the property (Mombasa, UTC+3) as YYYY-MM-DD. */
-export function propertyToday(): string {
-  return new Date(Date.now() + 3 * 3600 * 1000).toISOString().split("T")[0];
-}
+export { propertyToday } from "@/lib/dates";
 
 /** Whether a booking currently takes up a unit. Unpaid checkouts only hold for a short window. */
 export function bookingOccupiesInventory(b: typeof bookings.$inferSelect, now = Date.now()): boolean {
