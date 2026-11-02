@@ -1,31 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
-import { inquiries, bookings, auditLogs } from "@/lib/db/schema";
+import { inquiries, bookings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Resend } from "resend";
-import { newId } from "@/lib/ids";
-
-// Venue → staff email mapping
-function getVenueEmail(venue: string): string {
-  const map: Record<string, string> = {
-    village_apartment: process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke",
-    restaurant: process.env.EMAIL_RESTAURANT || "restaurant@tamarind.co.ke",
-    dhow: process.env.EMAIL_DHOW || "dhow@tamarind.co.ke",
-    dawa_terrace: process.env.EMAIL_DAWA || "reservations.mombasa@tamarind.co.ke",
-    golden_key: process.env.EMAIL_GOLDEN_KEY || "goldenkey.casino@tamarind.co.ke",
-  };
-  return map[venue] || map.village_apartment;
-}
+import { staffInboxFor, villageInbox } from "@/lib/staffInboxes";
+import { guestView, paidLabel } from "@/lib/bookingFormat";
+import { rateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import { escapeHtml } from "@/lib/escapeHtml";
+import { sendEmail, siteUrl } from "@/lib/mailer";
+import { writeAuditLog } from "@/lib/audit";
+import { freeCancellationHours, PROPERTY } from "@/lib/contact";
+import { msUntilCheckIn } from "@/lib/dates";
 
 async function findByToken(token: string) {
   const db = getDb();
   const clean = token.trim().toUpperCase();
 
-  // Inquiries
   const inqRows = await db.select().from(inquiries).where(eq(inquiries.guestToken, clean)).limit(1);
   if (inqRows.length > 0) return { type: "inquiry" as const, record: inqRows[0] };
 
-  // Bookings (for Paystack-confirmed bookings that have a guestToken)
   const bkgRows = await db.select().from(bookings).where(eq(bookings.guestToken, clean)).limit(1);
   if (bkgRows.length > 0) return { type: "booking" as const, record: bkgRows[0] };
 
@@ -34,53 +26,52 @@ async function findByToken(token: string) {
 
 // ============================================================
 // GET /api/guest/inquiry/[token]
-// Read-only view of inquiry/booking status for the guest
+// Read-only view of an inquiry or booking for the guest.
+// Bookings are returned without staff notes or payment internals.
 // ============================================================
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  const limited = await rateLimit(req, RATE_LIMITS.guestLookup);
+  if (limited) return limited;
   try {
     const { token } = await params;
     const found = await findByToken(token);
-
     if (!found) {
-      return NextResponse.json(
-        { error: `No record found for reference: ${token.trim().toUpperCase()}` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `No record found for reference: ${token.trim().toUpperCase()}` }, { status: 404 });
     }
-
-    return NextResponse.json({ [found.type]: found.record });
+    if (found.type === "booking") {
+      return NextResponse.json({ booking: guestView(found.record) });
+    }
+    return NextResponse.json({ inquiry: found.record });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("[Guest Lookup]", err.message);
+    return NextResponse.json({ error: "Could not load this reservation." }, { status: 500 });
   }
 }
 
 // ============================================================
 // PATCH /api/guest/inquiry/[token]
-// Guest updates special requests / dietary needs / arrival notes
+// Guest updates special requests / dietary needs / arrival notes.
 // ============================================================
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  const limited = await rateLimit(req, RATE_LIMITS.guestAction);
+  if (limited) return limited;
   try {
     const { token } = await params;
     const body = await req.json();
-    const { specialRequests, dietaryNeeds, arrivalTime, notes } = body;
+    const clip = (v: unknown) => (v === undefined ? undefined : String(v ?? "").slice(0, 1000));
+    const specialRequests = clip(body.specialRequests);
+    const dietaryNeeds = clip(body.dietaryNeeds);
+    const arrivalTime = clip(body.arrivalTime);
+    const notes = clip(body.notes);
 
     const found = await findByToken(token);
-    if (!found) {
-      return NextResponse.json({ error: "No record found for this token" }, { status: 404 });
-    }
+    if (!found) return NextResponse.json({ error: "No record found for this token" }, { status: 404 });
 
     const db = getDb();
 
     if (found.type === "inquiry") {
       const current = found.record;
       const currentPayload = (current.payload as any) || {};
-
       const updatedPayload = {
         ...currentPayload,
         ...(specialRequests !== undefined && { specialRequests }),
@@ -90,16 +81,22 @@ export async function PATCH(
         guestUpdatedAt: new Date().toISOString(),
       };
 
-      await db.update(inquiries)
-        .set({ payload: updatedPayload })
-        .where(eq(inquiries.id, current.id));
+      await db.update(inquiries).set({ payload: updatedPayload }).where(eq(inquiries.id, current.id));
 
-      // Notify staff
-      notifyStaffOfGuestUpdate(current, updatedPayload, "Special requests updated by guest").catch(() => { });
+      notifyStaff(
+        staffInboxFor(current.venue || "village_apartment"),
+        `[Guest Update] ${updatedPayload.name || "Guest"} updated their requests`,
+        [
+          ["Guest", updatedPayload.name],
+          ["Inquiry", current.id],
+          ["Special requests", updatedPayload.specialRequests],
+          ["Dietary needs", updatedPayload.dietaryNeeds],
+          ["Arrival time", updatedPayload.arrivalTime],
+          ["Notes", updatedPayload.guestNotes],
+        ]
+      ).catch(() => {});
 
-      await db.insert(auditLogs).values({
-        id: newId("log"),
-        timestamp: new Date().toISOString(),
+      await writeAuditLog({
         actor: currentPayload.name || "Guest",
         actorRole: "guest",
         category: "inquiry",
@@ -112,47 +109,58 @@ export async function PATCH(
       return NextResponse.json({ success: true, inquiry: updated[0] });
     }
 
-    if (found.type === "booking") {
-      const current = found.record;
-      const existingNotes = (current.staffNotes as any[]) || [];
-      const noteEntry = {
-        text: `Guest update: ${specialRequests || notes || "No details provided"}`,
-        author: "Guest (self-service)",
-        timestamp: new Date().toISOString(),
-      };
+    const current = found.record;
+    const parts = [
+      specialRequests && `Requests: ${specialRequests}`,
+      dietaryNeeds && `Dietary: ${dietaryNeeds}`,
+      arrivalTime && `Arrival: ${arrivalTime}`,
+      notes && `Notes: ${notes}`,
+    ].filter(Boolean);
+    const [updated] = await db
+      .update(bookings)
+      .set({
+        specialRequests: specialRequests ?? current.specialRequests,
+        staffNotes: [
+          ...((current.staffNotes as any[]) || []),
+          { text: `Guest update: ${parts.join(" · ") || "no details"}`, author: "Guest (self-service)", timestamp: new Date().toISOString() },
+        ],
+      })
+      .where(eq(bookings.id, current.id))
+      .returning();
 
-      await db.update(bookings)
-        .set({
-          specialRequests: specialRequests || current.specialRequests,
-          staffNotes: [...existingNotes, noteEntry],
-        })
-        .where(eq(bookings.id, current.id));
+    notifyStaff(villageInbox(), `[Guest Update] ${current.guestName} · ${current.bookingReference}`, [
+      ["Guest", current.guestName],
+      ["Booking", current.bookingReference],
+      ["Stay", `${current.checkIn} to ${current.checkOut}`],
+      ["Update", parts.join(" · ")],
+    ]).catch(() => {});
 
-      const updated = await db.select().from(bookings).where(eq(bookings.id, current.id)).limit(1);
-      return NextResponse.json({ success: true, booking: updated[0] });
-    }
-
-    return NextResponse.json({ error: "Unknown record type" }, { status: 400 });
+    return NextResponse.json({ success: true, booking: guestView(updated) });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("[Guest Update]", err.message);
+    return NextResponse.json({ error: "Could not save your update." }, { status: 500 });
   }
 }
 
 // ============================================================
 // DELETE /api/guest/inquiry/[token]
-// Guest cancels their inquiry or booking
+// Guest cancels their inquiry or booking.
+//
+// Bookings follow the cancellation policy:
+//   - not paid yet                    → cancelled straight away
+//   - paid, more than FREE_CANCELLATION_HOURS before check-in
+//                                     → cancelled, full refund marked as due
+//                                       (staff issue it from the admin)
+//   - paid, inside that window        → not cancelled; sent to staff as a
+//                                       cancellation request to decide
 // ============================================================
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  const limited = await rateLimit(req, RATE_LIMITS.guestAction);
+  if (limited) return limited;
   try {
     const { token } = await params;
-
     const found = await findByToken(token);
-    if (!found) {
-      return NextResponse.json({ error: "No record found for this token" }, { status: 404 });
-    }
+    if (!found) return NextResponse.json({ error: "No record found for this token" }, { status: 404 });
 
     const db = getDb();
 
@@ -162,26 +170,20 @@ export async function DELETE(
 
       if (current.status === "Booked") {
         return NextResponse.json(
-          { error: "This inquiry has already been converted to a confirmed booking. Please contact us directly to cancel: reservations.village@tamarind.co.ke" },
+          { error: `This inquiry has already been converted to a confirmed booking. Please contact us to cancel: ${PROPERTY.email}` },
           { status: 409 }
         );
       }
 
-      await db.update(inquiries)
-        .set({ status: "Cancelled" })
-        .where(eq(inquiries.id, current.id));
-
-      sendCancellationEmails(
-        payload.email || "",
-        payload.name || "Guest",
-        current.id,
-        current.venue,
-        "inquiry"
-      ).catch(() => { });
-
-      await db.insert(auditLogs).values({
-        id: newId("log"),
-        timestamp: new Date().toISOString(),
+      await db.update(inquiries).set({ status: "Cancelled" }).where(eq(inquiries.id, current.id));
+      sendCancellationEmails({
+        guestEmail: payload.email || "",
+        guestName: payload.name || "Guest",
+        reference: current.id,
+        staffInbox: staffInboxFor(current.venue || "village_apartment"),
+        what: "inquiry",
+      }).catch(() => {});
+      await writeAuditLog({
         actor: payload.name || "Guest",
         actorRole: "guest",
         category: "inquiry",
@@ -189,129 +191,157 @@ export async function DELETE(
         details: `Guest self-cancelled inquiry ${current.id}`,
         targetId: current.id,
       });
-
       return NextResponse.json({ success: true, message: "Your inquiry has been cancelled. A confirmation has been sent to your email." });
     }
 
-    if (found.type === "booking") {
-      const current = found.record;
+    const current = found.record;
+    if (["cancelled", "expired", "payment_failed"].includes(current.bookingStatus)) {
+      return NextResponse.json({ error: "This reservation is already cancelled." }, { status: 409 });
+    }
+    if (["in_house", "checked_out", "departing_today", "no_show"].includes(current.bookingStatus)) {
+      return NextResponse.json(
+        { error: "This stay has already started or finished, so it cannot be cancelled online. Please contact reservations." },
+        { status: 409 }
+      );
+    }
 
-      if (["in_house", "checked_out"].includes(current.bookingStatus)) {
-        return NextResponse.json(
-          { error: "Cancellation not possible for bookings already checked in or completed. Please contact us directly." },
-          { status: 409 }
-        );
-      }
+    const paid = current.paymentStatus === "paid";
+    const freeHours = freeCancellationHours();
+    const insideWindow = msUntilCheckIn(current.checkIn) < freeHours * 3600 * 1000;
 
-      await db.update(bookings)
-        .set({ bookingStatus: "cancelled" })
-        .where(eq(bookings.id, current.id));
-
-      sendCancellationEmails(
-        current.guestEmail,
-        current.guestName,
-        current.bookingReference,
-        current.inquirySource || "village_apartment",
-        "booking"
-      ).catch(() => { });
-
-      await db.insert(auditLogs).values({
-        id: newId("log"),
-        timestamp: new Date().toISOString(),
+    if (paid && insideWindow) {
+      const request = {
+        type: "cancel" as const,
+        message: "Guest asked to cancel online inside the free-cancellation period.",
+        requestedAt: new Date().toISOString(),
+        status: "open" as const,
+      };
+      const [updated] = await db.update(bookings).set({ changeRequest: request }).where(eq(bookings.id, current.id)).returning();
+      notifyStaff(villageInbox(), `[Cancellation request] ${current.guestName} · ${current.bookingReference}`, [
+        ["Guest", `${current.guestName} (${current.guestEmail}, ${current.guestPhone})`],
+        ["Booking", current.bookingReference],
+        ["Stay", `${current.checkIn} to ${current.checkOut}`],
+        ["Paid", paidLabel(current)],
+        ["Why staff must decide", `Check-in is less than ${freeHours} hours away, so this is outside free cancellation.`],
+      ]).catch(() => {});
+      await writeAuditLog({
         actor: current.guestName,
         actorRole: "guest",
         category: "booking",
-        action: "Guest Cancelled Booking",
-        details: `Guest self-cancelled booking ${current.bookingReference}`,
+        action: "Guest Requested Late Cancellation",
+        details: `${current.bookingReference}: guest asked to cancel inside the ${freeHours}-hour window; sent to staff.`,
         targetId: current.id,
       });
-
-      return NextResponse.json({ success: true, message: "Your reservation has been cancelled. A confirmation has been sent to your email." });
+      return NextResponse.json({
+        success: true,
+        pending: true,
+        booking: guestView(updated),
+        message: `Check-in is less than ${freeHours} hours away, so our team will review your cancellation and contact you shortly. Your booking stays active until then.`,
+      });
     }
 
-    return NextResponse.json({ error: "Unknown record type" }, { status: 400 });
+    const [updated] = await db
+      .update(bookings)
+      .set({ bookingStatus: "cancelled", ...(paid ? { refundStatus: "due" } : {}) })
+      .where(eq(bookings.id, current.id))
+      .returning();
+
+    sendCancellationEmails({
+      guestEmail: current.guestEmail,
+      guestName: current.guestName,
+      reference: current.bookingReference,
+      staffInbox: villageInbox(),
+      what: "reservation",
+      refundNote: paid
+        ? `A full refund of ${paidLabel(current)} will be issued to your original payment method. Card refunds usually take 5 to 10 working days; M-Pesa is faster.`
+        : undefined,
+      staffNote: paid ? `REFUND DUE: ${paidLabel(current)}. Issue it from Admin, Bookings, then the booking's Refund button.` : undefined,
+    }).catch(() => {});
+    await writeAuditLog({
+      actor: current.guestName,
+      actorRole: "guest",
+      category: "booking",
+      action: "Guest Cancelled Booking",
+      details: `Guest self-cancelled booking ${current.bookingReference}${paid ? " (refund due)" : ""}`,
+      targetId: current.id,
+    });
+
+    return NextResponse.json({
+      success: true,
+      booking: guestView(updated),
+      message: paid
+        ? "Your reservation is cancelled. Your refund will be processed by our team, and a confirmation has been sent to your email."
+        : "Your reservation has been cancelled. A confirmation has been sent to your email.",
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("[Guest Cancel]", err.message);
+    return NextResponse.json({ error: "Could not cancel right now. Please contact reservations." }, { status: 500 });
   }
 }
 
 // ---------------------------------------------------------------
-// Email helpers
+// Email helpers (all guest text is escaped)
 // ---------------------------------------------------------------
 
-async function notifyStaffOfGuestUpdate(inquiry: any, updatedPayload: any, subject: string) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return;
-  const resend = new Resend(key);
-  const staffEmail = getVenueEmail(inquiry.venue || "village_apartment");
-
-  await resend.emails.send({
-    from: process.env.EMAIL_FROM || "reservations@tamarind.co.ke",
-    to: staffEmail,
-    subject: `[Guest Update] ${updatedPayload.name || "Guest"} — ${subject}`,
-    html: `
-      <div style="font-family:sans-serif;max-width:600px;padding:24px;border:1px solid #e2d9d0">
-        <h2 style="color:#821124">Guest Updated Their Request</h2>
-        <p><strong>Guest:</strong> ${updatedPayload.name || "N/A"}</p>
-        <p><strong>Inquiry ID:</strong> ${inquiry.id}</p>
-        <p><strong>Special Requests:</strong> ${updatedPayload.specialRequests || "—"}</p>
-        <p><strong>Dietary Needs:</strong> ${updatedPayload.dietaryNeeds || "—"}</p>
-        <p><strong>Arrival Time:</strong> ${updatedPayload.arrivalTime || "—"}</p>
-        <p><strong>Guest Notes:</strong> ${updatedPayload.guestNotes || "—"}</p>
-        <p>Please log in to the staff dashboard to review.</p>
-      </div>`,
+async function notifyStaff(to: string, subject: string, rows: [string, unknown][]) {
+  const e = escapeHtml;
+  await sendEmail({
+    to,
+    subject,
+    html: `<div style="font-family:sans-serif;max-width:600px;padding:24px;border:1px solid #e2d9d0">
+      <h2 style="color:#821124;margin-top:0">${e(subject.replace(/^\[[^\]]+\]\s*/, ""))}</h2>
+      <table style="font-size:13px;border-collapse:collapse">${rows
+        .filter(([, v]) => v !== undefined && v !== null && v !== "")
+        .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#8b7355;vertical-align:top">${e(k)}</td><td style="padding:4px 0">${e(v)}</td></tr>`)
+        .join("")}</table>
+      <p style="margin-top:16px"><a href="${e(siteUrl())}/admin/bookings">Open the staff portal</a></p>
+    </div>`,
   });
 }
 
-async function sendCancellationEmails(
-  guestEmail: string,
-  guestName: string,
-  reference: string,
-  venue: string,
-  type: "inquiry" | "booking"
-) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return;
-  const resend = new Resend(key);
-  const staffEmail = getVenueEmail(venue);
-  const fromEmail = process.env.EMAIL_FROM || "reservations@tamarind.co.ke";
-
-  const guestHtml = `
-    <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fdfaf7;border:1px solid #e2d9d0;padding:40px;color:#1F1615">
-      <h1 style="color:#821124;font-size:22px;letter-spacing:2px;text-align:center">TAMARIND VILLAGE</h1>
-      <hr style="border:1px solid #e2d9d0;margin:24px 0"/>
-      <h2 style="font-size:18px">Cancellation Confirmed</h2>
-      <p style="font-size:14px;line-height:1.6">Dear ${guestName},</p>
-      <p style="font-size:14px;line-height:1.6">Your ${type === "booking" ? "reservation" : "inquiry"} <strong>${reference}</strong> has been successfully cancelled.</p>
-      <p style="font-size:14px;line-height:1.6">If this was a mistake, or if you would like to rebook, please contact us:</p>
-      <p style="font-size:13px">📞 +254 725 959 552<br/>✉ reservations.village@tamarind.co.ke</p>
-      <p style="font-size:12px;color:#8b7355;margin-top:32px">Tamarind Village — Mombasa Serviced Apartments</p>
-    </div>`;
-
-  const promises: Promise<any>[] = [];
-
-  if (guestEmail) {
-    promises.push(resend.emails.send({
-      from: fromEmail,
-      to: guestEmail,
-      subject: `Cancellation Confirmed — ${reference}`,
-      html: guestHtml,
-    }));
+async function sendCancellationEmails(p: {
+  guestEmail: string;
+  guestName: string;
+  reference: string;
+  staffInbox: string;
+  what: "inquiry" | "reservation";
+  refundNote?: string;
+  staffNote?: string;
+}) {
+  const e = escapeHtml;
+  const jobs: Promise<boolean>[] = [];
+  if (p.guestEmail) {
+    jobs.push(
+      sendEmail({
+        to: p.guestEmail,
+        replyTo: PROPERTY.email,
+        subject: `Cancellation confirmed: ${p.reference}`,
+        html: `<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fdfaf7;border:1px solid #e2d9d0;padding:40px;color:#1F1615">
+          <h1 style="color:#821124;font-size:22px;letter-spacing:2px;text-align:center">TAMARIND VILLAGE</h1>
+          <hr style="border:none;border-top:1px solid #e2d9d0;margin:24px 0"/>
+          <h2 style="font-size:18px">Cancellation confirmed</h2>
+          <p style="font-size:14px;line-height:1.6">Dear ${e(p.guestName)},</p>
+          <p style="font-size:14px;line-height:1.6">Your ${p.what} <strong>${e(p.reference)}</strong> has been cancelled.</p>
+          ${p.refundNote ? `<p style="font-size:14px;line-height:1.6">${e(p.refundNote)}</p>` : ""}
+          <p style="font-size:14px;line-height:1.6">If this was a mistake, or you would like to rebook, just reply to this email.</p>
+          <p style="font-size:13px">${e(PROPERTY.phoneDisplay)}<br/>${e(PROPERTY.email)}</p>
+        </div>`,
+      })
+    );
   }
-
-  promises.push(resend.emails.send({
-    from: fromEmail,
-    to: staffEmail,
-    subject: `[Cancellation] ${guestName} — ${reference}`,
-    html: `
-      <div style="font-family:sans-serif;max-width:600px;padding:24px;border:1px solid #e2d9d0">
-        <h2 style="color:#821124">Guest Cancelled Their ${type === "booking" ? "Booking" : "Inquiry"}</h2>
-        <p><strong>Guest:</strong> ${guestName}</p>
-        <p><strong>Reference:</strong> ${reference}</p>
-        <p><strong>Guest Email:</strong> ${guestEmail || "—"}</p>
-        <p>Please update your records accordingly.</p>
+  jobs.push(
+    sendEmail({
+      to: p.staffInbox,
+      subject: `[Cancellation] ${p.guestName} · ${p.reference}`,
+      html: `<div style="font-family:sans-serif;max-width:600px;padding:24px;border:1px solid #e2d9d0">
+        <h2 style="color:#821124">Guest cancelled their ${p.what}</h2>
+        <p><strong>Guest:</strong> ${e(p.guestName)} (${e(p.guestEmail || "no email")})</p>
+        <p><strong>Reference:</strong> ${e(p.reference)}</p>
+        ${p.staffNote ? `<p style="background:#fef2f2;border:1px solid #fca5a5;padding:10px"><strong>${e(p.staffNote)}</strong></p>` : ""}
+        <p><a href="${e(siteUrl())}/admin/bookings">Open the staff portal</a></p>
       </div>`,
-  }));
-
-  await Promise.allSettled(promises);
+    })
+  );
+  await Promise.allSettled(jobs);
 }
+

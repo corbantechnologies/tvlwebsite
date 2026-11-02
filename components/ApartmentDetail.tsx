@@ -829,7 +829,7 @@ function ApartmentDetailContent({
             <span className="text-[10px] uppercase tracking-widest font-bold text-brand-gold">Architectural Note</span>
             <h4 className="font-serif text-lg text-stone-200 mt-2 mb-3">Traditional Swahili Carvings</h4>
             <p className="text-xs text-stone-400 font-light leading-relaxed">
-              Tamarind Village features authentic coastal styling designed to pay homage to Mombasa's Swahili-Arabic seafaring heritage. Your suite is furnished with real hand-carved mahogany furniture crafted locally in coastal workshops, blending deep-wood carvings with luxurious airy linen overlays.
+              Tamarind Village features authentic coastal styling designed to pay homage to Mombasa&apos;s Swahili-Arabic seafaring heritage. Your suite is furnished with real hand-carved mahogany furniture crafted locally in coastal workshops, blending deep-wood carvings with luxurious airy linen overlays.
             </p>
           </div>
           <div className="border-t border-stone-800 pt-4 mt-6 flex justify-between items-center text-xs text-brand-gold font-bold uppercase tracking-wider">

@@ -80,7 +80,7 @@ export default function ReviewsSection() {
               Cherished Moments at <span className="text-brand-teal font-serif italic">Tamarind Mombasa</span>
             </h2>
             <p className="text-stone-600 text-xs sm:text-sm font-light mt-2 max-w-xl leading-relaxed">
-              Consistently awarded the TripAdvisor Travelers' Choice & Certificate of Excellence for over two decades of coastal fine dining and luxury serviced hospitality.
+              Consistently awarded the TripAdvisor Travelers&apos; Choice & Certificate of Excellence for over two decades of coastal fine dining and luxury serviced hospitality.
             </p>
           </div>
 
@@ -161,7 +161,7 @@ export default function ReviewsSection() {
                 </div>
 
                 <h3 className="font-serif text-lg font-bold text-brand-dark mb-3 leading-snug">
-                  "{review.title}"
+                  &quot;{review.title}&quot;
                 </h3>
 
                 <p className="text-stone-600 text-xs sm:text-sm font-light leading-relaxed mb-6">

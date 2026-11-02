@@ -43,92 +43,26 @@ async function main() {
   }
 
   // Imported after env is loaded so the DB client picks up DATABASE_URL.
-  const { getDb, getClient } = await import("../lib/db/db");
-  const { bookings, eventTickets } = await import("../lib/db/schema");
-  const { eq, or } = await import("drizzle-orm");
-  const { fulfillApartmentBooking } = await import("../lib/bookingPaymentService");
-  const { fulfillEventTicket, isEventTicketPayment } = await import("../lib/eventTicketService");
+  const { getClient } = await import("../lib/db/db");
+  const { findUnrecordedPayments, recordMissingPayments } = await import("../lib/paystackReconcile");
 
-  const db = getDb();
-  let page = 1;
-  let scanned = 0;
-  const missing: any[] = [];
-
-  // Page through every successful transaction.
-  for (;;) {
-    const url = new URL("https://api.paystack.co/transaction");
-    url.searchParams.set("status", "success");
-    url.searchParams.set("perPage", "100");
-    url.searchParams.set("page", String(page));
-    if (fromArg) url.searchParams.set("from", fromArg);
-
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${secret}` } });
-    const body: any = await res.json();
-    if (!body.status || !Array.isArray(body.data)) {
-      console.error(`Failed to fetch page ${page}:`, body.message);
-      process.exit(1);
-    }
-
-    for (const tx of body.data) {
-      scanned++;
-      const ref: string = tx.reference;
-      if (isEventTicketPayment(ref, tx.metadata)) {
-        const [t] = await db.select({ id: eventTickets.id }).from(eventTickets).where(eq(eventTickets.ticketReference, ref)).limit(1);
-        if (!t) missing.push(tx);
-      } else {
-        const [b] = await db
-          .select({ id: bookings.id, paymentStatus: bookings.paymentStatus })
-          .from(bookings)
-          .where(or(eq(bookings.bookingReference, ref), eq(bookings.paymentReference, ref)))
-          .limit(1);
-        if (!b || b.paymentStatus !== "paid") missing.push(tx);
-      }
-    }
-
-    const pageCount = body.meta?.pageCount ?? page;
-    if (page >= pageCount || body.data.length === 0) break;
-    page++;
-  }
-
+  const { scanned, missing } = await findUnrecordedPayments({ from: fromArg, secret });
   console.log(`Scanned ${scanned} successful Paystack transactions; ${missing.length} not recorded as paid.\n`);
 
-  let recovered = 0;
-  let failed = 0;
-  for (const tx of missing) {
-    const ref = tx.reference;
-    const m = tx.metadata || {};
-    const label = isEventTicketPayment(ref, m) ? "TICKET " : "BOOKING";
-    console.log(
-      `${label} ${ref} · ${tx.currency} ${tx.amount / 100} · ${m.guestName || tx.customer?.email} · ${m.apartmentName || m.eventTitle || "?"} · ${m.checkIn || m.eventDate || ""}${m.checkOut ? " → " + m.checkOut : ""}`
-    );
-    if (!apply) continue;
-
-    try {
-      if (isEventTicketPayment(ref, m)) {
-        await fulfillEventTicket(ref, tx, { notifyGuest: false, actor: "Paystack Sync Script" });
-      } else {
-        const result = await fulfillApartmentBooking(ref, tx, {
-          notifyGuest: false,
-          notifyStaff,
-          actor: "Paystack Sync Script",
-        });
-        if (result.unmatched) {
-          console.log("   -> skipped: no apartment details in metadata (logged for staff review)");
-          continue;
-        }
-        if (result.needsReview) console.log("   -> recorded, NEEDS REVIEW (dates conflict or underpaid)");
-      }
-      recovered++;
-      console.log("   -> recorded");
-    } catch (err: any) {
-      failed++;
-      console.error(`   -> FAILED: ${err.message}`);
-    }
+  const outcomes = await recordMissingPayments(missing, { apply, notifyStaff, actor: "Paystack Sync Script" });
+  for (const o of outcomes) {
+    console.log(`${o.kind === "ticket" ? "TICKET " : "BOOKING"} ${o.reference} · ${o.currency} ${o.amount} · ${o.label}`);
+    if (o.result === "unmatched") console.log("   -> skipped: no apartment details in metadata (logged for staff review)");
+    else if (o.result === "needs_review") console.log("   -> recorded, NEEDS REVIEW (dates conflict or underpaid)");
+    else if (o.result === "recorded") console.log("   -> recorded");
+    else if (o.result === "failed") console.error(`   -> FAILED: ${o.error}`);
   }
 
+  const recorded = outcomes.filter((o) => o.result === "recorded" || o.result === "needs_review").length;
+  const failed = outcomes.filter((o) => o.result === "failed").length;
   console.log(
     apply
-      ? `\nDone. Recorded ${recovered}, failed ${failed}.`
+      ? `\nDone. Recorded ${recorded}, failed ${failed}.`
       : `\nDry run only. Re-run with --apply to record these ${missing.length} payments (guests will not be emailed).`
   );
   await getClient().end();

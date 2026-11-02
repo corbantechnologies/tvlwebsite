@@ -4,6 +4,8 @@ import { getDb } from "@/lib/db/db";
 import { bookings } from "@/lib/db/schema";
 import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { evaluateApartment, loadAvailabilityData, NON_OCCUPYING_STATUSES } from "@/lib/availability";
+import { chargeFor, normalizePayCurrency } from "@/lib/fx";
+import { rateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 import { generateReference, getSiteOrigin, initializePaystackTransaction } from "@/lib/paystack";
 
 // ============================================================
@@ -16,9 +18,11 @@ import { generateReference, getSiteOrigin, initializePaystackTransaction } from 
 // Inquiries cannot be paid online: staff convert them to a booking first.
 // ============================================================
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req, RATE_LIMITS.guestAction);
+  if (limited) return limited;
   try {
     await ensureDatabaseSeeded();
-    const { token } = await req.json();
+    const { token, payCurrency } = await req.json();
     const clean = String(token || "").trim().toUpperCase();
     if (!clean) return NextResponse.json({ error: "Booking token is required." }, { status: 400 });
 
@@ -55,11 +59,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Bookings are priced in USD; a KES payment is converted at today's rate.
+    const priced = (booking.currency || "USD").toUpperCase();
+    const charge =
+      priced === "USD"
+        ? chargeFor(amount, normalizePayCurrency(payCurrency))
+        : { currency: priced, amount, fxRate: null as number | null };
+    await db
+      .update(bookings)
+      .set({ chargeCurrency: charge.currency, chargeAmount: charge.amount, fxRate: charge.fxRate })
+      .where(eq(bookings.id, booking.id));
+
     const reference = generateReference("TVL");
     const init = await initializePaystackTransaction({
       email: booking.guestEmail,
-      amount,
-      currency: booking.currency || "USD",
+      amount: charge.amount,
+      currency: charge.currency,
       reference,
       callbackUrl: `${getSiteOrigin(req)}/booking-confirmed`,
       metadata: {

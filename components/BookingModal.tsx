@@ -21,6 +21,7 @@ import { APARTMENTS } from "@/lib/data";
 import AvailabilityStatus from "@/components/AvailabilityStatus";
 import { propertyToday } from "@/lib/dates";
 import toast from "react-hot-toast";
+import { chargeFor, usdToKesRate, type PayCurrency } from "@/lib/fx";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -139,6 +140,8 @@ export default function BookingModal({
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // USD for international cards; KES for M-Pesa (Paystack only takes M-Pesa in KES).
+  const [payCurrency, setPayCurrency] = useState<PayCurrency>("USD");
   const [submitError, setSubmitError] = useState("");
   const [confirmedData, setConfirmedData] = useState<any | null>(null);
   const [rateOverride, setRateOverride] = useState<{
@@ -379,7 +382,7 @@ export default function BookingModal({
     }
     discountUsd = Math.round(discountUsd * 100) / 100;
     const finalTotalUsd = Math.max(0, subtotal - discountUsd);
-    const totalKes = Math.round(finalTotalUsd * 130);
+    const totalKes = chargeFor(finalTotalUsd, "KES", usdToKesRate()).amount;
 
     return {
       nights,
@@ -490,13 +493,14 @@ export default function BookingModal({
           selectedExtras: Object.entries(selectedExtras).map(([extraId, quantity]) => ({ extraId, quantity })),
           specialRequests,
           promocode: appliedVoucher?.code || undefined,
+          payCurrency,
         }),
       });
 
       const payData = await payRes.json();
       if (payRes.ok && payData.authorizationUrl) {
         toast.success("Connecting to secure payment gateway...");
-        window.location.href = payData.authorizationUrl;
+        window.location.assign(payData.authorizationUrl);
         return;
       } else {
         throw new Error(payData.error || "Failed to initialize payment gateway");
@@ -1232,6 +1236,36 @@ export default function BookingModal({
                     {availabilityNotice && (
                       <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
                         {availabilityNotice}
+                      </div>
+                    )}
+
+                    {/* Payment currency */}
+                    {breakdown && (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">Pay in</span>
+                        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Payment currency">
+                          {([
+                            { value: "USD", title: `USD ${breakdown.totalUsd.toLocaleString()}`, sub: "International cards" },
+                            { value: "KES", title: `KES ${breakdown.totalKes.toLocaleString()}`, sub: "M-Pesa or Kenyan cards" },
+                          ] as const).map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              role="radio"
+                              aria-checked={payCurrency === opt.value}
+                              onClick={() => setPayCurrency(opt.value)}
+                              className={`p-2.5 text-left border transition-colors cursor-pointer ${
+                                payCurrency === opt.value ? "border-[#821124] bg-[#821124]/5" : "border-stone-200 hover:border-stone-400"
+                              }`}
+                            >
+                              <span className="block font-mono font-bold text-xs text-stone-900">{opt.title}</span>
+                              <span className="block text-[10px] text-stone-500">{opt.sub}</span>
+                            </button>
+                          ))}
+                        </div>
+                        {payCurrency === "KES" && (
+                          <p className="text-[10px] text-stone-500">Converted at KES {usdToKesRate()} per USD.</p>
+                        )}
                       </div>
                     )}
 

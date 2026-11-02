@@ -8,6 +8,8 @@ import { quoteApartmentStay, QuoteError } from "@/lib/bookingQuote";
 import { generateReference, getSiteOrigin, initializePaystackTransaction } from "@/lib/paystack";
 import { newGuestToken, newId } from "@/lib/ids";
 import { writeAuditLog } from "@/lib/audit";
+import { chargeFor, normalizePayCurrency, usdToKesRate } from "@/lib/fx";
+import { rateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,9 +26,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // so every payment has a booking row in the portal from the start.
 // ============================================================
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req, RATE_LIMITS.checkout);
+  if (limited) return limited;
   try {
     await ensureDatabaseSeeded();
     const body = await req.json();
+    const payCurrency = normalizePayCurrency(body.payCurrency);
 
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim();
@@ -66,6 +71,7 @@ export async function POST(req: NextRequest) {
         throw new QuoteError("This booking total is zero. Please contact reservations to confirm it.", 400);
       }
 
+      const charge = chargeFor(quote.totalUsd, payCurrency);
       const booking = {
         id: newId("bkg"),
         bookingReference: reference,
@@ -102,6 +108,9 @@ export async function POST(req: NextRequest) {
           ? [{ text: `Promo code ${quote.voucherCode} applied (−$${quote.discountUsd}).`, author: "System", timestamp: new Date().toISOString() }]
           : [],
         guestToken: newGuestToken(),
+        chargeCurrency: charge.currency,
+        chargeAmount: charge.amount,
+        fxRate: charge.fxRate,
         createdAt: new Date().toISOString(),
       };
       await tx.insert(bookings).values(booking);
@@ -117,7 +126,7 @@ export async function POST(req: NextRequest) {
             unitPriceUsd: x.unitPriceUsd,
             unitPriceKes: x.unitPriceKes,
             totalPriceUsd: x.totalUsd,
-            totalPriceKes: Math.round(x.totalUsd * 130),
+            totalPriceKes: Math.round(x.totalUsd * usdToKesRate()),
             notes: null,
             createdAt: new Date().toISOString(),
           }))
@@ -130,8 +139,8 @@ export async function POST(req: NextRequest) {
 
     const init = await initializePaystackTransaction({
       email,
-      amount: quote.totalUsd,
-      currency: "USD",
+      amount: booking.chargeAmount,
+      currency: booking.chargeCurrency,
       reference,
       callbackUrl: `${getSiteOrigin(req)}/booking-confirmed`,
       metadata: {
@@ -163,7 +172,7 @@ export async function POST(req: NextRequest) {
       actorRole: "system",
       category: "booking",
       action: "Checkout Started (Pending Payment)",
-      details: `${name} started checkout for ${booking.apartmentName}, ${booking.checkIn} to ${booking.checkOut} (USD ${quote.totalUsd}).`,
+      details: `${name} started checkout for ${booking.apartmentName}, ${booking.checkIn} to ${booking.checkOut} (USD ${quote.totalUsd}${booking.chargeCurrency === "KES" ? `, paying KES ${booking.chargeAmount}` : ""}).`,
       targetId: booking.id,
       metadata: { bookingReference: reference },
     });
@@ -173,6 +182,8 @@ export async function POST(req: NextRequest) {
       authorizationUrl: init.authorizationUrl,
       reference,
       totalUsd: quote.totalUsd,
+      chargeCurrency: booking.chargeCurrency,
+      chargeAmount: booking.chargeAmount,
     });
   } catch (err: any) {
     if (err instanceof QuoteError) {

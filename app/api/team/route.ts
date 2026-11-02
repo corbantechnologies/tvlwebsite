@@ -5,6 +5,10 @@ import { users, auditLogs } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { newId } from "@/lib/ids";
+import { randomBytes } from "crypto";
+import { GATE } from "@/lib/auth/roles";
+
+const STAFF_ROLES = Array.from(new Set(GATE));
 
 // GET /api/team — Return all real staff members
 export async function GET(req: NextRequest) {
@@ -61,7 +65,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "A user with this email already exists." }, { status: 409 });
     }
 
-    const rawPassword = password || "Tamarind@" + new Date().getFullYear();
+    if (!STAFF_ROLES.includes(String(role).trim().toLowerCase())) {
+      return NextResponse.json({ error: `Unknown role. Use one of: ${STAFF_ROLES.join(", ")}.` }, { status: 400 });
+    }
+    if (password && String(password).length < 10) {
+      return NextResponse.json({ error: "Passwords must be at least 10 characters." }, { status: 400 });
+    }
+
+    // A random temporary password (the old default was the same guessable value for everyone).
+    const rawPassword = password || `Tv-${randomBytes(6).toString("base64url")}`;
     const passwordHash = bcrypt.hashSync(rawPassword, 10);
     const userId = newId("usr");
     const now = new Date().toISOString();
@@ -71,7 +83,7 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       email: cleanEmail,
       passwordHash,
-      role: role.trim(),
+      role: role.trim().toLowerCase(),
       active: true,
       createdAt: now,
     });

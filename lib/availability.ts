@@ -6,6 +6,7 @@ import {
   rateOverrides,
   apartments,
 } from "@/lib/db/schema";
+import { usdToKesRate } from "@/lib/fx";
 
 // ============================================================
 // Shared availability logic.
@@ -157,7 +158,7 @@ export function evaluateApartment(
 
   const baseRateUsd = aptRecord ? aptRecord.pricePerNight : 0;
   const effectiveRateUsd = activeOverride?.rateUsd ?? baseRateUsd;
-  const effectiveRateKes = activeOverride?.rateKes ?? baseRateUsd * 130;
+  const effectiveRateKes = activeOverride?.rateKes ?? baseRateUsd * usdToKesRate();
   const minNights = activeOverride?.minNights ?? 1;
   const meetsMinNights = nights >= minNights;
 

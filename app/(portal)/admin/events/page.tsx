@@ -664,7 +664,7 @@ export default function AdminEventsPage() {
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-mono"
                     />
                     <p className="text-[10px] text-slate-500 mt-0.5">
-                      Directs payment to this unit's bank account.
+                      Directs payment to this unit&apos;s bank account.
                     </p>
                   </div>
 

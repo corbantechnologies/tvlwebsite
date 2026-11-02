@@ -292,7 +292,7 @@ function DiningDetailContent({ dining, onBack, onSelectDining, allDinings }: Din
             </p>
 
             <p className="p-4 bg-brand-teal/5 border-l-2 border-brand-teal text-stone-700 text-xs sm:text-sm font-light leading-relaxed italic mb-8">
-              "{specials.extraDetail}"
+              &quot;{specials.extraDetail}&quot;
             </p>
 
             {/* Experience Highlights */}

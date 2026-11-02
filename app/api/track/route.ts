@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { inquiries, bookings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { guestView } from "@/lib/bookingFormat";
+import { rateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 // ============================================================
 // /api/track — Query parameter helper for ?token=TVL-XXXXXX
 // ============================================================
 export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, RATE_LIMITS.guestLookup);
+  if (limited) return limited;
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token") || searchParams.get("ref");
@@ -26,13 +30,13 @@ export async function GET(req: NextRequest) {
     // Check bookings by guestToken or bookingReference
     const bkg = await db.select().from(bookings).where(eq(bookings.guestToken, clean)).limit(1);
     if (bkg.length > 0) {
-      return NextResponse.json({ success: true, booking: bkg[0], inquiry: bkg[0], type: "booking" });
+      return NextResponse.json({ success: true, booking: guestView(bkg[0]), inquiry: guestView(bkg[0]), type: "booking" });
     }
 
     // Also check bookings by bookingReference
     const bkgRef = await db.select().from(bookings).where(eq(bookings.bookingReference, clean)).limit(1);
     if (bkgRef.length > 0) {
-      return NextResponse.json({ success: true, booking: bkgRef[0], inquiry: bkgRef[0], type: "booking" });
+      return NextResponse.json({ success: true, booking: guestView(bkgRef[0]), inquiry: guestView(bkgRef[0]), type: "booking" });
     }
 
     return NextResponse.json({ error: "No reservation or inquiry found for this reference code." }, { status: 404 });

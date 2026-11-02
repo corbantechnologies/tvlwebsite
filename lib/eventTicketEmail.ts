@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { staffInboxFor } from "@/lib/staffInboxes";
 
 export async function sendTicketConfirmationEmail(ticket: any) {
   const key = process.env.RESEND_API_KEY;
@@ -97,12 +98,13 @@ export async function notifyStaffNewTicket(ticket: any) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return;
   const resend = new Resend(key);
-  const staffEmail = process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke";
+  // Each brand's own inbox gets its ticket sales (EMAIL_RESTAURANT, EMAIL_DHOW, ...).
+  const brandInbox = staffInboxFor(ticket.brand);
 
   try {
     await resend.emails.send({
       from: process.env.EMAIL_FROM || "reservations.village@tamarind.co.ke",
-      to: staffEmail,
+      to: brandInbox,
       subject: `[Event Ticket Sold] ${ticket.guestName} · ${ticket.eventTitle} (${ticket.ticketCount} pax)`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; padding: 24px; border: 1px solid #cbd5e1; border-radius: 8px;">

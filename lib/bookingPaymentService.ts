@@ -7,6 +7,10 @@ import { writeAuditLog } from "@/lib/audit";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { newGuestToken, newId } from "@/lib/ids";
 import { recordVoucherRedemption } from "@/lib/vouchers";
+import { paidLabel } from "@/lib/bookingFormat";
+import { buildEReservationPdf, eReservationUrl } from "@/lib/eReservation";
+import { whatsappLink } from "@/lib/contact";
+export { paidLabel };
 
 type Booking = typeof bookings.$inferSelect;
 
@@ -73,6 +77,9 @@ export async function fulfillApartmentBooking(
         paymentStatus: "paid",
         paymentMethod: txData.channel || "paystack",
         paymentReference: reference,
+        amountPaid: Number(txData.amount) / 100,
+        chargeCurrency: (txData.currency || existing.chargeCurrency || existing.currency || "USD").toUpperCase(),
+        paidAt: txData.paid_at || new Date().toISOString(),
         bookingStatus: ["pending_payment", "expired", "payment_failed", "inquiry"].includes(existing.bookingStatus)
           ? "confirmed"
           : existing.bookingStatus,
@@ -135,6 +142,10 @@ export async function fulfillApartmentBooking(
       paymentStatus: "paid",
       paymentMethod: txData.channel || "paystack",
       paymentReference: reference,
+      chargeCurrency: (txData.currency || "USD").toUpperCase(),
+      chargeAmount: txData.amount / 100,
+      amountPaid: txData.amount / 100,
+      paidAt: txData.paid_at || new Date().toISOString(),
       bookingStatus: "confirmed",
       inquirySource: "village_apartment",
       specialRequests: metadata.specialRequests || null,
@@ -185,9 +196,18 @@ export async function fulfillApartmentBooking(
   // 3. Sanity checks that need a human: short payment, or dates no longer free.
   const reviewReasons: string[] = [];
   const paidMajor = txData.amount / 100;
-  const sameCurrency = (txData.currency || "").toUpperCase() === (booking.currency || "").toUpperCase();
-  if (sameCurrency && paidMajor + 0.01 < Number(booking.totalAmount)) {
-    reviewReasons.push(`Paid ${txData.currency} ${paidMajor} but the booking total is ${booking.currency} ${booking.totalAmount}.`);
+  const paidCurrency = (txData.currency || "").toUpperCase();
+  // Compare against what checkout asked Paystack to charge (KES or USD), else the USD total.
+  const expected =
+    existing?.chargeCurrency && existing.chargeAmount != null && existing.chargeCurrency.toUpperCase() === paidCurrency
+      ? { currency: paidCurrency, amount: Number(existing.chargeAmount) }
+      : paidCurrency === (booking.currency || "").toUpperCase()
+        ? { currency: paidCurrency, amount: Number(booking.totalAmount) }
+        : null;
+  if (expected && paidMajor + 0.01 < expected.amount) {
+    reviewReasons.push(`Paid ${paidCurrency} ${paidMajor} but ${expected.currency} ${expected.amount} was due.`);
+  } else if (!expected) {
+    reviewReasons.push(`Paid in ${paidCurrency || "an unknown currency"} (${paidMajor}); please confirm it covers the ${booking.currency} ${booking.totalAmount} total.`);
   }
   try {
     const data = await loadAvailabilityData(db);
@@ -257,12 +277,24 @@ export async function sendApartmentBookingEmail(booking: Booking) {
 
   const resend = new Resend(key);
   const guestPortalUrl = `${siteUrl()}/track?token=${encodeURIComponent(booking.guestToken || "")}`;
+  const eResUrl = eReservationUrl(booking);
+  const waUrl = whatsappLink(`Hello Tamarind Village, this is ${booking.guestName} (booking ${booking.bookingReference}).`);
   const e = escapeHtml;
+
+  // The e-reservation PDF; the email still goes out if it cannot be built.
+  let attachments: { filename: string; content: Buffer }[] | undefined;
+  try {
+    attachments = [{ filename: `Tamarind-Village-${booking.bookingReference}.pdf`, content: await buildEReservationPdf(booking) }];
+  } catch (err: any) {
+    console.warn("[Booking Email] e-reservation PDF failed:", err.message);
+  }
 
   try {
     const result = await resend.emails.send({
       from: senderEmail(),
       to: booking.guestEmail,
+      replyTo: process.env.EMAIL_VILLAGE || "reservations.village@tamarind.co.ke",
+      attachments,
       subject: `Your Tamarind Village Reservation — ${booking.bookingReference}`,
       html: `
         <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fdfaf7;border:1px solid #e2d9d0;padding:40px;color:#1F1615">
@@ -281,9 +313,15 @@ export async function sendApartmentBookingEmail(booking: Booking) {
               <tr><td style="padding:6px 0;color:#8b7355">Guests</td><td>${e(booking.adults)} adults${booking.children > 0 ? `, ${e(booking.children)} children` : ""}</td></tr>
               ${booking.mealPlanName ? `<tr><td style="padding:6px 0;color:#8b7355">Meal Plan</td><td>${e(booking.mealPlanName)}</td></tr>` : ""}
               ${booking.specialRequests ? `<tr><td style="padding:6px 0;color:#8b7355">Special Requests</td><td>${e(booking.specialRequests)}</td></tr>` : ""}
-              <tr><td style="padding:6px 0;color:#8b7355">Total Paid</td><td style="font-weight:bold;color:#047857">${e(booking.currency)} ${Number(booking.totalAmount).toLocaleString()}</td></tr>
+              <tr><td style="padding:6px 0;color:#8b7355">Total Paid</td><td style="font-weight:bold;color:#047857">${e(paidLabel(booking))}</td></tr>
             </table>
           </div>
+          <p style="font-size:13px;line-height:1.8">Your e-reservation is attached as a PDF. Show its QR code at reception, or open it online:</p>
+          <p style="text-align:center;margin:20px 0">
+            <a href="${e(eResUrl)}" style="background:#821124;color:#fff;padding:10px 18px;text-decoration:none;border-radius:4px;display:inline-block;font-family:sans-serif;font-size:13px;margin:4px">View e-reservation</a>
+            <a href="${e(guestPortalUrl)}" style="background:#1F1615;color:#fff;padding:10px 18px;text-decoration:none;border-radius:4px;display:inline-block;font-family:sans-serif;font-size:13px;margin:4px">Check in online</a>
+            <a href="${e(waUrl)}" style="background:#25D366;color:#fff;padding:10px 18px;text-decoration:none;border-radius:4px;display:inline-block;font-family:sans-serif;font-size:13px;margin:4px">WhatsApp us</a>
+          </p>
           <div style="background:#fffbe8;border:1px solid #e2c589;padding:16px;border-radius:4px;margin:24px 0">
             <p style="font-size:13px;margin:0"><strong>Manage your booking online:</strong></p>
             <p style="font-size:12px;margin:8px 0 0;color:#8b7355">Access token: <strong style="color:#1F1615">${e(booking.guestToken)}</strong></p>
@@ -328,7 +366,7 @@ export async function notifyStaffApartmentBooking(booking: Booking, reviewReason
           <p><strong>Occupancy:</strong> ${e(booking.adults)} Adults, ${e(booking.children)} Children</p>
           ${booking.mealPlanName ? `<p><strong>Meal Plan:</strong> ${e(booking.mealPlanName)}</p>` : ""}
           ${booking.specialRequests ? `<p><strong>Special Requests:</strong> ${e(booking.specialRequests)}</p>` : ""}
-          <p><strong>Total Paid:</strong> ${e(booking.currency)} ${Number(booking.totalAmount).toLocaleString()}</p>
+          <p><strong>Total Paid:</strong> ${e(paidLabel(booking))}</p>
           <p><strong>Payment Method:</strong> ${e(booking.paymentMethod)} (Ref: ${e(booking.paymentReference || booking.bookingReference)})</p>
           <p><strong>Guest Access Token:</strong> <code>${e(booking.guestToken)}</code></p>
           <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
