@@ -30,6 +30,7 @@ import {
   Ticket,
   ClipboardList,
   QrCode,
+  KeyRound,
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { canViewPage } from '@/lib/auth/roles';
@@ -245,6 +246,13 @@ export default function AdminPortalLayout({
               )}
             </div>
 
+            <Link
+              href="/admin/account"
+              className="p-1.5 text-slate-400 hover:text-[#821124] hover:bg-rose-50 rounded-md transition-colors"
+              title="My account (change password)"
+            >
+              <KeyRound className="w-4 h-4" />
+            </Link>
             <button
               onClick={handleLogout}
               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
@@ -361,7 +369,9 @@ export default function AdminPortalLayout({
             </div>
 
             <div className="p-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-              <span className="text-xs text-slate-700 font-medium">{currentUser?.name || 'Administrator'}</span>
+              <Link href="/admin/account" onClick={() => setMobileOpen(false)} className="text-xs text-slate-700 font-medium flex items-center gap-1.5 hover:text-[#821124]">
+                <KeyRound className="w-3.5 h-3.5" /> {currentUser?.name || 'My account'}
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-xs text-rose-600 font-bold uppercase flex items-center gap-1 hover:text-rose-700"

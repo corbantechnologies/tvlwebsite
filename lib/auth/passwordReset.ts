@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "crypto";
 
-/** Reset links are valid for one hour. */
+/** Reset links are valid for one hour; invite links for new accounts for three days. */
 export const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+export const INVITE_TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
 export const MIN_PASSWORD_LENGTH = 10;
 
 export function newResetToken(): { token: string; hash: string } {

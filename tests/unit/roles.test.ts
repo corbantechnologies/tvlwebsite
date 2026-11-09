@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canCallApi, canViewPage, homePageFor } from "@/lib/auth/roles";
+import { ASSIGNABLE_ROLES, canCallApi, canViewPage, homePageFor, isOwnerRole, isStaffRole } from "@/lib/auth/roles";
 import { isPublicApiRequest } from "@/lib/auth/apiAccess";
 
 test("owners can manage staff; others cannot", () => {
@@ -54,4 +54,27 @@ test("public API allowlist", () => {
   assert.ok(!isPublicApiRequest("POST", "/api/guest/booking/TVL-ABC123/refund", sp()));
   assert.ok(!isPublicApiRequest("POST", "/api/bookings/bkg_1/refund", sp()));
   assert.ok(!isPublicApiRequest("GET", "/api/reports", sp()));
+});
+
+test("every staff member can change their own password and open My account", () => {
+  for (const role of ["admin", "manager", "reception", "security"]) {
+    assert.ok(canCallApi(role, "POST", "/api/auth/change-password"), role);
+    assert.ok(canViewPage(role, "/admin/account"), role);
+  }
+  assert.ok(!canCallApi("", "POST", "/api/auth/change-password"));
+  assert.ok(!isPublicApiRequest("POST", "/api/auth/change-password", new URLSearchParams()));
+});
+
+test("only owners can change roles or reset other staff passwords", () => {
+  assert.ok(canCallApi("admin", "PATCH", "/api/team"));
+  assert.ok(canCallApi("gm", "POST", "/api/team/reset-password"));
+  assert.ok(!canCallApi("manager", "PATCH", "/api/team"));
+  assert.ok(!canCallApi("reception", "POST", "/api/team/reset-password"));
+});
+
+test("assignable roles are all recognised staff roles", () => {
+  for (const r of ASSIGNABLE_ROLES) assert.ok(isStaffRole(r), r);
+  assert.ok(isStaffRole("Reception "));
+  assert.ok(!isStaffRole("guest"));
+  assert.ok(isOwnerRole("GM") && !isOwnerRole("manager"));
 });

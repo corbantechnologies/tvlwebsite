@@ -86,6 +86,8 @@ async function seedAdminUser(db: ReturnType<typeof getDb>): Promise<void> {
     role: "admin",
     active: true,
     createdAt: new Date().toISOString(),
+    // The fallback password is public in the repository, so it must be replaced at first sign-in.
+    mustChangePassword: !process.env.ADMIN_SEED_PASSWORD,
   }).onConflictDoNothing();
 
   console.log("[Seed] Admin user created:", process.env.ADMIN_SEED_EMAIL || "admin@tamarindvillage.co.ke");

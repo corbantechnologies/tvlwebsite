@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/db";
 import { passwordResets, users } from "@/lib/db/schema";
@@ -7,6 +6,7 @@ import { ensureDatabaseSeeded } from "@/lib/db/seed";
 import { hashResetToken, passwordProblem } from "@/lib/auth/passwordReset";
 import { rateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 import { writeAuditLog } from "@/lib/audit";
+import { setStaffPassword } from "@/lib/auth/passwordLinks";
 
 // POST /api/auth/reset-password  (public)  { token, newPassword }
 export async function POST(req: NextRequest) {
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This staff account is not active." }, { status: 403 });
     }
 
-    await db.update(users).set({ passwordHash: await bcrypt.hash(String(newPassword), 12) }).where(eq(users.id, user.id));
+    // Ends every other session and clears a temporary-password flag.
+    await setStaffPassword(user.id, String(newPassword), { temporary: false });
     await writeAuditLog({
       actor: user.name,
       actorRole: user.role,

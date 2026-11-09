@@ -412,6 +412,17 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    id: "004_staff_password_state",
+    description: "Staff must-change-password flag and password-changed time (ends older sessions)",
+    up: async (db) => {
+      await db.execute(sql`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TEXT;
+        CREATE INDEX IF NOT EXISTS password_resets_user_idx ON password_resets (user_id);
+      `);
+    },
+  },
 ];
 
 /** Applies every migration not yet recorded. Returns the ids it applied. */
