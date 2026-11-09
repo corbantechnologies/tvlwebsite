@@ -9,10 +9,14 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").notNull(), // "admin" | "manager" | "reservations" | "reception"
+  role: text("role").notNull(), // see lib/auth/roles.ts
   active: boolean("active").notNull().default(true),
   createdAt: text("created_at").notNull(),
   lastLogin: text("last_login"),
+  /** Set for new accounts and admin resets: the user must choose their own password before using the portal. */
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
+  /** Sessions signed in before this time are no longer accepted. */
+  passwordChangedAt: text("password_changed_at"),
 });
 
 export const sessions = pgTable("sessions", {

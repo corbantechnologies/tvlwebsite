@@ -17,7 +17,7 @@ const sections: GuideSection[] = [
     body: (
       <>
         <p>
-          Sign in at <Link href="/admin/login">/admin/login</Link> with your work email. Forgot your password? Select <strong>Forgot your password?</strong> on that page; a reset link valid for one hour is emailed to you. New passwords need at least 10 characters with a letter and a number.
+          Sign in at <Link href="/admin/login">/admin/login</Link> with your work email. Forgot your password? Select <strong>Forgot your password?</strong> on that page; a reset link valid for one hour is emailed to you. If it does not arrive, ask an admin or GM to reset it for you. To change your password while signed in, open <Link href="/admin/account">My account</Link> (the key icon next to Sign out). New passwords need at least 10 characters with a letter and a number. If you were given a temporary password, the portal asks you to choose your own before anything else.
         </p>
         <p>What you see in the menu depends on your role. The website enforces the same rules, so a hidden page cannot be opened by typing its address.</p>
         <table>
@@ -212,7 +212,7 @@ const sections: GuideSection[] = [
     tag: 'Admin',
     body: (
       <>
-        <p><strong>Staff accounts.</strong> In <Link href="/admin/team">Staff Team</Link>, add people with the narrowest role that fits their job. If you leave the password empty, a random temporary password is shown once; give it to the person privately and ask them to change it with Forgot your password. Remove accounts on the day someone leaves.</p>
+        <p><strong>Staff accounts.</strong> In <Link href="/admin/team">Staff Team</Link>, add people with the narrowest role that fits their job. When email is set up they get a link to choose their own password; otherwise a temporary password is shown once for you to pass on privately, and they must replace it at first sign-in. Change someone&apos;s role with the dropdown on their row, and reset a forgotten password with the envelope (email a link) or key (temporary password) icons; a reset signs them out everywhere. On the day someone leaves, click <strong>Active</strong> to deactivate them: they are signed out at once and their history stays readable. There is always at least one active admin or GM.</p>
         <p><strong>Website settings</strong> live in Vercel (Project, Settings, Environment Variables). The ones staff most often ask about:</p>
         <table>
           <tbody>

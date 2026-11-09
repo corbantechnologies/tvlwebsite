@@ -16,6 +16,19 @@ export const RESERVATIONS = [...MANAGEMENT, "reservations", "reservationist"];
 export const FRONT_OFFICE = [...RESERVATIONS, "reception", "frontdesk"];
 export const GATE = [...FRONT_OFFICE, "security", "scanner"];
 
+/** Roles an admin can give a staff member (the aliases above still sign in). */
+export const ASSIGNABLE_ROLES = ["security", "reception", "reservations", "manager", "gm", "admin"] as const;
+/** Every role value the portal recognises, including older aliases. */
+export const STAFF_ROLES = Array.from(new Set(GATE));
+
+export function isStaffRole(role: unknown): role is string {
+  return typeof role === "string" && STAFF_ROLES.includes(role.toLowerCase().trim());
+}
+
+export function isOwnerRole(role: unknown): boolean {
+  return typeof role === "string" && OWNERS.includes(role.toLowerCase().trim());
+}
+
 const WRITE = ["POST", "PUT", "PATCH", "DELETE"];
 const ANY = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
@@ -23,6 +36,7 @@ type Rule = { methods: string[]; pattern: RegExp; roles: string[] };
 
 // First match wins. Routes not listed are open to FRONT_OFFICE.
 const API_RULES: Rule[] = [
+  { methods: ["POST"], pattern: /^\/api\/auth\/change-password$/, roles: GATE }, // every signed-in staff member
   { methods: ANY, pattern: /^\/api\/(team|audit-logs)(\/.*)?$/, roles: OWNERS },
   { methods: ANY, pattern: /^\/api\/reports(\/.*)?$/, roles: MANAGEMENT },
   { methods: WRITE, pattern: /^\/api\/bookings\/[^/]+\/refund$/, roles: MANAGEMENT },
@@ -74,7 +88,9 @@ export function canCallApi(role: string | null | undefined, method: string, path
 
 export function canViewPage(role: string | null | undefined, pathname: string): boolean {
   const r = norm(role);
-  if (pathname === "/admin/guide" || pathname.startsWith("/admin/guide/")) return true; // every signed-in staff member
+  // Every signed-in staff member
+  if (pathname === "/admin/guide" || pathname.startsWith("/admin/guide/")) return true;
+  if (pathname === "/admin/account") return true;
   const rule = PAGE_RULES.find((x) => pathname === x.prefix || pathname.startsWith(x.prefix + "/"));
   return (rule ? rule.roles : FRONT_OFFICE).includes(r);
 }

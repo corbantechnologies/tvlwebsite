@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken, COOKIE_NAME } from "@/lib/auth/session";
+import { resolveStaffSession, COOKIE_NAME } from "@/lib/auth/session";
 import { isPublicApiRequest } from "@/lib/auth/apiAccess";
 import { canCallApi, canViewPage, homePageFor } from "@/lib/auth/roles";
+
+// What a staff member on a temporary password may still call.
+const ALLOWED_BEFORE_PASSWORD_CHANGE = /^\/api\/auth\/(change-password|session)$/;
 
 export async function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
@@ -11,10 +14,12 @@ export async function proxy(req: NextRequest) {
     if (isPublicApiRequest(req.method, pathname, searchParams)) {
       return NextResponse.next();
     }
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    const user = token ? await verifySessionToken(token) : null;
+    const user = await resolveStaffSession(req.cookies.get(COOKIE_NAME)?.value);
     if (!user) {
       return NextResponse.json({ error: "Staff sign-in required." }, { status: 401 });
+    }
+    if (user.mustChangePassword && !ALLOWED_BEFORE_PASSWORD_CHANGE.test(pathname)) {
+      return NextResponse.json({ error: "Choose a new password first (My account)." }, { status: 403 });
     }
     if (!canCallApi(user.role, req.method, pathname)) {
       return NextResponse.json({ error: "Your staff role does not allow this action." }, { status: 403 });
@@ -28,13 +33,19 @@ export async function proxy(req: NextRequest) {
 
   // 2. Guard all /admin pages except /admin/login
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    const user = token ? await verifySessionToken(token) : null;
+    const user = await resolveStaffSession(req.cookies.get(COOKIE_NAME)?.value);
 
     if (!user) {
       const loginUrl = new URL("/admin/login", req.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
+      const res = NextResponse.redirect(loginUrl);
+      res.cookies.delete(COOKIE_NAME); // expired, deactivated or signed out by a password change
+      return res;
+    }
+
+    // A temporary password (new account or admin reset) must be replaced before anything else.
+    if (user.mustChangePassword && pathname !== "/admin/account") {
+      return NextResponse.redirect(new URL("/admin/account", req.url));
     }
 
     if (pathname !== "/admin" && !canViewPage(user.role, pathname)) {
@@ -51,12 +62,12 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // 3. If logged in and visiting /admin/login, redirect to /admin/frontdesk
-  if (pathname === "/admin/login") {
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    const user = token ? await verifySessionToken(token) : null;
+  // 3. If logged in and visiting /admin/login, go to the user's home page,
+  //    unless they opened a password reset link (that must still work while signed in).
+  if (pathname === "/admin/login" && !searchParams.has("reset")) {
+    const user = await resolveStaffSession(req.cookies.get(COOKIE_NAME)?.value);
     if (user) {
-      return NextResponse.redirect(new URL("/admin/frontdesk", req.url));
+      return NextResponse.redirect(new URL(user.mustChangePassword ? "/admin/account" : homePageFor(user.role), req.url));
     }
   }
 

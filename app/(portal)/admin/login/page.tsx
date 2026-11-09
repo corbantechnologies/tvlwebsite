@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { homePageFor } from '@/lib/auth/roles';
 
 export default function AdminLoginPage() {
   // useSearchParams needs a Suspense boundary in the App Router.
@@ -46,7 +47,12 @@ function LoginCard() {
       if (res.ok && data.success) {
         toast.success(`Welcome back, ${data.user.name}!`);
         const callbackUrl = searchParams.get('callbackUrl');
-        router.push(callbackUrl && callbackUrl.startsWith('/admin') ? callbackUrl : '/admin/frontdesk');
+        if (data.mustChangePassword) {
+          toast('Choose your own password to continue.');
+          router.push('/admin/account');
+        } else {
+          router.push(callbackUrl && callbackUrl.startsWith('/admin/') && !callbackUrl.startsWith('//') ? callbackUrl : homePageFor(data.user.role));
+        }
         router.refresh();
       } else {
         toast.error(data.error || 'Invalid credentials.');
