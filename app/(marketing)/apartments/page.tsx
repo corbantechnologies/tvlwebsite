@@ -10,6 +10,7 @@ import TransferModal from '@/components/TransferModal';
 import GuestBookingTrackerModal from '@/components/GuestBookingTrackerModal';
 import OptimizedImage from '@/components/OptimizedImage';
 import { ShieldCheck, Maximize2, Users, CheckCircle2, ArrowRight, Home } from 'lucide-react';
+import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 export default function ApartmentsIndexPage() {
   const router = useRouter();
@@ -196,6 +197,10 @@ export default function ApartmentsIndexPage() {
                         </Link>
                         <button
                           onClick={() => {
+                            if (isProfitroomBookingActive()) {
+                              openProfitroomBooking();
+                              return;
+                            }
                             setSelectedApartmentId(apt.id);
                             setIsBookingOpen(true);
                           }}

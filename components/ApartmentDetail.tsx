@@ -24,6 +24,7 @@ import { motion } from "motion/react";
 import OptimizedImage from "./OptimizedImage";
 import AvailabilityStatus from "./AvailabilityStatus";
 import { propertyToday } from "@/lib/dates";
+import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 interface ApartmentDetailProps {
   apartment: ApartmentType;
@@ -164,6 +165,7 @@ function ApartmentDetailContent({
   const [confirmedToken, setConfirmedToken] = useState("");
   const [promocode, setPromocode] = useState("");
   const [bookingMode, setBookingMode] = useState<"live" | "inquiry">("live");
+  const profitroomActive = isProfitroomBookingActive();
 
   // Direct Booking launcher (Native Tamarind PMS / Paystack modal)
   const handleDirectBook = (e: React.FormEvent) => {
@@ -717,7 +719,30 @@ function ApartmentDetailContent({
                 )}
 
                 {/* Direct Online Booking Section */}
-                {bookingMode === "live" ? (
+                {bookingMode === "live" && profitroomActive && (
+                  <button
+                    type="button"
+                    onClick={() => openProfitroomBooking({ checkIn, checkOut, guests: guestCount, promocode })}
+                    className="w-full py-3.5 font-bold rounded-none text-xs uppercase tracking-widest transition-colors duration-200 cursor-pointer text-center flex items-center justify-center gap-2 bg-brand-dark text-white hover:bg-brand-teal shadow-md"
+                    id="btn-detail-profitroom-book"
+                  >
+                    <span>Check Rates &amp; Book Now</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {bookingMode === "live" && profitroomActive ? (
+                  <p className="text-center text-[11px] text-stone-500">
+                    <a
+                      href="#"
+                      onClick={(e) => handleDirectBook(e)}
+                      className="underline underline-offset-4 decoration-stone-300 hover:text-brand-teal"
+                      id="link-detail-direct-book"
+                    >
+                      Or book and pay here with card or M-Pesa
+                    </a>
+                  </p>
+                ) : bookingMode === "live" ? (
                   <div className="p-4 bg-[#821124]/5 border border-[#821124]/20 text-left space-y-2.5">
                     <h4 className="text-[10px] font-bold text-[#821124] uppercase tracking-wider flex items-center gap-1.5">
                       <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -732,7 +757,7 @@ function ApartmentDetailContent({
                       disabled={!checkIn || !checkOut || checkingAvailability || !isAvailable}
                       className={`w-full py-3.5 font-bold rounded-none text-xs uppercase tracking-widest transition-colors duration-200 cursor-pointer text-center flex items-center justify-center gap-2 ${
                         checkIn && checkOut && !checkingAvailability && isAvailable 
-                          ? "bg-[#821124] text-white hover:bg-[#680e1c] shadow-md" 
+                          ? "bg-[#821124] text-white hover:bg-[#680e1c] shadow-md"
                           : "bg-stone-200 text-stone-400 cursor-not-allowed"
                       }`}
                       id="btn-detail-direct-book"

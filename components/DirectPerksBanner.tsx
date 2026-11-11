@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ShieldCheck, GlassWater, CalendarCheck2, Clock, Sparkles } from "lucide-react";
+import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 interface DirectPerksBannerProps {
   onOpenBooking: () => void;
@@ -102,7 +103,7 @@ export default function DirectPerksBanner({ onOpenBooking, onOpenTracking }: Dir
               </button>
             )}
             <button
-              onClick={onOpenBooking}
+              onClick={() => (isProfitroomBookingActive() ? openProfitroomBooking() : onOpenBooking())}
               className="px-6 py-2.5 bg-brand-gold hover:bg-amber-500 text-brand-dark font-bold uppercase tracking-widest text-xs transition-all shadow-md cursor-pointer"
             >
               Check Availability

@@ -24,7 +24,6 @@ const PUBLIC_API_RULES: Rule[] = [
   { methods: ["GET"], pattern: /^\/api\/packages$/ },
   { methods: ["GET"], pattern: /^\/api\/pricing$/ },
   { methods: ["GET"], pattern: /^\/api\/settings$/ },
-  { methods: ["GET", "OPTIONS"], pattern: /^\/api\/profitroom(\/(rooms|offers))?$/ },
 
   // Guest actions
   { methods: ["POST"], pattern: /^\/api\/(inquire|inquiries)$/ },

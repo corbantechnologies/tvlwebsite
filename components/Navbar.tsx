@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Menu, X, MapPin, Phone, Car } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 interface NavbarProps {
   onNavigate: (sectionId: string) => void;
@@ -14,6 +15,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onNavigate, onOpenBooking, onOpenTransferModal, onOpenTracking, activeView, onGoHome }: NavbarProps) {
+  const profitroomActive = isProfitroomBookingActive();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -165,12 +167,22 @@ export default function Navbar({ onNavigate, onOpenBooking, onOpenTransferModal,
 
             {/* CTAs */}
             <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
+              {profitroomActive && (
+                <a
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); onOpenBooking(); }}
+                  className="text-[#2D2926] hover:text-brand-teal text-[11px] font-semibold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap underline underline-offset-4 decoration-stone-300"
+                  id="navbar-btn-book-direct"
+                >
+                  Book &amp; Pay Here
+                </a>
+              )}
               <button
-                onClick={onOpenBooking}
+                onClick={() => (profitroomActive ? openProfitroomBooking() : onOpenBooking())}
                 className="bg-brand-dark text-white px-5 py-2.5 xl:px-6 xl:py-3 text-xs font-bold uppercase tracking-wider xl:tracking-widest hover:bg-brand-teal transition-all shadow-sm cursor-pointer whitespace-nowrap"
                 id="navbar-btn-book"
               >
-                Check Availability
+                {profitroomActive ? "Book Now" : "Check Availability"}
               </button>
             </div>
 
@@ -234,13 +246,28 @@ export default function Navbar({ onNavigate, onOpenBooking, onOpenTransferModal,
                   <button
                     onClick={() => {
                       setIsOpen(false);
-                      onOpenBooking();
+                      if (profitroomActive) openProfitroomBooking();
+                      else onOpenBooking();
                     }}
                     className="w-full py-3 bg-brand-dark hover:bg-brand-teal text-white font-bold text-xs tracking-widest uppercase transition-all cursor-pointer shadow-sm"
                     id="mobile-btn-book"
                   >
-                    Check Availability
+                    {profitroomActive ? "Book Now" : "Check Availability"}
                   </button>
+                  {profitroomActive && (
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsOpen(false);
+                        onOpenBooking();
+                      }}
+                      className="block w-full text-center py-2 text-stone-600 hover:text-brand-teal font-semibold text-[11px] tracking-wider uppercase transition-colors cursor-pointer underline underline-offset-4 decoration-stone-300"
+                      id="mobile-btn-book-direct"
+                    >
+                      Or Book &amp; Pay Here
+                    </a>
+                  )}
                 </div>
               </div>
             </motion.div>

@@ -22,6 +22,7 @@ import AvailabilityStatus from "@/components/AvailabilityStatus";
 import { propertyToday } from "@/lib/dates";
 import toast from "react-hot-toast";
 import { chargeFor, usdToKesRate, type PayCurrency } from "@/lib/fx";
+import { isProfitroomBookingActive, profitroomBookingUrl } from "@/lib/profitroomBooking";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -594,6 +595,22 @@ export default function BookingModal({
 
         {/* Main Content Area */}
         <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+          {!confirmedData && isProfitroomBookingActive() && (
+            <div className="mb-6 p-4 bg-white border border-stone-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" id="checkout-profitroom-option">
+              <p className="text-xs text-stone-600">
+                Prefer our main booking engine? You can check rates and book there instead.
+              </p>
+              <a
+                href={profitroomBookingUrl({ checkIn, checkOut, guests: adults + children, promocode })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 px-4 py-2.5 bg-brand-dark hover:bg-brand-teal text-white text-xs font-bold uppercase tracking-widest text-center transition-colors"
+                id="btn-checkout-profitroom"
+              >
+                Book on Main Engine
+              </a>
+            </div>
+          )}
           {!confirmedData ? (
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
