@@ -41,6 +41,7 @@ import {
   Train,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 export default function App() {
   const router = useRouter();
@@ -545,6 +546,10 @@ export default function App() {
   };
 
   const handleOpenBookingWithParams = (aptId: string = "1-bedroom", pkgId: string = "ro") => {
+    if (isProfitroomBookingActive()) {
+      openProfitroomBooking();
+      return;
+    }
     setSelectedApartmentId(aptId);
     setPreSelectedPkg(pkgId);
     setIsBookingOpen(true);
@@ -747,7 +752,7 @@ export default function App() {
                       </button>
 
                       <button
-                        onClick={() => setIsBookingOpen(true)}
+                        onClick={() => (isProfitroomBookingActive() ? openProfitroomBooking() : setIsBookingOpen(true))}
                         className="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold rounded-none text-xs uppercase tracking-widest transition-all duration-300 backdrop-blur-sm cursor-pointer"
                         id="hero-btn-book"
                       >

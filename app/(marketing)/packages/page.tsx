@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ArrowRight, Tag } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
+import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 interface MealPlan {
   id: string;
@@ -36,6 +37,10 @@ export default function PackagesPage() {
   }, []);
 
   const handleSelectPlan = (planId: string) => {
+    if (isProfitroomBookingActive()) {
+      openProfitroomBooking();
+      return;
+    }
     setSelectedPlanId(planId);
     setIsBookingOpen(true);
   };
