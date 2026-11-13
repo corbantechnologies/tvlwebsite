@@ -191,16 +191,11 @@ export default function Footer({ onNavigate, onSelectApartment, onGoHome, onSele
               </button>
             </li>
             <li className="pt-2">
-              <span className="text-[10px] uppercase font-bold text-brand-gold block">Boarding upgrades</span>
+              <span className="text-[10px] uppercase font-bold text-brand-gold block">Offers</span>
             </li>
             <li>
-              <button onClick={() => navigateTo("packages-section")} className="hover:text-brand-teal transition-colors cursor-pointer">
-                Bed & Breakfast (B&B)
-              </button>
-            </li>
-            <li>
-              <button onClick={() => navigateTo("packages-section")} className="hover:text-brand-teal transition-colors cursor-pointer">
-                Coastal Half Board & Premium
+              <button onClick={() => navigateTo("offers-section")} className="hover:text-brand-teal transition-colors cursor-pointer">
+                Special Offers
               </button>
             </li>
           </ul>

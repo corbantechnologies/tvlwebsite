@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: "/packages",
+        destination: "/offers",
+        permanent: false,
+      },
+      {
         source: "/booking/confirmed",
         destination: "/booking-confirmed",
         permanent: true,

@@ -1,0 +1,86 @@
+<Offers>
+<Offer>
+<OfferID>785279</OfferID>
+<OfferName>Flexible Rate - Room Only</OfferName>
+<OfferType>O</OfferType>
+<OfferDescription><p>Offer includes:</p><ul><li>accommodation in comfortable apartments</li><li>unlimited access to Wi-Fi</li></ul></OfferDescription>
+<OfferSummary>Lowest rate guarantee. Free cancellation.</OfferSummary>
+<Available Days="1234567"/>
+<MinPrice>
+213.00
+<Price>213.00</Price>
+<Calculation>N</Calculation>
+<Occupancy>2</Occupancy>
+<Nights>1</Nights>
+<Currency>USD</Currency>
+</MinPrice>
+<Tags>
+<Tag Type="Meals">Room Only</Tag>
+</Tags>
+<OfferLink>Booking.Open({OfferID:785279})</OfferLink>
+<OfferImage>https://r.profitroom.com/tamarindvillage/images/offers/skDJZJu4iWTNtWeF.jpg</OfferImage>
+</Offer>
+<Offer>
+<OfferID>808796</OfferID>
+<OfferName>Bed &amp; Breakfast</OfferName>
+<OfferType>O</OfferType>
+<OfferDescription/>
+<OfferSummary/>
+<MinPrice>
+234
+<Price>234</Price>
+<Calculation>N</Calculation>
+<Occupancy>2</Occupancy>
+<Nights>1</Nights>
+<Currency>USD</Currency>
+</MinPrice>
+<Tags>
+<Tag Type="Meals">Breakfast</Tag>
+</Tags>
+<OfferLink>Booking.Open({OfferID:808796})</OfferLink>
+<OfferImage>https://r.profitroom.com/tamarindvillage/images/offers/wlF602VHdhWCW1k5.jpeg</OfferImage>
+</Offer>
+<Offer>
+<OfferID>875390</OfferID>
+<OfferName>Stay &amp; dine- Half Board Deal with Seafood</OfferName>
+<OfferType>S</OfferType>
+<OfferDescription/>
+<OfferSummary>Indulge in our premium Stay &amp; Dine Half Board Deal and savor exquisite seafood at Tamarind Restaurant. Immerse yourself in the charm of Tamarind Village, where exceptional comfort and unforgettable moments await in our beautifully appointed apartments.</OfferSummary>
+<MinPrice>
+288
+<Price>288</Price>
+<Calculation>N</Calculation>
+<Occupancy>2</Occupancy>
+<Nights>1</Nights>
+<Currency>USD</Currency>
+</MinPrice>
+<Tags>
+<Tag Type="Meals">Breakfast and Dinner</Tag>
+<Tag>Active</Tag>
+<Tag>Deals</Tag>
+</Tags>
+<OfferLink>Booking.Open({OfferID:875390})</OfferLink>
+<OfferImage>https://r.profitroom.com/tamarindvillage/images/offers/2o7Yx58kVL88Jynx.jpg</OfferImage>
+</Offer>
+<Offer>
+<OfferID>848982</OfferID>
+<OfferName>Stay &amp; dine - Half Board Deal</OfferName>
+<OfferType>S</OfferType>
+<OfferDescription/>
+<OfferSummary>Indulge in our premium Stay &amp; Dine Half Board Deal and enjoy daily breakfast plus a delectable dinner at Tamarind Restaurant. Unwind in the serene charm of Tamarind Village, where comfort, warm hospitality, and unforgettable memories come together in our beautifully appointed apartments.</OfferSummary>
+<MinPrice>
+272
+<Price>272</Price>
+<Calculation>PN</Calculation>
+<Occupancy>2</Occupancy>
+<Nights>1</Nights>
+<Currency>USD</Currency>
+</MinPrice>
+<Tags>
+<Tag Type="Meals">Breakfast and Dinner</Tag>
+<Tag>Active</Tag>
+</Tags>
+<OfferLink>Booking.Open({OfferID:848982})</OfferLink>
+<OfferImage>https://r.profitroom.com/tamarindvillage/images/offers/LRgo74geLYL1bggj.jpg</OfferImage>
+</Offer>
+</Offers>

@@ -41,3 +41,22 @@ export function profitroomBookingUrl(params: ProfitroomBookingParams = {}): stri
 export function openProfitroomBooking(params: ProfitroomBookingParams = {}): void {
   window.open(profitroomBookingUrl(params), "_blank", "noopener,noreferrer");
 }
+
+type ProfitroomWidget = { Open: (opts: Record<string, unknown>) => void };
+
+/**
+ * Opens one ProfitRoom offer. Uses ProfitRoom's own Booking.Open() when their
+ * booking widget script is on the page (NEXT_PUBLIC_PROFITROOM_WIDGET_SRC);
+ * otherwise opens the booking engine start page.
+ */
+export function openProfitroomOffer(offerId: string): void {
+  const widget = (window as unknown as { Booking?: ProfitroomWidget }).Booking;
+  const numericId = Number(offerId);
+  if (widget && typeof widget.Open === "function" && Number.isFinite(numericId)) {
+    widget.Open({ OfferID: numericId });
+    return;
+  }
+  openProfitroomBooking();
+}
+
+export const PROFITROOM_WIDGET_SRC = process.env.NEXT_PUBLIC_PROFITROOM_WIDGET_SRC?.trim() || "";
