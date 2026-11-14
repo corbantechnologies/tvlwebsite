@@ -21,6 +21,7 @@ const PUBLIC_API_RULES: Rule[] = [
   { methods: ["GET"], pattern: /^\/api\/events$/ },
   { methods: ["GET"], pattern: /^\/api\/extras$/ },
   { methods: ["GET"], pattern: /^\/api\/meal-plans$/ },
+  { methods: ["GET"], pattern: /^\/api\/offers$/ }, // ProfitRoom offers feed
   { methods: ["GET"], pattern: /^\/api\/packages$/ },
   { methods: ["GET"], pattern: /^\/api\/pricing$/ },
   { methods: ["GET"], pattern: /^\/api\/settings$/ },

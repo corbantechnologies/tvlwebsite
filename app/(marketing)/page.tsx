@@ -42,6 +42,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
+import SpecialOffers from "@/components/SpecialOffers";
+import Link from "next/link";
 
 export default function App() {
   const router = useRouter();
@@ -966,147 +968,30 @@ export default function App() {
                 </div>
               </section>
 
-              {/* 4. BOARDING PACKAGES SECTION */}
-              <section className="py-20 bg-brand-dark text-stone-100 scroll-mt-12" id="packages-section">
+              {/* 4. SPECIAL OFFERS SECTION (live from the ProfitRoom Suite) */}
+              <section className="py-20 bg-brand-dark text-stone-100 scroll-mt-12" id="offers-section">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="text-center max-w-3xl mx-auto mb-16">
-                    <span className="text-xs font-bold uppercase tracking-widest text-brand-gold">Boarding & Dining Upgrades</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-brand-gold">Stay &amp; Save</span>
                     <h2 className="font-serif text-3xl sm:text-4xl text-white tracking-tight mt-2">
-                      Tailored Boarding Packages
+                      Special Offers
                     </h2>
                     <p className="text-stone-400 font-light mt-3 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
-                      Upgrade your apartment self-catering stay with one of our specialized board packages, linking you to the culinary brilliance of the adjacent Tamarind Restaurant.
+                      Seasonal deals and stay packages at Tamarind Village, with dining at the adjacent Tamarind Restaurant.
                     </p>
                   </div>
 
-                  {/* Packages Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto justify-items-center justify-center">
-                    {displayMealPlans.map((pkg: any, index: number) => {
-                      const getPackageIcon = (id: string) => {
-                        switch (id) {
-                          case "ro":
-                          case "room-only": return <Sparkles className="w-5 h-5" />;
-                          case "bb":
-                          case "bed-breakfast": return <Coffee className="w-5 h-5" />;
-                          case "hb":
-                          case "half-board": return <Utensils className="w-5 h-5" />;
-                          default: return <Utensils className="w-5 h-5" />;
-                        }
-                      };
+                  <SpecialOffers variant="dark" limit={3} />
 
-                      const isPopular = pkg.id === "half-board" || pkg.id === "hb";
-
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={`bg-[#2D2926] border border-stone-800 rounded-none flex flex-col justify-between hover:border-brand-teal/80 transition-all duration-300 shadow-md group relative w-full max-w-sm overflow-hidden ${index === 2 ? "md:col-span-2 lg:col-span-1 mx-auto" : ""
-                            }`}
-                          id={`package-card-${pkg.id}`}
-                        >
-                          {/* Card Image Banner */}
-                          {pkg.image && (
-                            <div className="relative w-full h-44 overflow-hidden bg-stone-900 flex-shrink-0">
-                              <img
-                                src={pkg.image}
-                                alt={pkg.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-[#2D2926] via-transparent to-black/30" />
-                              <span className="absolute bottom-2.5 left-4 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 bg-black/70 backdrop-blur-sm text-stone-200 border border-white/10">
-                                {pkg.shortName || 'PLAN'}
-                              </span>
-                            </div>
-                          )}
-
-                          {isPopular && (
-                            <div className="absolute top-3 right-3 bg-[#821124] text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-none border border-[#821124]/40 shadow-sm whitespace-nowrap z-10">
-                              Signature Seafood Experience
-                            </div>
-                          )}
-
-                          <div className="p-8 pt-6 flex-1 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-center gap-2 mb-4">
-                                <div className="p-2 bg-stone-800 rounded-none text-brand-teal">
-                                  {getPackageIcon(pkg.id)}
-                                </div>
-                                <h3 className="font-serif text-base sm:text-lg font-bold text-white group-hover:text-brand-teal transition-colors">
-                                  {pkg.name}
-                                </h3>
-                              </div>
-
-                              <p className="text-stone-400 text-xs font-light leading-relaxed mb-6">
-                                {pkg.description}
-                              </p>
-
-                              <div className="space-y-3 mb-8">
-                                <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider block">What&apos;s Included:</span>
-                                {(pkg.highlights || []).map((highlight: string, idx: number) => (
-                                  <div key={idx} className="flex gap-2.5 items-start text-xs text-stone-300">
-                                    <CheckCircle2 className="w-4 h-4 text-brand-teal flex-shrink-0 mt-0.5" />
-                                    <span className="font-light leading-snug">{highlight}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="pt-6 border-t border-stone-800/80 flex flex-col gap-4">
-                              <div className="w-full space-y-1">
-                                <span className="text-[9px] text-[#C59B27] uppercase font-bold tracking-wider block">
-                                  Package Add-On Rate (Per Guest / Day)
-                                </span>
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-2xl font-serif font-bold text-white">
-                                    {pkg.pricePerPersonPerDayUsd === 0 ? "Included ($0)" : `$${pkg.pricePerPersonPerDayUsd}`}
-                                  </span>
-                                  {pkg.pricePerPersonPerDayUsd > 0 && (
-                                    <span className="text-[11px] text-stone-400 font-light">USD / guest / day</span>
-                                  )}
-                                </div>
-                                {pkg.pricePerPersonPerDayKes > 0 && (
-                                  <span className="text-[11px] font-mono text-stone-400 block">
-                                    ≈ KES {pkg.pricePerPersonPerDayKes.toLocaleString()} / guest / day
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Example Calculation Box */}
-                              <div className="p-3 bg-stone-900/90 border border-stone-800 text-[11px] text-stone-300 space-y-0.5">
-                                <span className="text-[9px] uppercase font-bold text-[#C59B27] tracking-wider block">
-                                  Calculation Example:
-                                </span>
-                                {pkg.pricePerPersonPerDayUsd === 0 ? (
-                                  <span className="text-stone-400">Included with all apartment suites · +$0 dining cost</span>
-                                ) : (
-                                  <span>2 Guests × 3 Nights = <strong>+${pkg.pricePerPersonPerDayUsd * 2 * 3} USD</strong> added to suite stay</span>
-                                )}
-                              </div>
-
-                              <button
-                                onClick={() => handleOpenBookingWithParams("1-bedroom", pkg.id)}
-                                className="w-full py-3 bg-[#821124] hover:bg-[#680e1c] text-white font-bold rounded-none text-xs uppercase tracking-widest transition-colors cursor-pointer text-center"
-                                id={`btn-pkg-select-${pkg.id}`}
-                              >
-                                Select Package
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Transparent Calculation Banner */}
-                  <div className="mt-14 bg-stone-900/90 border border-stone-800 p-6 sm:p-8 text-center max-w-4xl mx-auto space-y-2">
-                    <span className="text-xs font-bold uppercase tracking-widest text-[#C59B27] block">
-                      Transparent Package Calculation
-                    </span>
-                    <p className="font-mono text-xs sm:text-sm text-stone-200 font-semibold">
-                      Total Stay Cost = (Apartment Base Rate × Nights) + (Package Rate × Total Guests × Nights) + Optional Extras
-                    </p>
-                    <p className="text-xs text-stone-400 max-w-2xl mx-auto leading-relaxed">
-                      Boarding plans are dining add-ons calculated per person per day on top of the suite rate. For example: 2 adults staying 3 nights on Bed &amp; Breakfast ($21/day) = (Suite Base × 3) + ($21 × 2 × 3 = $126 USD dining package).
-                    </p>
+                  <div className="mt-12 text-center">
+                    <Link
+                      href="/offers"
+                      className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-brand-gold hover:text-white transition-colors"
+                      id="link-all-offers"
+                    >
+                      See all offers
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 </div>
               </section>

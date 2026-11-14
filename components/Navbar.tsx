@@ -58,7 +58,7 @@ export default function Navbar({ onNavigate, onOpenBooking, onOpenTransferModal,
 
   const menuItems = [
     { label: "Apartments", href: "apartments-section" },
-    { label: "Packages", href: "packages-section" },
+    { label: "Special Offers", href: "offers-section" },
     { label: "Dining", href: "dining-section" },
     { label: "Facilities", href: "facilities-section" },
     { label: "Location", href: "contact-section" },
