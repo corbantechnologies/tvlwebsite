@@ -1,4 +1,5 @@
 <Offers>
+<Offer><OfferID>1252992</OfferID><OfferName>Festive season offer with FREE breakfast</OfferName><OfferType>O</OfferType><OfferDescription>&lt;p&gt;Price includes room charge and a free breakfast per person throughout your stay&lt;/p&gt;</OfferDescription><OfferSummary>Enjoy the festive season by the creek at Tamarind Village and get free breakfast throughout your stay.</OfferSummary><Available From="2026-11-20" To="2026-12-19"/><MinPrice>250<Price>250</Price><Calculation>N</Calculation><Occupancy>2</Occupancy><Nights>1</Nights><Currency>USD</Currency></MinPrice><Tags><Tag Type="Meals">Breakfast</Tag></Tags><OfferLink>Booking.Open({OfferID:1252992})</OfferLink><OfferImage>https://r.profitroom.com/tamarindvillage/images/offers/TxVRdezDSXgznSrf.jpg</OfferImage></Offer>
 <Offer>
 <OfferID>785279</OfferID>
 <OfferName>Flexible Rate - Room Only</OfferName>
