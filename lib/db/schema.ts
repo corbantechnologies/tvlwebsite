@@ -148,6 +148,8 @@ export const events = pgTable("events", {
   startDate: text("start_date").notNull(),
   endDate: text("end_date"),
   timeText: text("time_text").notNull(),
+  /** Weekdays it repeats on (0 = Sunday … 6 = Saturday), e.g. [5] for a Friday happy hour. Empty = one-off. */
+  repeatDays: jsonb("repeat_days").$type<number[]>().default([]),
   priceUsd: integer("price_usd").default(0),
   priceKes: integer("price_kes").default(0),
   image: text("image").notNull(),

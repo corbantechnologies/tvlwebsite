@@ -19,6 +19,7 @@ import {
 import { motion } from "motion/react";
 import { DiningExperience } from "@/types";
 import OptimizedImage from "./OptimizedImage";
+import { repeatText } from '@/lib/eventSchedule';
 
 interface DiningDetailProps {
   dining: DiningExperience;
@@ -644,7 +645,7 @@ function DiningDetailContent({ dining, onBack, onSelectDining, allDinings }: Din
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {venueEvents.map((evt) => {
               const poster = evt.image || evt.posterUrl || gallery[0];
-              const dateStr = evt.startDate || evt.eventDate || 'Upcoming Date';
+              const dateStr = repeatText(evt) || evt.startDate || evt.eventDate || 'Upcoming Date';
               const timeStr = evt.timeText || evt.eventTime || 'Evening Session';
               const priceKes = evt.priceKes || evt.ticketPriceKes || 0;
               const priceUsd = evt.priceUsd || 0;

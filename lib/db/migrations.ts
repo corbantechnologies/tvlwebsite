@@ -423,6 +423,13 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    id: "005_event_repeats",
+    description: "Weekly repeating events (e.g. happy hour every Friday)",
+    up: async (db) => {
+      await db.execute(sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS repeat_days JSONB DEFAULT '[]'::jsonb`);
+    },
+  },
 ];
 
 /** Applies every migration not yet recorded. Returns the ids it applied. */
