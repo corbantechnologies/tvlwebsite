@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/db";
 import { events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { cleanRepeatDays } from "@/lib/eventSchedule";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,6 +20,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       startDate: body.startDate || body.eventDate,
       endDate: body.endDate || null,
       timeText: body.timeText || body.eventTime || "6:30 PM - 10:30 PM",
+      repeatDays: cleanRepeatDays(body.repeatDays),
       priceUsd: Number(body.priceUsd ?? body.ticketPriceUsd ?? 0),
       priceKes: Number(body.priceKes ?? body.ticketPriceKes ?? 0),
       image: body.image || body.posterUrl || "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",

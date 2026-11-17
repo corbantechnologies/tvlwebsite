@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MediaDropzone from '@/components/ui/MediaDropzone';
+import { WEEKDAYS, cleanRepeatDays, repeatText } from '@/lib/eventSchedule';
 
 interface AdminEvent {
   id: string;
@@ -33,6 +34,7 @@ interface AdminEvent {
   startDate: string;
   endDate?: string | null;
   timeText: string;
+  repeatDays?: number[] | null;
   priceKes?: number;
   priceUsd?: number;
   image?: string;
@@ -81,6 +83,7 @@ export default function AdminEventsPage() {
   const [startDate, setStartDate] = useState('2026-11-01');
   const [endDate, setEndDate] = useState('');
   const [timeText, setTimeText] = useState('18:30 – 22:30');
+  const [repeatDays, setRepeatDays] = useState<number[]>([]);
   const [priceKes, setPriceKes] = useState<number | ''>(8500);
   const [priceUsd, setPriceUsd] = useState<number | ''>(65);
   const [maxCapacity, setMaxCapacity] = useState<number | ''>(65);
@@ -123,6 +126,7 @@ export default function AdminEventsPage() {
     setStartDate(new Date().toISOString().split('T')[0]);
     setEndDate('');
     setTimeText('18:30 – 22:30');
+    setRepeatDays([]);
     setPriceKes(8500);
     setPriceUsd(65);
     setMaxCapacity(80);
@@ -145,6 +149,7 @@ export default function AdminEventsPage() {
     setStartDate(evt.startDate);
     setEndDate(evt.endDate || '');
     setTimeText(evt.timeText || '18:30 – 22:30');
+    setRepeatDays(cleanRepeatDays(evt.repeatDays));
     setPriceKes(evt.priceKes ?? '');
     setPriceUsd(evt.priceUsd ?? '');
     setMaxCapacity(evt.maxCapacity ?? '');
@@ -190,6 +195,7 @@ export default function AdminEventsPage() {
           startDate,
           endDate: endDate || null,
           timeText,
+          repeatDays,
           priceKes: Number(priceKes || 0),
           priceUsd: Number(priceUsd || 0),
           maxCapacity: Number(maxCapacity || 80),
@@ -235,6 +241,7 @@ export default function AdminEventsPage() {
           startDate,
           endDate: endDate || null,
           timeText,
+          repeatDays,
           priceKes: Number(priceKes || 0),
           priceUsd: Number(priceUsd || 0),
           maxCapacity: Number(maxCapacity || 80),
@@ -426,7 +433,7 @@ export default function AdminEventsPage() {
                     <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs text-slate-600">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-[#821124] shrink-0" />
-                        <span>{evt.startDate} {evt.endDate ? `to ${evt.endDate}` : ''}</span>
+                        <span>{repeatText(evt) ? `${repeatText(evt)} · from ${evt.startDate}` : evt.startDate} {evt.endDate ? `to ${evt.endDate}` : ''}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -599,6 +606,33 @@ export default function AdminEventsPage() {
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Repeats weekly on (optional, e.g. Friday for a happy hour)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {WEEKDAYS.map((day, i) => {
+                    const on = repeatDays.includes(i);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setRepeatDays(on ? repeatDays.filter((d) => d !== i) : [...repeatDays, i].sort((a, b) => a - b))}
+                        className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${on ? 'bg-[#821124] border-[#821124] text-white' : 'bg-white border-slate-300 text-slate-700'}`}
+                      >
+                        {day.slice(0, 3)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  {repeatDays.length
+                    ? `${repeatText({ repeatDays })}, from the start date${endDate ? ` until ${endDate}` : ' until you set an end date'}.`
+                    : 'Leave empty for a one-off event.'}
+                </p>
               </div>
 
               <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">

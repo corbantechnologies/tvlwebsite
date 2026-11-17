@@ -6,6 +6,7 @@ import { Calendar, Clock, MapPin, Ticket, Sparkles, ArrowRight, ExternalLink } f
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import BookingModal from '@/components/BookingModal';
 import EventTicketModal from '@/components/EventTicketModal';
+import { repeatText } from '@/lib/eventSchedule';
 ;
 
 interface EventItem {
@@ -75,6 +76,9 @@ export default function EventsPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.events && d.events.length > 0) setEvents(d.events);
+        // Links like /events#happy-hour (e.g. from the in-room guide) open at that event.
+        const target = decodeURIComponent(window.location.hash.slice(1));
+        if (target) setTimeout(() => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' }), 100);
       })
       .catch(() => {});
   }, []);
@@ -143,14 +147,15 @@ export default function EventsPage() {
             const poster = evt.image || evt.posterUrl || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5';
             const priceKes = evt.priceKes || evt.ticketPriceKes || 0;
             const priceUsd = evt.priceUsd || 0;
-            const dateStr = evt.startDate || evt.eventDate || 'Coming Soon';
+            const dateStr = repeatText(evt) || evt.startDate || evt.eventDate || 'Coming Soon';
             const timeStr = evt.timeText || evt.eventTime || 'Evening';
             const brandLabel = BRAND_DISPLAY[evt.brand || ''] || evt.brand || 'Tamarind Mombasa';
 
             return (
               <div
                 key={evt.id}
-                className="bg-white rounded-2xl overflow-hidden border border-[#C59B27]/30 shadow-md hover:shadow-2xl transition-all flex flex-col justify-between group"
+                id={evt.slug || evt.id}
+                className="scroll-mt-28 bg-white rounded-2xl overflow-hidden border border-[#C59B27]/30 shadow-md hover:shadow-2xl transition-all flex flex-col justify-between group"
               >
                 <div>
                   <div className="relative h-56 w-full overflow-hidden bg-black/40">
