@@ -24,7 +24,7 @@ import { motion } from "motion/react";
 import OptimizedImage from "./OptimizedImage";
 import AvailabilityStatus from "./AvailabilityStatus";
 import { propertyToday } from "@/lib/dates";
-import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
+import { isDirectBookingLinkShown, isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 interface ApartmentDetailProps {
   apartment: ApartmentType;
@@ -732,6 +732,7 @@ function ApartmentDetailContent({
                 )}
 
                 {bookingMode === "live" && profitroomActive ? (
+                  isDirectBookingLinkShown() && (
                   <p className="text-center text-[11px] text-stone-500">
                     <a
                       href="#"
@@ -742,6 +743,7 @@ function ApartmentDetailContent({
                       Or book and pay here with card or M-Pesa
                     </a>
                   </p>
+                  )
                 ) : bookingMode === "live" ? (
                   <div className="p-4 bg-[#821124]/5 border border-[#821124]/20 text-left space-y-2.5">
                     <h4 className="text-[10px] font-bold text-[#821124] uppercase tracking-wider flex items-center gap-1.5">

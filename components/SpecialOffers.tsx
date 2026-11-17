@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
-import { ArrowRight, Utensils, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Utensils, CheckCircle2, CalendarDays } from "lucide-react";
 import type { ProfitroomOffer } from "@/lib/profitroomOffers";
 import { openProfitroomOffer } from "@/lib/profitroomBooking";
 
@@ -25,6 +25,27 @@ function priceBasis(o: ProfitroomOffer): string | null {
   if (o.priceNights) parts.push(`${o.priceNights} night${o.priceNights === 1 ? "" : "s"}`);
   if (o.priceOccupancy) parts.push(`${o.priceOccupancy} guest${o.priceOccupancy === 1 ? "" : "s"}`);
   return parts.length ? `for ${parts.join(", ")}` : null;
+}
+
+function shortDate(iso: string, withYear: boolean): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(withYear ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  });
+}
+
+/** "Valid 20 Nov – 19 Dec 2026", "Valid from 20 Nov 2026", "Valid until 19 Dec 2026", or null. */
+function validity(o: ProfitroomOffer): string | null {
+  const { availableFrom: from, availableTo: to } = o;
+  if (from && to) {
+    const sameYear = from.slice(0, 4) === to.slice(0, 4);
+    return `Valid ${shortDate(from, !sameYear)} – ${shortDate(to, true)}`;
+  }
+  if (from) return `Valid from ${shortDate(from, true)}`;
+  if (to) return `Valid until ${shortDate(to, true)}`;
+  return null;
 }
 
 export default function SpecialOffers({ variant = "light", limit, onLoaded }: Props) {
@@ -79,6 +100,7 @@ export default function SpecialOffers({ variant = "light", limit, onLoaded }: Pr
         const price = formatPrice(o);
         const basis = priceBasis(o);
         const blurb = o.summary || o.descriptionLines.filter((l) => !l.startsWith("•")).join(" ");
+        const valid = validity(o);
         const bullets = o.descriptionLines.filter((l) => l.startsWith("•")).map((l) => l.replace(/^•\s*/, ""));
         return (
           <article
@@ -110,6 +132,15 @@ export default function SpecialOffers({ variant = "light", limit, onLoaded }: Pr
               <h3 className={`font-serif text-lg font-bold leading-snug ${dark ? "text-white" : "text-[#1F1615]"}`}>
                 {o.name}
               </h3>
+              {valid && (
+                <p
+                  className={`mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${dark ? "text-[#C59B27]" : "text-[#821124]"}`}
+                  id={`offer-valid-${o.id}`}
+                >
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  {valid}
+                </p>
+              )}
               {blurb && (
                 <p className={`mt-3 text-xs font-light leading-relaxed ${dark ? "text-stone-400" : "text-stone-600"}`}>
                   {blurb}

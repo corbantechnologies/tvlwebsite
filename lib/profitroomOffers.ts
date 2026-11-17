@@ -31,6 +31,9 @@ export type ProfitroomOffer = {
   priceOccupancy: number | null;
   priceNights: number | null;
   image: string | null;
+  /** Dates the offer runs, YYYY-MM-DD, from the feed's <Available From To>. Null when open-ended. */
+  availableFrom: string | null;
+  availableTo: string | null;
 };
 
 const parser = new XMLParser({
@@ -87,6 +90,21 @@ function safeImageUrl(u: string): string | null {
   }
 }
 
+function isoDate(v: unknown): string | null {
+  const s = text(v);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+
+/** Today's date in Nairobi (UTC+3, no DST) as YYYY-MM-DD. */
+function nairobiToday(now: Date): string {
+  return new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** False once an offer's end date has passed (Nairobi time). Open-ended offers are always current. */
+export function isOfferCurrent(o: Pick<ProfitroomOffer, "availableTo">, now: Date = new Date()): boolean {
+  return !o.availableTo || o.availableTo >= nairobiToday(now);
+}
+
 function num(v: string): number | null {
   if (!v) return null;
   const n = Number(v.replace(/,/g, ""));
@@ -100,6 +118,7 @@ type RawOffer = {
   OfferSummary?: unknown;
   OfferDescription?: unknown;
   OfferImage?: unknown;
+  Available?: Record<string, unknown>;
   MinPrice?: Record<string, unknown>;
   Tags?: { Tag?: unknown[] };
 };
@@ -129,6 +148,9 @@ export function parseOffersXml(xml: string): ProfitroomOffer[] {
         else tags.push(value);
       }
 
+      const availableFrom = isoDate(r.Available?.["@_From"]);
+      const availableTo = isoDate(r.Available?.["@_To"]);
+
       const mp = (r.MinPrice ?? {}) as Record<string, unknown>;
       const minPrice = num(text(mp.Price)) ?? num(text(mp));
 
@@ -136,7 +158,12 @@ export function parseOffersXml(xml: string): ProfitroomOffer[] {
         id,
         name,
         type,
-        isSpecial: type === "S" || tags.some((t) => t.toLowerCase() === "deals"),
+        // Shown on the website: special offers (type S), anything tagged "Deals" in the Suite,
+        // and seasonal offers with a date range. Standing rates (Room Only, B&B) have none of these.
+        isSpecial:
+          type === "S" ||
+          tags.some((t) => t.toLowerCase() === "deals") ||
+          Boolean(availableFrom || availableTo),
         summary: decodeEntities(text(r.OfferSummary)),
         descriptionLines: htmlToLines(text(r.OfferDescription)),
         meals,
@@ -146,6 +173,8 @@ export function parseOffersXml(xml: string): ProfitroomOffer[] {
         priceOccupancy: num(text(mp.Occupancy)),
         priceNights: num(text(mp.Nights)),
         image: safeImageUrl(text(r.OfferImage)),
+        availableFrom,
+        availableTo,
       };
     })
     .filter((o): o is ProfitroomOffer => o !== null);

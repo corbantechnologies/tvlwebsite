@@ -45,9 +45,9 @@ export function openProfitroomBooking(params: ProfitroomBookingParams = {}): voi
 type ProfitroomWidget = { Open: (opts: Record<string, unknown>) => void };
 
 /**
- * Opens one ProfitRoom offer. Uses ProfitRoom's own Booking.Open() when their
- * booking widget script is on the page (NEXT_PUBLIC_PROFITROOM_WIDGET_SRC);
- * otherwise opens the booking engine start page.
+ * Opens one ProfitRoom offer. Uses ProfitRoom's own Booking.Open() from their
+ * Booking.js script (see PROFITROOM_WIDGET_SRC); if that hasn't loaded yet,
+ * opens the booking engine start page.
  */
 export function openProfitroomOffer(offerId: string): void {
   const widget = (window as unknown as { Booking?: ProfitroomWidget }).Booking;
@@ -59,4 +59,31 @@ export function openProfitroomOffer(offerId: string): void {
   openProfitroomBooking();
 }
 
-export const PROFITROOM_WIDGET_SRC = process.env.NEXT_PUBLIC_PROFITROOM_WIDGET_SRC?.trim() || "";
+/**
+ * ProfitRoom's Booking.js (from their "Integrating a booking system with own
+ * booking form" guide). It provides Booking.Open({OfferID}), which opens one
+ * offer in a panel over our site. NEXT_PUBLIC_PROFITROOM_WIDGET_SRC can point
+ * it elsewhere, or "off" stops it loading.
+ */
+const DEFAULT_WIDGET_SRC = "https://open.upperbooking.com/tamarindvillage/Booking.js?locale=en";
+
+export function profitroomWidgetSrc(value: string | undefined = process.env.NEXT_PUBLIC_PROFITROOM_WIDGET_SRC): string {
+  const v = value?.trim();
+  if (!v) return DEFAULT_WIDGET_SRC;
+  if (v.toLowerCase() === "off") return "";
+  return v;
+}
+
+export const PROFITROOM_WIDGET_SRC = profitroomWidgetSrc();
+
+/**
+ * Our own "Book & Pay Here" link (Paystack checkout) next to ProfitRoom's
+ * Book Now. Hidden unless NEXT_PUBLIC_SHOW_DIRECT_BOOKING_LINK is "on".
+ * When ProfitRoom is switched off, our checkout is the main button and this
+ * setting doesn't apply.
+ */
+export function isDirectBookingLinkShown(
+  value: string | undefined = process.env.NEXT_PUBLIC_SHOW_DIRECT_BOOKING_LINK,
+): boolean {
+  return value?.trim().toLowerCase() === "on";
+}

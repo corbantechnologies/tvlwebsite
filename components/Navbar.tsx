@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Menu, X, MapPin, Phone, Car } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
+import { isDirectBookingLinkShown, isProfitroomBookingActive, openProfitroomBooking } from "@/lib/profitroomBooking";
 
 interface NavbarProps {
   onNavigate: (sectionId: string) => void;
@@ -16,6 +16,7 @@ interface NavbarProps {
 
 export default function Navbar({ onNavigate, onOpenBooking, onOpenTransferModal, onOpenTracking, activeView, onGoHome }: NavbarProps) {
   const profitroomActive = isProfitroomBookingActive();
+  const showDirectLink = profitroomActive && isDirectBookingLinkShown();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -167,7 +168,7 @@ export default function Navbar({ onNavigate, onOpenBooking, onOpenTransferModal,
 
             {/* CTAs */}
             <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
-              {profitroomActive && (
+              {showDirectLink && (
                 <a
                   href="#"
                   onClick={(e) => { e.preventDefault(); onOpenBooking(); }}
@@ -254,7 +255,7 @@ export default function Navbar({ onNavigate, onOpenBooking, onOpenTransferModal,
                   >
                     {profitroomActive ? "Book Now" : "Check Availability"}
                   </button>
-                  {profitroomActive && (
+                  {showDirectLink && (
                     <a
                       href="#"
                       onClick={(e) => {

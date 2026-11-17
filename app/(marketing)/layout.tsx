@@ -12,7 +12,7 @@ export default function MarketingLayout({
   return (
     <div className="min-h-screen bg-brand-sand font-sans text-brand-dark selection:bg-brand-teal selection:text-white flex flex-col w-full max-w-full overflow-x-hidden">
       {children}
-      {/* ProfitRoom's booking widget, which provides Booking.Open() for offer buttons. Only loaded when configured. */}
+      {/* ProfitRoom's Booking.js, which provides Booking.Open() for the offer buttons. */}
       {PROFITROOM_WIDGET_SRC && <Script src={PROFITROOM_WIDGET_SRC} strategy="lazyOnload" />}
     </div>
   );
