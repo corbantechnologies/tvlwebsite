@@ -24,18 +24,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       priceUsd: Number(body.priceUsd ?? body.ticketPriceUsd ?? 0),
       priceKes: Number(body.priceKes ?? body.ticketPriceKes ?? 0),
       image: body.image || body.posterUrl || "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
-      gallery: body.gallery || [],
       maxCapacity: Number(body.maxCapacity || body.capacity || 100),
-      bookedCount: Number(body.bookedCount || 0),
-      highlights: body.highlights || [],
-      dressCode: body.dressCode || "Smart Casual",
-      bookingLink: body.bookingLink || "",
       externalTicketUrl: body.externalTicketUrl || null,
       paymentEnabled: !!body.paymentEnabled,
       isFeatured: !!body.isFeatured,
       isActive: body.isActive !== false,
       gatePin: body.gatePin || "2026",
       subaccountCode: body.subaccountCode || null,
+      // Only change these when sent: the admin form doesn't send them, and resetting
+      // bookedCount to 0 on every edit would let an event oversell.
+      ...(body.bookedCount !== undefined && { bookedCount: Number(body.bookedCount) || 0 }),
+      ...(body.gallery !== undefined && { gallery: body.gallery || [] }),
+      ...(body.highlights !== undefined && { highlights: body.highlights || [] }),
+      ...(body.dressCode !== undefined && { dressCode: body.dressCode || "Smart Casual" }),
+      ...(body.bookingLink !== undefined && { bookingLink: body.bookingLink || "" }),
     } as any).where(eq(events.id, id));
 
     return NextResponse.json({ success: true, message: "Event updated" });
