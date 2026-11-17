@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowRight, Utensils, CheckCircle2, CalendarDays } from "lucide-react";
 import type { ProfitroomOffer } from "@/lib/profitroomOffers";
 import { openProfitroomOffer } from "@/lib/profitroomBooking";
+import { formatOfferPrice, offerValidity } from "@/lib/offerDisplay";
 
 type Props = {
   /** "dark" for the home page section, "light" for the offers page. */
@@ -14,38 +15,11 @@ type Props = {
   onLoaded?: (count: number) => void;
 };
 
-function formatPrice(o: ProfitroomOffer): string | null {
-  if (o.minPrice == null) return null;
-  const amount = Number.isInteger(o.minPrice) ? o.minPrice.toLocaleString() : o.minPrice.toFixed(2);
-  return `${o.currency} ${amount}`;
-}
-
 function priceBasis(o: ProfitroomOffer): string | null {
   const parts: string[] = [];
   if (o.priceNights) parts.push(`${o.priceNights} night${o.priceNights === 1 ? "" : "s"}`);
   if (o.priceOccupancy) parts.push(`${o.priceOccupancy} guest${o.priceOccupancy === 1 ? "" : "s"}`);
   return parts.length ? `for ${parts.join(", ")}` : null;
-}
-
-function shortDate(iso: string, withYear: boolean): string {
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    ...(withYear ? { year: "numeric" } : {}),
-    timeZone: "UTC",
-  });
-}
-
-/** "Valid 20 Nov – 19 Dec 2026", "Valid from 20 Nov 2026", "Valid until 19 Dec 2026", or null. */
-function validity(o: ProfitroomOffer): string | null {
-  const { availableFrom: from, availableTo: to } = o;
-  if (from && to) {
-    const sameYear = from.slice(0, 4) === to.slice(0, 4);
-    return `Valid ${shortDate(from, !sameYear)} – ${shortDate(to, true)}`;
-  }
-  if (from) return `Valid from ${shortDate(from, true)}`;
-  if (to) return `Valid until ${shortDate(to, true)}`;
-  return null;
 }
 
 export default function SpecialOffers({ variant = "light", limit, onLoaded }: Props) {
@@ -97,10 +71,10 @@ export default function SpecialOffers({ variant = "light", limit, onLoaded }: Pr
   return (
     <div className="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
       {shown.map((o) => {
-        const price = formatPrice(o);
+        const price = formatOfferPrice(o);
         const basis = priceBasis(o);
         const blurb = o.summary || o.descriptionLines.filter((l) => !l.startsWith("•")).join(" ");
-        const valid = validity(o);
+        const valid = offerValidity(o);
         const bullets = o.descriptionLines.filter((l) => l.startsWith("•")).map((l) => l.replace(/^•\s*/, ""));
         return (
           <article
